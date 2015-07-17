@@ -1225,42 +1225,39 @@ static operand
 parse_multiplicative_expression (void)
 {
   operand expr = parse_unary_expression (NULL, NULL);
-
   skip_newlines ();
-  while (true)
+
+  while (tok.type == TOK_MULT
+         || tok.type == TOK_DIV
+         || tok.type == TOK_MOD)
   {
-    switch (tok.type)
-    {
-      case TOK_MULT:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_multiplication_res (expr, parse_unary_expression (NULL, NULL));
-        break;
-      }
-      case TOK_DIV:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_division_res (expr, parse_unary_expression (NULL, NULL));
-        break;
-      }
-      case TOK_MOD:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_remainder_res (expr, parse_unary_expression (NULL, NULL));
-        break;
-      }
-      default:
-      {
-        lexer_save_token (tok);
-        goto done;
-      }
-    }
+    token_type tt = tok.type;
+
     skip_newlines ();
+
+    expr = dump_evaluate_if_identifier_or_constant (expr);
+
+    operand expr_rhs = parse_unary_expression (NULL, NULL);
+    skip_newlines ();
+
+    if (tt == TOK_MULT)
+    {
+      expr = dump_multiplication_res (expr, expr_rhs);
+    }
+    else if (tt == TOK_DIV)
+    {
+      expr = dump_division_res (expr, expr_rhs);
+    }
+    else
+    {
+      JERRY_ASSERT (tt == TOK_MOD);
+
+      expr = dump_remainder_res (expr, expr_rhs);
+    }
   }
-done:
+
+  lexer_save_token (tok);
+
   return expr;
 }
 
@@ -1271,35 +1268,34 @@ static operand
 parse_additive_expression (void)
 {
   operand expr = parse_multiplicative_expression ();
-
   skip_newlines ();
-  while (true)
+
+  while (tok.type == TOK_PLUS
+         || tok.type == TOK_MINUS)
   {
-    switch (tok.type)
-    {
-      case TOK_PLUS:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_addition_res (expr, parse_multiplicative_expression ());
-        break;
-      }
-      case TOK_MINUS:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_substraction_res (expr, parse_multiplicative_expression ());
-        break;
-      }
-      default:
-      {
-        lexer_save_token (tok);
-        goto done;
-      }
-    }
+    token_type tt = tok.type;
+
     skip_newlines ();
+
+    expr = dump_evaluate_if_identifier_or_constant (expr);
+
+    operand expr_rhs = parse_multiplicative_expression ();
+    skip_newlines ();
+
+    if (tt == TOK_PLUS)
+    {
+      expr = dump_addition_res (expr, expr_rhs);
+    }
+    else
+    {
+      JERRY_ASSERT (tt == TOK_MINUS);
+
+      expr = dump_substraction_res (expr, expr_rhs);
+    }
   }
-done:
+
+  lexer_save_token (tok);
+
   return expr;
 }
 
@@ -1310,42 +1306,39 @@ static operand
 parse_shift_expression (void)
 {
   operand expr = parse_additive_expression ();
-
   skip_newlines ();
-  while (true)
+
+  while (tok.type == TOK_LSHIFT
+         || tok.type == TOK_RSHIFT
+         || tok.type == TOK_RSHIFT_EX)
   {
-    switch (tok.type)
-    {
-      case TOK_LSHIFT:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_left_shift_res (expr, parse_additive_expression ());
-        break;
-      }
-      case TOK_RSHIFT:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_right_shift_res (expr, parse_additive_expression ());
-        break;
-      }
-      case TOK_RSHIFT_EX:
-      {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
-        skip_newlines ();
-        expr = dump_right_shift_ex_res (expr, parse_additive_expression ());
-        break;
-      }
-      default:
-      {
-        lexer_save_token (tok);
-        goto done;
-      }
-    }
+    token_type tt = tok.type;
+
     skip_newlines ();
+
+    expr = dump_evaluate_if_identifier_or_constant (expr);
+
+    operand expr_rhs = parse_additive_expression ();
+    skip_newlines ();
+
+    if (tt == TOK_LSHIFT)
+    {
+      expr = dump_left_shift_res (expr, expr_rhs);
+    }
+    else if (tt == TOK_RSHIFT)
+    {
+      expr = dump_right_shift_res (expr, expr_rhs);
+    }
+    else
+    {
+      JERRY_ASSERT (tt == TOK_RSHIFT_EX);
+
+      expr = dump_right_shift_ex_res (expr, expr_rhs);
+    }
   }
-done:
+
+  lexer_save_token (tok);
+
   return expr;
 }
 
