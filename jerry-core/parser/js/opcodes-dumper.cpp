@@ -176,6 +176,100 @@ tmp_operand (void)
   return ret;
 }
 
+operand
+empty_operand (void)
+{
+  operand ret;
+
+  ret.type = OPERAND_TMP;
+  ret.uid = INVALID_VALUE;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+}
+
+bool
+operand_is_empty (operand op)
+{
+  return op.type == OPERAND_TMP && op.uid == INVALID_VALUE && op.lit_id == NOT_A_LITERAL;
+}
+
+operand
+literal_operand (lit_cpointer_t lit_cp)
+{
+  operand ret;
+
+  ret.type = OPERAND_LITERAL;
+  ret.uid = LITERAL_TO_REWRITE;
+  ret.lit_id = lit_cp;
+
+  return ret;
+}
+
+static operand
+create_operand_from_tmp_and_lit (idx_t tmp, lit_cpointer_t lit_id)
+{
+  if (tmp != LITERAL_TO_REWRITE)
+  {
+    JERRY_ASSERT (lit_id.packed_value == MEM_CP_NULL);
+
+    operand ret;
+
+    ret.type = OPERAND_TMP;
+    ret.uid = tmp;
+    ret.lit_id = NOT_A_LITERAL;
+
+    return ret;
+  }
+  else
+  {
+    JERRY_ASSERT (lit_id.packed_value != MEM_CP_NULL);
+
+    operand ret;
+
+    ret.type = OPERAND_LITERAL;
+    ret.uid = LITERAL_TO_REWRITE;
+    ret.lit_id = lit_id;
+
+    return ret;
+  }
+}
+
+/**
+ * Creates operand for eval's return value
+ *
+ * @return constructed operand
+ */
+operand
+eval_ret_operand (void)
+{
+  operand ret;
+
+  ret.type = OPERAND_TMP;
+  ret.uid = EVAL_RET_VALUE;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+} /* eval_ret_operand */
+
+/**
+ * Creates operand for taking iterator value (next property name)
+ * from for-in opcode handler.
+ *
+ * @return constructed operand
+ */
+operand
+jsp_create_operand_for_in_special_reg (void)
+{
+  operand ret;
+
+  ret.type = OPERAND_TMP;
+  ret.uid = OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+} /* jsp_create_operand_for_in_special_reg */
+
 static uint8_t
 name_to_native_call_id (operand obj)
 {
@@ -344,35 +438,6 @@ dump_prop_setter_op_meta (op_meta last, operand op)
 }
 
 static operand
-create_operand_from_tmp_and_lit (idx_t tmp, lit_cpointer_t lit_id)
-{
-  if (tmp != LITERAL_TO_REWRITE)
-  {
-    JERRY_ASSERT (lit_id.packed_value == MEM_CP_NULL);
-
-    operand ret;
-
-    ret.type = OPERAND_TMP;
-    ret.uid = tmp;
-    ret.lit_id = NOT_A_LITERAL;
-
-    return ret;
-  }
-  else
-  {
-    JERRY_ASSERT (lit_id.packed_value != MEM_CP_NULL);
-
-    operand ret;
-
-    ret.type = OPERAND_LITERAL;
-    ret.uid = LITERAL_TO_REWRITE;
-    ret.lit_id = lit_id;
-
-    return ret;
-  }
-}
-
-static operand
 dump_triple_address_and_prop_setter_res (void (*dumper) (operand, operand, operand),
                                          op_meta last, operand op)
 {
@@ -415,71 +480,6 @@ static opcode_counter_t
 get_diff_from (opcode_counter_t oc)
 {
   return (opcode_counter_t) (serializer_get_current_opcode_counter () - oc);
-}
-
-operand
-empty_operand (void)
-{
-  operand ret;
-
-  ret.type = OPERAND_TMP;
-  ret.uid = INVALID_VALUE;
-  ret.lit_id = NOT_A_LITERAL;
-
-  return ret;
-}
-
-operand
-literal_operand (lit_cpointer_t lit_cp)
-{
-  operand ret;
-
-  ret.type = OPERAND_LITERAL;
-  ret.uid = LITERAL_TO_REWRITE;
-  ret.lit_id = lit_cp;
-
-  return ret;
-}
-
-/**
- * Creates operand for eval's return value
- *
- * @return constructed operand
- */
-operand
-eval_ret_operand (void)
-{
-  operand ret;
-
-  ret.type = OPERAND_TMP;
-  ret.uid = EVAL_RET_VALUE;
-  ret.lit_id = NOT_A_LITERAL;
-
-  return ret;
-} /* eval_ret_operand */
-
-/**
- * Creates operand for taking iterator value (next property name)
- * from for-in opcode handler.
- *
- * @return constructed operand
- */
-operand
-jsp_create_operand_for_in_special_reg (void)
-{
-  operand ret;
-
-  ret.type = OPERAND_TMP;
-  ret.uid = OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME;
-  ret.lit_id = NOT_A_LITERAL;
-
-  return ret;
-} /* jsp_create_operand_for_in_special_reg */
-
-bool
-operand_is_empty (operand op)
-{
-  return op.type == OPERAND_TMP && op.uid == INVALID_VALUE && op.lit_id == NOT_A_LITERAL;
 }
 
 void
