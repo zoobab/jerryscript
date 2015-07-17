@@ -117,7 +117,7 @@ void
 jsp_early_error_add_prop_name (operand op, prop_type pt)
 {
   JERRY_ASSERT (op.type == OPERAND_LITERAL);
-  STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.data.lit_id), pt));
+  STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.lit_id), pt));
 }
 
 void
@@ -202,7 +202,7 @@ jsp_early_error_start_checking_of_vargs (void)
 void jsp_early_error_add_varg (operand op)
 {
   JERRY_ASSERT (op.type == OPERAND_LITERAL);
-  STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.data.lit_id), VARG));
+  STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.lit_id), VARG));
 }
 
 static void
@@ -210,10 +210,10 @@ emit_error_on_eval_and_arguments (operand op, locus loc __attr_unused___)
 {
   if (op.type == OPERAND_LITERAL)
   {
-    if (lit_literal_equal_type_utf8 (lit_get_literal_by_cp (op.data.lit_id),
+    if (lit_literal_equal_type_utf8 (lit_get_literal_by_cp (op.lit_id),
                                      lit_get_magic_string_utf8 (LIT_MAGIC_STRING_ARGUMENTS),
                                      lit_get_magic_string_size (LIT_MAGIC_STRING_ARGUMENTS))
-        || lit_literal_equal_type_utf8 (lit_get_literal_by_cp (op.data.lit_id),
+        || lit_literal_equal_type_utf8 (lit_get_literal_by_cp (op.lit_id),
                                         lit_get_magic_string_utf8 (LIT_MAGIC_STRING_EVAL),
                                         lit_get_magic_string_size (LIT_MAGIC_STRING_EVAL)))
     {

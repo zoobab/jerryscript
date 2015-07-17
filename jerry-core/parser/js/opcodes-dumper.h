@@ -29,11 +29,9 @@ typedef enum __attr_packed___
 typedef struct
 {
   operand_type type;
-  union
-  {
-    idx_t uid;
-    lit_cpointer_t lit_id;
-  } data;
+
+  idx_t uid;
+  lit_cpointer_t lit_id;
 } operand;
 
 typedef enum __attr_packed___
