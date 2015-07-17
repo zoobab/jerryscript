@@ -317,8 +317,16 @@ create_op_meta_for_vlt (varg_list_type vlt, operand *res, operand *obj)
   op_meta ret;
   switch (vlt)
   {
-    case VARG_FUNC_EXPR: ret = create_op_meta_for_res_and_obj (getop_func_expr_n, res, obj); break;
-    case VARG_CONSTRUCT_EXPR: ret = create_op_meta_for_res_and_obj (getop_construct_n, res, obj); break;
+    case VARG_FUNC_EXPR:
+    {
+      ret = create_op_meta_for_res_and_obj (getop_func_expr_n, res, obj);
+      break;
+    }
+    case VARG_CONSTRUCT_EXPR:
+    {
+      ret = create_op_meta_for_res_and_obj (getop_construct_n, res, obj);
+      break;
+    }
     case VARG_CALL_EXPR:
     {
       JERRY_ASSERT (obj != NULL);
