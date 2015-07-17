@@ -223,8 +223,8 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
 
     MEM_FINALIZE_LOCAL_ARRAY (re_utf8_buffer_p)
     ecma_deref_ecma_string (string_p);
-#else
-    JERRY_UNIMPLEMENTED ("Regular Expressions are not supported in compact profile!");
+#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+    ret_value = ecma_make_throw_obj_completion_value (ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR));
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
   }
   else
