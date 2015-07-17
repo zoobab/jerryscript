@@ -194,6 +194,54 @@ operand_is_empty (operand op)
   return op.type == OPERAND_TMP && op.uid == INVALID_VALUE && op.lit_id == NOT_A_LITERAL;
 }
 
+bool
+operand_is_reference (operand op)
+{
+  JERRY_ASSERT (!operand_is_empty (op));
+
+  /*
+   * TODO:
+   *      Implement and add object-based reference operand type
+   */
+  return (op.type == OPERAND_IDENTIFIER);
+}
+
+static bool
+operand_is_generally_encodable (operand op)
+{
+  JERRY_ASSERT (!operand_is_empty (op));
+
+  return (op.type == OPERAND_TMP
+          || op.type == OPERAND_IDENTIFIER);
+}
+
+bool
+operand_is_constant (operand op)
+{
+  JERRY_ASSERT (!operand_is_empty (op));
+
+  return (op.type == OPERAND_STRING
+          || op.type == OPERAND_NUMBER);
+}
+
+bool
+operand_is_number (operand op)
+{
+  return (op.type == OPERAND_NUMBER);
+}
+
+ecma_number_t
+operand_get_number (operand op)
+{
+  JERRY_ASSERT (operand_is_number (op));
+
+
+  literal_t lit = lit_get_literal_by_cp (op.lit_id);
+  JERRY_ASSERT (lit_literal_is_num (lit));
+
+  return lit_charset_literal_get_number (lit);
+}
+
 operand
 identifier_operand (lit_cpointer_t lit_cp)
 {
@@ -298,6 +346,8 @@ jsp_create_operand_for_in_special_reg (void)
 static uint8_t
 name_to_native_call_id (operand obj)
 {
+  JERRY_ASSERT (operand_is_generally_encodable (obj));
+
   if (obj.type != OPERAND_IDENTIFIER)
   {
     return OPCODE_NATIVE_CALL__COUNT;
@@ -340,6 +390,9 @@ create_op_meta_for_res_and_obj (opcode_t (*getop) (idx_t, idx_t, idx_t), operand
 {
   JERRY_ASSERT (obj != NULL);
   JERRY_ASSERT (res != NULL);
+
+  JERRY_ASSERT (operand_is_generally_encodable (*res));
+  JERRY_ASSERT (operand_is_generally_encodable (*obj));
 
   const opcode_t opcode = getop (res->uid, obj->uid, INVALID_VALUE);
   return create_op_meta (opcode, res->lit_id, obj->lit_id, NOT_A_LITERAL);

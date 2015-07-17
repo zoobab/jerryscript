@@ -778,7 +778,7 @@ parse_literal (void)
 {
   switch (tok.type)
   {
-    case TOK_NUMBER: return dump_number_assignment_res (token_data_as_lit_cp ());
+    case TOK_NUMBER: return number_operand (token_data_as_lit_cp ());
     case TOK_STRING: return dump_string_assignment_res (token_data_as_lit_cp ());
     case TOK_REGEXP: return dump_regexp_assignment_res (token_data_as_lit_cp ());
     case TOK_NULL: return dump_null_assignment_res ();
@@ -1277,20 +1277,50 @@ parse_additive_expression (void)
 
     skip_newlines ();
 
-    expr = dump_evaluate_if_identifier_or_constant (expr);
+    if (operand_is_reference (expr))
+    {
+      expr = dump_evaluate_if_identifier_or_constant (expr);
+    }
 
     operand expr_rhs = parse_multiplicative_expression ();
     skip_newlines ();
 
-    if (tt == TOK_PLUS)
+    if (operand_is_number (expr)
+        && operand_is_number (expr_rhs))
     {
-      expr = dump_addition_res (expr, expr_rhs);
+      ecma_number_t left_num = operand_get_number (expr);
+      ecma_number_t right_num = operand_get_number (expr_rhs);
+      ecma_number_t ret;
+
+      if (tt == TOK_PLUS)
+      {
+        ret = ecma_number_add (left_num, right_num);
+      }
+      else
+      {
+        JERRY_ASSERT (tt == TOK_MINUS);
+
+        ret = ecma_number_substract (left_num, right_num);
+      }
+
+      literal_t lit = lit_find_or_create_literal_from_num (ret);
+      expr = number_operand (lit_cpointer_t::compress (lit));
     }
     else
     {
-      JERRY_ASSERT (tt == TOK_MINUS);
+      expr = dump_evaluate_if_identifier_or_constant (expr);
+      expr_rhs = dump_evaluate_if_identifier_or_constant (expr_rhs);
 
-      expr = dump_substraction_res (expr, expr_rhs);
+      if (tt == TOK_PLUS)
+      {
+        expr = dump_addition_res (expr, expr_rhs);
+      }
+      else
+      {
+        JERRY_ASSERT (tt == TOK_MINUS);
+
+        expr = dump_substraction_res (expr, expr_rhs);
+      }
     }
   }
 

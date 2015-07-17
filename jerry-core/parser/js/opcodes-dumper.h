@@ -54,6 +54,11 @@ operand eval_ret_operand (void);
 operand jsp_create_operand_for_in_special_reg (void);
 bool operand_is_empty (operand);
 
+bool operand_is_reference (operand);
+bool operand_is_constant (operand);
+bool operand_is_number (operand);
+ecma_number_t operand_get_number (operand);
+
 void dumper_init (void);
 void dumper_free (void);
 
