@@ -195,11 +195,35 @@ operand_is_empty (operand op)
 }
 
 operand
-literal_operand (lit_cpointer_t lit_cp)
+identifier_operand (lit_cpointer_t lit_cp)
 {
   operand ret;
 
-  ret.type = OPERAND_LITERAL;
+  ret.type = OPERAND_IDENTIFIER;
+  ret.uid = LITERAL_TO_REWRITE;
+  ret.lit_id = lit_cp;
+
+  return ret;
+}
+
+operand
+string_operand (lit_cpointer_t lit_cp)
+{
+  operand ret;
+
+  ret.type = OPERAND_STRING;
+  ret.uid = LITERAL_TO_REWRITE;
+  ret.lit_id = lit_cp;
+
+  return ret;
+}
+
+operand
+number_operand (lit_cpointer_t lit_cp)
+{
+  operand ret;
+
+  ret.type = OPERAND_NUMBER;
   ret.uid = LITERAL_TO_REWRITE;
   ret.lit_id = lit_cp;
 
@@ -224,10 +248,11 @@ create_operand_from_tmp_and_lit (idx_t tmp, lit_cpointer_t lit_id)
   else
   {
     JERRY_ASSERT (lit_id.packed_value != MEM_CP_NULL);
+    JERRY_ASSERT (lit_literal_is_utf8_string (lit_get_literal_by_cp (lit_id)));
 
     operand ret;
 
-    ret.type = OPERAND_LITERAL;
+    ret.type = OPERAND_IDENTIFIER;
     ret.uid = LITERAL_TO_REWRITE;
     ret.lit_id = lit_id;
 
@@ -273,7 +298,7 @@ jsp_create_operand_for_in_special_reg (void)
 static uint8_t
 name_to_native_call_id (operand obj)
 {
-  if (obj.type != OPERAND_LITERAL)
+  if (obj.type != OPERAND_IDENTIFIER)
   {
     return OPCODE_NATIVE_CALL__COUNT;
   }
@@ -554,7 +579,7 @@ dumper_is_eval_literal (operand obj) /**< byte-code operand */
   /*
    * FIXME: Switch to corresponding magic string
    */
-  bool is_eval_lit = (obj.type == OPERAND_LITERAL
+  bool is_eval_lit = (obj.type == OPERAND_IDENTIFIER
                       && lit_literal_equal_type_cstr (lit_get_literal_by_cp (obj.lit_id), "eval"));
 
   return is_eval_lit;
@@ -797,18 +822,18 @@ dump_varg (operand op)
 void
 dump_prop_name_and_value (operand name, operand value)
 {
-  JERRY_ASSERT (name.type == OPERAND_LITERAL);
-
   operand tmp;
 
   literal_t lit = lit_get_literal_by_cp (name.lit_id);
 
   if (lit_literal_is_utf8_string (lit))
   {
+    JERRY_ASSERT (name.type == OPERAND_STRING);
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
+    JERRY_ASSERT (name.type == OPERAND_NUMBER);
     JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
@@ -820,7 +845,8 @@ dump_prop_name_and_value (operand name, operand value)
 void
 dump_prop_getter_decl (operand name, operand func)
 {
-  JERRY_ASSERT (name.type == OPERAND_LITERAL);
+  JERRY_ASSERT (name.type == OPERAND_STRING
+                || name.type == OPERAND_NUMBER);
   JERRY_ASSERT (func.type == OPERAND_TMP);
 
   operand tmp;
@@ -844,7 +870,8 @@ dump_prop_getter_decl (operand name, operand func)
 void
 dump_prop_setter_decl (operand name, operand func)
 {
-  JERRY_ASSERT (name.type == OPERAND_LITERAL);
+  JERRY_ASSERT (name.type == OPERAND_STRING
+                || name.type == OPERAND_NUMBER);
   JERRY_ASSERT (func.type == OPERAND_TMP);
 
   operand tmp;
@@ -1043,28 +1070,19 @@ dump_logical_not_res (operand op)
 static void
 dump_delete (operand res, operand op, bool is_strict, locus loc)
 {
-  if (op.type == OPERAND_LITERAL)
+  if (op.type == OPERAND_IDENTIFIER)
   {
     literal_t lit = lit_get_literal_by_cp (op.lit_id);
 
-    if (lit_literal_is_utf8_string (lit))
-    {
-      jsp_early_error_check_delete (is_strict, loc);
+    JERRY_ASSERT (lit_literal_is_utf8_string (lit));
 
-      const opcode_t opcode = getop_delete_var (res.uid, LITERAL_TO_REWRITE);
-      serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, op.lit_id, NOT_A_LITERAL));
-    }
-    else
-    {
-      JERRY_ASSERT (lit_literal_is_num (lit));
+    jsp_early_error_check_delete (is_strict, loc);
 
-      dump_boolean_assignment (res, true);
-    }
+    const opcode_t opcode = getop_delete_var (res.uid, LITERAL_TO_REWRITE);
+    serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, op.lit_id, NOT_A_LITERAL));
   }
-  else
+  else if (op.type == OPERAND_TMP)
   {
-    JERRY_ASSERT (op.type == OPERAND_TMP);
-
     const op_meta last_op_meta = last_dumped_op_meta ();
     if (last_op_meta.op.op_idx == OPCODE (prop_getter))
     {
@@ -1082,6 +1100,12 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
     {
       dump_boolean_assignment (res, true);
     }
+  }
+  else
+  {
+    JERRY_ASSERT (op.type == OPERAND_STRING
+                  || op.type == OPERAND_NUMBER);
+    dump_boolean_assignment (res, true);
   }
 }
 
@@ -1890,7 +1914,7 @@ rewrite_try (void)
 void
 dump_catch_for_rewrite (operand op)
 {
-  JERRY_ASSERT (op.type == OPERAND_LITERAL);
+  JERRY_ASSERT (op.type == OPERAND_IDENTIFIER);
   STACK_PUSH (catches, serializer_get_current_opcode_counter ());
   opcode_t opcode = getop_meta (OPCODE_META_TYPE_CATCH, INVALID_VALUE, INVALID_VALUE);
   serializer_dump_op_meta (create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));

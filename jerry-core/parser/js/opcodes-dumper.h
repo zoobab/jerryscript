@@ -22,7 +22,9 @@
 
 typedef enum __attr_packed___
 {
-  OPERAND_LITERAL,
+  OPERAND_IDENTIFIER,
+  OPERAND_NUMBER,
+  OPERAND_STRING,
   OPERAND_TMP
 } operand_type;
 
@@ -45,7 +47,9 @@ typedef enum __attr_packed___
 } varg_list_type;
 
 operand empty_operand (void);
-operand literal_operand (lit_cpointer_t);
+operand string_operand (lit_cpointer_t);
+operand number_operand (lit_cpointer_t);
+operand identifier_operand (lit_cpointer_t);
 operand eval_ret_operand (void);
 operand jsp_create_operand_for_in_special_reg (void);
 bool operand_is_empty (operand);

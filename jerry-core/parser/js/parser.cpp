@@ -296,21 +296,24 @@ parse_property_name (void)
   {
     case TOK_NAME:
     case TOK_STRING:
+    {
+      return string_operand (token_data_as_lit_cp ());
+    }
     case TOK_NUMBER:
     {
-      return literal_operand (token_data_as_lit_cp ());
+      return number_operand (token_data_as_lit_cp ());
     }
     case TOK_SMALL_INT:
     {
       literal_t lit = lit_find_or_create_literal_from_num ((ecma_number_t) token_data ());
-      return literal_operand (lit_cpointer_t::compress (lit));
+      return number_operand (lit_cpointer_t::compress (lit));
     }
     case TOK_KEYWORD:
     {
       const char *s = lexer_keyword_to_string ((keyword) token_data ());
       literal_t lit = lit_find_or_create_literal_from_utf8_string ((const lit_utf8_byte_t *) s,
                                                                    (lit_utf8_size_t)strlen (s));
-      return literal_operand (lit_cpointer_t::compress (lit));
+      return string_operand (lit_cpointer_t::compress (lit));
     }
     case TOK_NULL:
     case TOK_BOOL:
@@ -320,7 +323,7 @@ parse_property_name (void)
                                   : (tok.uid ? LIT_MAGIC_STRING_TRUE : LIT_MAGIC_STRING_FALSE));
       literal_t lit = lit_find_or_create_literal_from_utf8_string (lit_get_magic_string_utf8 (id),
                                                                    lit_get_magic_string_size (id));
-      return literal_operand (lit_cpointer_t::compress (lit));
+      return string_operand (lit_cpointer_t::compress (lit));
     }
     default:
     {
@@ -462,7 +465,7 @@ parse_argument_list (varg_list_type vlt, operand obj, uint8_t *args_count, opera
       {
         call_flags = (opcode_call_flags_t) (call_flags | OPCODE_CALL_FLAGS_HAVE_THIS_ARG);
 
-        if (this_arg_p->type == OPERAND_LITERAL)
+        if (this_arg_p->type == OPERAND_IDENTIFIER)
         {
           /*
            * FIXME:
@@ -475,6 +478,8 @@ parse_argument_list (varg_list_type vlt, operand obj, uint8_t *args_count, opera
         }
         else
         {
+          JERRY_ASSERT (this_arg_p->type == OPERAND_TMP);
+
           this_arg = *this_arg_p;
         }
 
@@ -548,7 +553,7 @@ parse_argument_list (varg_list_type vlt, operand obj, uint8_t *args_count, opera
         || vlt == VARG_FUNC_EXPR)
     {
       current_token_must_be (TOK_NAME);
-      op = literal_operand (token_data_as_lit_cp ());
+      op = identifier_operand (token_data_as_lit_cp ());
       jsp_early_error_add_varg (op);
       jsp_early_error_check_for_eval_and_arguments_in_strict_mode (op, is_strict_mode (), tok.loc);
       dump_varg (op);
@@ -646,7 +651,7 @@ parse_function_declaration (void)
   jsp_label_t *masked_label_set_p = jsp_label_mask_set ();
 
   token_after_newlines_must_be (TOK_NAME);
-  const operand name = literal_operand (token_data_as_lit_cp ());
+  const operand name = identifier_operand (token_data_as_lit_cp ());
 
   jsp_early_error_check_for_eval_and_arguments_in_strict_mode (name, is_strict_mode (), tok.loc);
 
@@ -704,7 +709,7 @@ parse_function_expression (void)
   skip_newlines ();
   if (token_is (TOK_NAME))
   {
-    const operand name = literal_operand (token_data_as_lit_cp ());
+    const operand name = identifier_operand (token_data_as_lit_cp ());
     jsp_early_error_check_for_eval_and_arguments_in_strict_mode (name, is_outer_scope_strict, tok.loc);
 
     skip_newlines ();
@@ -816,7 +821,7 @@ parse_primary_expression (void)
     case TOK_NUMBER:
     case TOK_REGEXP:
     case TOK_STRING: return parse_literal ();
-    case TOK_NAME: return literal_operand (token_data_as_lit_cp ());
+    case TOK_NAME: return identifier_operand (token_data_as_lit_cp ());
     case TOK_OPEN_SQUARE: return parse_array_literal ();
     case TOK_OPEN_BRACE: return parse_object_literal ();
     case TOK_OPEN_PAREN:
@@ -1198,13 +1203,26 @@ parse_unary_expression (operand *this_arg_gl, operand *prop_gl)
 }
 
 static operand
-dump_assignment_of_lhs_if_literal (operand lhs)
+dump_evaluate_if_identifier_or_constant (operand expr)
 {
-  if (lhs.type == OPERAND_LITERAL)
+  if (expr.type == OPERAND_IDENTIFIER)
   {
-    lhs = dump_variable_assignment_res (lhs);
+    expr = dump_variable_assignment_res (expr);
   }
-  return lhs;
+  else if (expr.type == OPERAND_STRING)
+  {
+    expr = dump_string_assignment_res (expr.lit_id);
+  }
+  else if (expr.type == OPERAND_NUMBER)
+  {
+    expr = dump_number_assignment_res (expr.lit_id);
+  }
+  else
+  {
+    JERRY_ASSERT (expr.type == OPERAND_TMP);
+  }
+
+  return expr;
 }
 
 /* multiplicative_expression
@@ -1222,21 +1240,21 @@ parse_multiplicative_expression (void)
     {
       case TOK_MULT:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_multiplication_res (expr, parse_unary_expression (NULL, NULL));
         break;
       }
       case TOK_DIV:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_division_res (expr, parse_unary_expression (NULL, NULL));
         break;
       }
       case TOK_MOD:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_remainder_res (expr, parse_unary_expression (NULL, NULL));
         break;
@@ -1268,14 +1286,14 @@ parse_additive_expression (void)
     {
       case TOK_PLUS:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_addition_res (expr, parse_multiplicative_expression ());
         break;
       }
       case TOK_MINUS:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_substraction_res (expr, parse_multiplicative_expression ());
         break;
@@ -1307,21 +1325,21 @@ parse_shift_expression (void)
     {
       case TOK_LSHIFT:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_left_shift_res (expr, parse_additive_expression ());
         break;
       }
       case TOK_RSHIFT:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_right_shift_res (expr, parse_additive_expression ());
         break;
       }
       case TOK_RSHIFT_EX:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_right_shift_ex_res (expr, parse_additive_expression ());
         break;
@@ -1353,28 +1371,28 @@ parse_relational_expression (bool in_allowed)
     {
       case TOK_LESS:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_less_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_GREATER:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_greater_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_LESS_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_less_or_equal_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_GREATER_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_greater_or_equal_than_res (expr, parse_shift_expression ());
         break;
@@ -1383,7 +1401,7 @@ parse_relational_expression (bool in_allowed)
       {
         if (is_keyword (KW_INSTANCEOF))
         {
-          expr = dump_assignment_of_lhs_if_literal (expr);
+          expr = dump_evaluate_if_identifier_or_constant (expr);
           skip_newlines ();
           expr = dump_instanceof_res (expr, parse_shift_expression ());
           break;
@@ -1392,7 +1410,7 @@ parse_relational_expression (bool in_allowed)
         {
           if (in_allowed)
           {
-            expr = dump_assignment_of_lhs_if_literal (expr);
+            expr = dump_evaluate_if_identifier_or_constant (expr);
             skip_newlines ();
             expr = dump_in_res (expr, parse_shift_expression ());
             break;
@@ -1427,28 +1445,28 @@ parse_equality_expression (bool in_allowed)
     {
       case TOK_DOUBLE_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_equal_value_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_NOT_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_not_equal_value_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_TRIPLE_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_equal_value_type_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_NOT_DOUBLE_EQ:
       {
-        expr = dump_assignment_of_lhs_if_literal (expr);
+        expr = dump_evaluate_if_identifier_or_constant (expr);
         skip_newlines ();
         expr = dump_not_equal_value_type_res (expr, parse_relational_expression (in_allowed));
         break;
@@ -1477,7 +1495,7 @@ parse_bitwise_and_expression (bool in_allowed)
   {
     if (tok.type == TOK_AND)
     {
-      expr = dump_assignment_of_lhs_if_literal (expr);
+      expr = dump_evaluate_if_identifier_or_constant (expr);
       skip_newlines ();
       expr = dump_bitwise_and_res (expr, parse_equality_expression (in_allowed));
     }
@@ -1504,7 +1522,7 @@ parse_bitwise_xor_expression (bool in_allowed)
   {
     if (tok.type == TOK_XOR)
     {
-      expr = dump_assignment_of_lhs_if_literal (expr);
+      expr = dump_evaluate_if_identifier_or_constant (expr);
       skip_newlines ();
       expr = dump_bitwise_xor_res (expr, parse_bitwise_and_expression (in_allowed));
     }
@@ -1531,7 +1549,7 @@ parse_bitwise_or_expression (bool in_allowed)
   {
     if (tok.type == TOK_OR)
     {
-      expr = dump_assignment_of_lhs_if_literal (expr);
+      expr = dump_evaluate_if_identifier_or_constant (expr);
       skip_newlines ();
       expr = dump_bitwise_or_res (expr, parse_bitwise_xor_expression (in_allowed));
     }
@@ -1765,7 +1783,7 @@ parse_expression (bool in_allowed, /**< flag indicating if 'in' is allowed insid
     skip_newlines ();
     if (token_is (TOK_COMMA))
     {
-      dump_assignment_of_lhs_if_literal (expr);
+      dump_evaluate_if_identifier_or_constant (expr);
 
       skip_newlines ();
       expr = parse_assignment_expression (in_allowed);
@@ -1797,7 +1815,7 @@ static operand
 parse_variable_declaration (void)
 {
   current_token_must_be (TOK_NAME);
-  const operand name = literal_operand (token_data_as_lit_cp ());
+  const operand name = identifier_operand (token_data_as_lit_cp ());
 
   skip_newlines ();
   if (token_is (TOK_EQ))
@@ -2459,7 +2477,7 @@ parse_catch_clause (void)
 
   token_after_newlines_must_be (TOK_OPEN_PAREN);
   token_after_newlines_must_be (TOK_NAME);
-  const operand exception = literal_operand (token_data_as_lit_cp ());
+  const operand exception = identifier_operand (token_data_as_lit_cp ());
   jsp_early_error_check_for_eval_and_arguments_in_strict_mode (exception, is_strict_mode (), tok.loc);
   token_after_newlines_must_be (TOK_CLOSE_PAREN);
 
@@ -2840,7 +2858,7 @@ parse_statement (jsp_label_t *outermost_stmt_label_p) /**< outermost (first) lab
       lexer_save_token (tok);
       tok = temp;
       operand expr = parse_expression (true, JSP_EVAL_RET_STORE_DUMP);
-      dump_assignment_of_lhs_if_literal (expr);
+      dump_evaluate_if_identifier_or_constant (expr);
       insert_semicolon ();
     }
   }
@@ -3013,7 +3031,7 @@ preparse_scope (bool is_global)
         {
           if (!var_declared (token_data_as_lit_cp ()))
           {
-            jsp_early_error_check_for_eval_and_arguments_in_strict_mode (literal_operand (token_data_as_lit_cp ()),
+            jsp_early_error_check_for_eval_and_arguments_in_strict_mode (identifier_operand (token_data_as_lit_cp ()),
                                                                          is_strict_mode (),
                                                                          tok.loc);
             dump_variable_declaration (token_data_as_lit_cp ());
