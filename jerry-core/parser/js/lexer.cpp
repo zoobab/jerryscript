@@ -812,7 +812,7 @@ lexer_parse_identifier_or_keyword (void)
 /**
  * Parse numeric literal (ECMA-262, v5, 7.8.3)
  *
- * @return token of TOK_SMALL_INT or TOK_NUMBER types
+ * @return token of TOK_NUMBER
  */
 static token
 lexer_parse_number (void)
@@ -990,18 +990,9 @@ lexer_parse_number (void)
     }
   }
 
-  if (fp_res >= 0 && fp_res <= 255 && (uint8_t) fp_res == fp_res)
-  {
-    known_token = create_token (TOK_SMALL_INT, (uint8_t) fp_res);
-    is_token_parse_in_progress = NULL;
-    return known_token;
-  }
-  else
-  {
-    known_token = convert_seen_num_to_token (fp_res);
-    is_token_parse_in_progress = NULL;
-    return known_token;
-  }
+  known_token = convert_seen_num_to_token (fp_res);
+  is_token_parse_in_progress = NULL;
+  return known_token;
 } /* lexer_parse_number */
 
 /**
@@ -1298,7 +1289,6 @@ lexer_parse_token (void)
            || sent_token.type == TOK_CLOSE_BRACE
            || sent_token.type == TOK_CLOSE_SQUARE
            || sent_token.type == TOK_CLOSE_PAREN
-           || sent_token.type == TOK_SMALL_INT
            || sent_token.type == TOK_NUMBER
            || sent_token.type == TOK_STRING
            || sent_token.type == TOK_REGEXP))
@@ -1686,7 +1676,6 @@ lexer_token_type_to_string (token_type tt)
     case TOK_EOF: return "End of file";
     case TOK_NAME: return "Identifier";
     case TOK_KEYWORD: return "Keyword";
-    case TOK_SMALL_INT: /* FALLTHRU */
     case TOK_NUMBER: return "Number";
     case TOK_REGEXP: return "RegExp";
 

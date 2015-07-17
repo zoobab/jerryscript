@@ -283,8 +283,6 @@ generate_opcode (scopes_tree tree, opcode_counter_t opc_index, lit_id_hash_table
       switch (om->op.data.assignment.type_value_right)
       {
         case OPCODE_ARG_TYPE_SIMPLE:
-        case OPCODE_ARG_TYPE_SMALLINT:
-        case OPCODE_ARG_TYPE_SMALLINT_NEGATE:
         {
           change_uid (om, lit_ids, 0x100);
           break;
@@ -423,8 +421,6 @@ count_new_literals_in_opcode (scopes_tree tree, opcode_counter_t opc_index)
       switch (om->op.data.assignment.type_value_right)
       {
         case OPCODE_ARG_TYPE_SIMPLE:
-        case OPCODE_ARG_TYPE_SMALLINT:
-        case OPCODE_ARG_TYPE_SMALLINT_NEGATE:
         {
           insert_uids_to_lit_id_map (om, 0x100);
           break;

@@ -87,7 +87,6 @@ typedef enum __attr_packed___
   TOK_EOF = 0, // End of file
   TOK_NAME, // Identifier
   TOK_KEYWORD, // Keyword
-  TOK_SMALL_INT,
   TOK_NUMBER,
 
   TOK_NULL,

@@ -45,8 +45,6 @@ typedef uint8_t idx_t; /** index values */
 typedef enum
 {
   OPCODE_ARG_TYPE_SIMPLE, /**< ecma_simple_value_t */
-  OPCODE_ARG_TYPE_SMALLINT, /**< small integer: from 0 to 255 */
-  OPCODE_ARG_TYPE_SMALLINT_NEGATE, /**< small integer: from -255 to -0 */
   OPCODE_ARG_TYPE_NUMBER, /**< index of number literal */
   OPCODE_ARG_TYPE_NUMBER_NEGATE, /**< index of number literal with negation */
   OPCODE_ARG_TYPE_STRING, /**< index of string literal */

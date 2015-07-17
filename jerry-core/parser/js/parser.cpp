@@ -303,11 +303,6 @@ parse_property_name (void)
     {
       return number_operand (token_data_as_lit_cp ());
     }
-    case TOK_SMALL_INT:
-    {
-      literal_t lit = lit_find_or_create_literal_from_num ((ecma_number_t) token_data ());
-      return number_operand (lit_cpointer_t::compress (lit));
-    }
     case TOK_KEYWORD:
     {
       const char *s = lexer_keyword_to_string ((keyword) token_data ());
@@ -788,7 +783,6 @@ parse_literal (void)
     case TOK_REGEXP: return dump_regexp_assignment_res (token_data_as_lit_cp ());
     case TOK_NULL: return dump_null_assignment_res ();
     case TOK_BOOL: return dump_boolean_assignment_res ((bool) token_data ());
-    case TOK_SMALL_INT: return dump_smallint_assignment_res ((idx_t) token_data ());
     default:
     {
       EMIT_ERROR (JSP_EARLY_ERROR_SYNTAX, "Expected literal");
@@ -817,7 +811,6 @@ parse_primary_expression (void)
   {
     case TOK_NULL:
     case TOK_BOOL:
-    case TOK_SMALL_INT:
     case TOK_NUMBER:
     case TOK_REGEXP:
     case TOK_STRING: return parse_literal ();

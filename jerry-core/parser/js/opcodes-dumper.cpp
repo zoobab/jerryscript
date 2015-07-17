@@ -647,21 +647,6 @@ dump_regexp_assignment_res (lit_cpointer_t lit_id)
   return op;
 }
 
-static void
-dump_smallint_assignment (operand op, idx_t uid)
-{
-  const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_SMALLINT, uid);
-  serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
-}
-
-operand
-dump_smallint_assignment_res (idx_t uid)
-{
-  operand op = tmp_operand ();
-  dump_smallint_assignment (op, uid);
-  return op;
-}
-
 void
 dump_undefined_assignment (operand op)
 {

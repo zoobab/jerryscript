@@ -156,19 +156,10 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
                                     dst_var_idx,
                                     ecma_make_number_value (num_p));
   }
-  else if (type_value_right == OPCODE_ARG_TYPE_SMALLINT)
+  else
   {
-    ecma_number_t *num_p = int_data->tmp_num_p;
+    JERRY_ASSERT (type_value_right == OPCODE_ARG_TYPE_REGEXP);
 
-    *num_p = src_val_descr;
-
-    ret_value = set_variable_value (int_data,
-                                    int_data->pos,
-                                    dst_var_idx,
-                                    ecma_make_number_value (num_p));
-  }
-  else if (type_value_right == OPCODE_ARG_TYPE_REGEXP)
-  {
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
     lit_cpointer_t lit_cp = serializer_get_literal_cp_by_uid (src_val_descr,
                                                               int_data->opcodes_p,
@@ -226,18 +217,6 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
     ret_value = ecma_make_throw_obj_completion_value (ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR));
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
-  }
-  else
-  {
-    JERRY_ASSERT (type_value_right == OPCODE_ARG_TYPE_SMALLINT_NEGATE);
-    ecma_number_t *num_p = int_data->tmp_num_p;
-
-    *num_p = ecma_number_negate (src_val_descr);
-
-    ret_value = set_variable_value (int_data,
-                                    int_data->pos,
-                                    dst_var_idx,
-                                    ecma_make_number_value (num_p));
   }
 
   int_data->pos++;
