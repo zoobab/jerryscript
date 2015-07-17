@@ -243,17 +243,17 @@ jsp_early_error_check_for_syntax_errors_in_formal_param_list (bool is_strict, lo
   for (size_t i = (STACK_TOP (size_t_stack) + 1u); i < STACK_SIZE (props); i++)
   {
     JERRY_ASSERT (STACK_ELEMENT (props, i).type == VARG);
+
     literal_t previous = STACK_ELEMENT (props, i).lit;
-    JERRY_ASSERT (previous->get_type () == LIT_STR_T
-                  || previous->get_type () == LIT_MAGIC_STR_T
-                  || previous->get_type () == LIT_MAGIC_STR_EX_T);
+    JERRY_ASSERT (lit_literal_is_utf8_string (previous));
+
     for (size_t j = STACK_TOP (size_t_stack); j < i; j++)
     {
       JERRY_ASSERT (STACK_ELEMENT (props, j).type == VARG);
+
       literal_t current = STACK_ELEMENT (props, j).lit;
-      JERRY_ASSERT (current->get_type () == LIT_STR_T
-                    || current->get_type () == LIT_MAGIC_STR_T
-                    || current->get_type () == LIT_MAGIC_STR_EX_T);
+      JERRY_ASSERT (lit_literal_is_utf8_string (current));
+
       if (lit_literal_equal_type (previous, current))
       {
         PARSE_ERROR_VARG (JSP_EARLY_ERROR_SYNTAX,

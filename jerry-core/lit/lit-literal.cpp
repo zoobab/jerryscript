@@ -279,6 +279,30 @@ lit_literal_equal_charset_rec (literal_t lit,                /**< literal to com
 } /* lit_literal_equal_charset_rec */
 
 /**
+ * Check whether type of the literal is utf8 string
+ *
+ * @return true / false
+ */
+bool
+lit_literal_is_utf8_string (literal_t lit) /**< the literal */
+{
+  return (lit->get_type () == LIT_STR_T
+          || lit->get_type () == LIT_MAGIC_STR_T
+          || lit->get_type () == LIT_MAGIC_STR_EX_T);
+} /* lit_literal_is_utf8_string */
+
+/**
+ * Check whether type of the literal is number
+ *
+ * @return true / false
+ */
+bool
+lit_literal_is_num (literal_t lit) /**< the literal */
+{
+  return (lit->get_type () == lit_literal_storage_t::LIT_NUMBER);
+} /* lit_literal_is_num */
+
+/**
  * Check if literal equals to utf-8 string
  *
  * @return true if equal

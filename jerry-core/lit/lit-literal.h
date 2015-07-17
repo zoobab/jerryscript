@@ -34,6 +34,9 @@ literal_t lit_create_literal_from_num (ecma_number_t);
 literal_t lit_find_literal_by_num (ecma_number_t);
 literal_t lit_find_or_create_literal_from_num (ecma_number_t);
 
+bool lit_literal_is_utf8_string (literal_t);
+bool lit_literal_is_num (literal_t);
+
 bool lit_literal_equal_utf8 (literal_t, const lit_utf8_byte_t *, lit_utf8_size_t);
 bool lit_literal_equal_num (literal_t, ecma_number_t);
 bool lit_literal_equal (literal_t, literal_t);

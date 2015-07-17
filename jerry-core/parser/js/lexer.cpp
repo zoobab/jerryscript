@@ -167,9 +167,7 @@ lexer_create_token_for_charset (token_type tt, /**< token type */
   }
 
   lit = lit_create_literal_from_utf8_string (charset_p, size);
-  JERRY_ASSERT (lit->get_type () == LIT_STR_T
-                || lit->get_type () == LIT_MAGIC_STR_T
-                || lit->get_type () == LIT_MAGIC_STR_EX_T);
+  JERRY_ASSERT (lit_literal_is_utf8_string (lit));
 
   return create_token_from_lit (tt, lit);
 } /* lexer_create_token_for_charset */

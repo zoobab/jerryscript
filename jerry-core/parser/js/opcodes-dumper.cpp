@@ -798,17 +798,18 @@ void
 dump_prop_name_and_value (operand name, operand value)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
   operand tmp;
-  if (lit->get_type () == LIT_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_EX_T)
+
+  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
+  if (lit_literal_is_utf8_string (lit))
   {
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
 
@@ -821,17 +822,18 @@ dump_prop_getter_decl (operand name, operand func)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
   JERRY_ASSERT (func.type == OPERAND_TMP);
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
   operand tmp;
-  if (lit->get_type () == LIT_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_EX_T)
+
+  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
+  if (lit_literal_is_utf8_string (lit))
   {
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
 
@@ -844,19 +846,21 @@ dump_prop_setter_decl (operand name, operand func)
 {
   JERRY_ASSERT (name.type == OPERAND_LITERAL);
   JERRY_ASSERT (func.type == OPERAND_TMP);
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
   operand tmp;
-  if (lit->get_type () == LIT_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_T
-      || lit->get_type () == LIT_MAGIC_STR_EX_T)
+
+  literal_t lit = lit_get_literal_by_cp (name.lit_id);
+
+  if (lit_literal_is_utf8_string (lit))
   {
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
+
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_VARG_PROP_SETTER, tmp.uid, func.uid);
   serializer_dump_op_meta (create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
 }
@@ -1043,17 +1047,17 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
   {
     literal_t lit = lit_get_literal_by_cp (op.lit_id);
 
-    if (lit->get_type () == LIT_STR_T
-        || lit->get_type () == LIT_MAGIC_STR_T
-        || lit->get_type () == LIT_MAGIC_STR_EX_T)
+    if (lit_literal_is_utf8_string (lit))
     {
       jsp_early_error_check_delete (is_strict, loc);
 
       const opcode_t opcode = getop_delete_var (res.uid, LITERAL_TO_REWRITE);
       serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, op.lit_id, NOT_A_LITERAL));
     }
-    else if (lit->get_type () == LIT_NUMBER_T)
+    else
     {
+      JERRY_ASSERT (lit_literal_is_num (lit));
+
       dump_boolean_assignment (res, true);
     }
   }
