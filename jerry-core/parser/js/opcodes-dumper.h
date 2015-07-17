@@ -61,19 +61,13 @@ void dumper_finish_varg_code_sequence (void);
 
 extern bool dumper_is_eval_literal (operand);
 
-void dump_boolean_assignment (operand, bool);
 operand dump_boolean_assignment_res (bool);
-void dump_string_assignment (operand, lit_cpointer_t);
 operand dump_string_assignment_res (lit_cpointer_t);
-void dump_number_assignment (operand, lit_cpointer_t);
 operand dump_number_assignment_res (lit_cpointer_t);
-void dump_regexp_assignment (operand, lit_cpointer_t);
 operand dump_regexp_assignment_res (lit_cpointer_t);
-void dump_smallint_assignment (operand, idx_t);
 operand dump_smallint_assignment_res (idx_t);
 void dump_undefined_assignment (operand);
 operand dump_undefined_assignment_res (void);
-void dump_null_assignment (operand);
 operand dump_null_assignment_res (void);
 void dump_variable_assignment (operand, operand);
 operand dump_variable_assignment_res (operand);
@@ -86,74 +80,43 @@ void dump_varg (operand);
 void dump_prop_name_and_value (operand, operand);
 void dump_prop_getter_decl (operand, operand);
 void dump_prop_setter_decl (operand, operand);
-void dump_prop_getter (operand, operand, operand);
 operand dump_prop_getter_res (operand, operand);
 void dump_prop_setter (operand, operand, operand);
 
 void dump_function_end_for_rewrite (void);
 void rewrite_function_end (varg_list_type);
 
-void dump_this (operand);
 operand dump_this_res (void);
 
-void dump_post_increment (operand, operand);
 operand dump_post_increment_res (operand);
-void dump_post_decrement (operand, operand);
 operand dump_post_decrement_res (operand);
-void dump_pre_increment (operand, operand);
 operand dump_pre_increment_res (operand);
-void dump_pre_decrement (operand, operand);
 operand dump_pre_decrement_res (operand);
-void dump_unary_plus (operand, operand);
 operand dump_unary_plus_res (operand);
-void dump_unary_minus (operand, operand);
 operand dump_unary_minus_res (operand);
-void dump_bitwise_not (operand, operand);
 operand dump_bitwise_not_res (operand);
-void dump_logical_not (operand, operand);
 operand dump_logical_not_res (operand);
 
-void dump_multiplication (operand, operand, operand);
 operand dump_multiplication_res (operand, operand);
-void dump_division (operand, operand, operand);
 operand dump_division_res (operand, operand);
-void dump_remainder (operand, operand, operand);
 operand dump_remainder_res (operand, operand);
-void dump_addition (operand, operand, operand);
 operand dump_addition_res (operand, operand);
-void dump_substraction (operand, operand, operand);
 operand dump_substraction_res (operand, operand);
-void dump_left_shift (operand, operand, operand);
 operand dump_left_shift_res (operand, operand);
-void dump_right_shift (operand, operand, operand);
 operand dump_right_shift_res (operand, operand);
-void dump_right_shift_ex (operand, operand, operand);
 operand dump_right_shift_ex_res (operand, operand);
-void dump_less_than (operand, operand, operand);
 operand dump_less_than_res (operand, operand);
-void dump_greater_than (operand, operand, operand);
 operand dump_greater_than_res (operand, operand);
-void dump_less_or_equal_than (operand, operand, operand);
 operand dump_less_or_equal_than_res (operand, operand);
-void dump_greater_or_equal_than (operand, operand, operand);
 operand dump_greater_or_equal_than_res (operand, operand);
-void dump_instanceof (operand, operand, operand);
 operand dump_instanceof_res (operand, operand);
-void dump_in (operand, operand, operand);
 operand dump_in_res (operand, operand);
-void dump_equal_value (operand, operand, operand);
 operand dump_equal_value_res (operand, operand);
-void dump_not_equal_value (operand, operand, operand);
 operand dump_not_equal_value_res (operand, operand);
-void dump_equal_value_type (operand, operand, operand);
 operand dump_equal_value_type_res (operand, operand);
-void dump_not_equal_value_type (operand, operand, operand);
 operand dump_not_equal_value_type_res (operand, operand);
-void dump_bitwise_and (operand, operand, operand);
 operand dump_bitwise_and_res (operand, operand);
-void dump_bitwise_xor (operand, operand, operand);
 operand dump_bitwise_xor_res (operand, operand);
-void dump_bitwise_or (operand, operand, operand);
 operand dump_bitwise_or_res (operand, operand);
 
 void start_dumping_logical_and_checks (void);
@@ -199,10 +162,8 @@ void rewrite_case_clause (void);
 void rewrite_default_clause (void);
 void finish_dumping_case_clauses (void);
 
-void dump_delete (operand, operand, bool, locus);
 operand dump_delete_res (operand, bool, locus);
 
-void dump_typeof (operand, operand);
 operand dump_typeof_res (operand);
 
 opcode_counter_t dump_with_for_rewrite (operand);

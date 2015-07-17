@@ -560,7 +560,7 @@ dumper_is_eval_literal (operand obj) /**< byte-code operand */
   return is_eval_lit;
 } /* dumper_is_eval_literal */
 
-void
+static void
 dump_boolean_assignment (operand op, bool is_true)
 {
   const opcode_t opcode = getop_assignment (op.uid,
@@ -577,7 +577,7 @@ dump_boolean_assignment_res (bool is_true)
   return op;
 }
 
-void
+static void
 dump_string_assignment (operand op, lit_cpointer_t lit_id)
 {
   const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_STRING, LITERAL_TO_REWRITE);
@@ -592,7 +592,7 @@ dump_string_assignment_res (lit_cpointer_t lit_id)
   return op;
 }
 
-void
+static void
 dump_number_assignment (operand op, lit_cpointer_t lit_id)
 {
   const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_NUMBER, LITERAL_TO_REWRITE);
@@ -607,7 +607,7 @@ dump_number_assignment_res (lit_cpointer_t lit_id)
   return op;
 }
 
-void
+static void
 dump_regexp_assignment (operand op, lit_cpointer_t lit_id)
 {
   const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_REGEXP, LITERAL_TO_REWRITE);
@@ -622,7 +622,7 @@ dump_regexp_assignment_res (lit_cpointer_t lit_id)
   return op;
 }
 
-void
+static void
 dump_smallint_assignment (operand op, idx_t uid)
 {
   const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_SMALLINT, uid);
@@ -654,7 +654,7 @@ dump_undefined_assignment_res (void)
   return op;
 }
 
-void
+static void
 dump_null_assignment (operand op)
 {
   const opcode_t opcode = getop_assignment (op.uid,
@@ -861,7 +861,7 @@ dump_prop_setter_decl (operand name, operand func)
   serializer_dump_op_meta (create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
 }
 
-void
+static void
 dump_prop_getter (operand res, operand obj, operand prop)
 {
   dump_triple_address (getop_prop_getter, res, obj, prop);
@@ -910,7 +910,7 @@ rewrite_function_end (varg_list_type vlt)
   STACK_DROP (function_ends, 1);
 }
 
-void
+static void
 dump_this (operand op)
 {
   dump_single_address (getop_this_binding, op);
@@ -924,7 +924,7 @@ dump_this_res (void)
   return res;
 }
 
-void
+static void
 dump_post_increment (operand res, operand obj)
 {
   dump_double_address (getop_post_incr, res, obj);
@@ -938,7 +938,7 @@ dump_post_increment_res (operand op)
   return res;
 }
 
-void
+static void
 dump_post_decrement (operand res, operand obj)
 {
   dump_double_address (getop_post_decr, res, obj);
@@ -952,7 +952,7 @@ dump_post_decrement_res (operand op)
   return res;
 }
 
-void
+static void
 dump_pre_increment (operand res, operand obj)
 {
   dump_double_address (getop_pre_incr, res, obj);
@@ -966,7 +966,7 @@ dump_pre_increment_res (operand op)
   return res;
 }
 
-void
+static void
 dump_pre_decrement (operand res, operand obj)
 {
   dump_double_address (getop_pre_decr, res, obj);
@@ -980,7 +980,7 @@ dump_pre_decrement_res (operand op)
   return res;
 }
 
-void
+static void
 dump_unary_plus (operand res, operand obj)
 {
   dump_double_address (getop_unary_plus, res, obj);
@@ -994,7 +994,7 @@ dump_unary_plus_res (operand op)
   return res;
 }
 
-void
+static void
 dump_unary_minus (operand res, operand obj)
 {
   dump_double_address (getop_unary_minus, res, obj);
@@ -1008,7 +1008,7 @@ dump_unary_minus_res (operand op)
   return res;
 }
 
-void
+static void
 dump_bitwise_not (operand res, operand obj)
 {
   dump_double_address (getop_b_not, res, obj);
@@ -1022,7 +1022,7 @@ dump_bitwise_not_res (operand op)
   return res;
 }
 
-void
+static void
 dump_logical_not (operand res, operand obj)
 {
   dump_double_address (getop_logical_not, res, obj);
@@ -1036,7 +1036,7 @@ dump_logical_not_res (operand op)
   return res;
 }
 
-void
+static void
 dump_delete (operand res, operand op, bool is_strict, locus loc)
 {
   if (op.type == OPERAND_LITERAL)
@@ -1089,7 +1089,7 @@ dump_delete_res (operand op, bool is_strict, locus loc)
   return res;
 }
 
-void
+static void
 dump_typeof (operand res, operand op)
 {
   dump_double_address (getop_typeof, res, op);
@@ -1103,7 +1103,7 @@ dump_typeof_res (operand op)
   return res;
 }
 
-void
+static void
 dump_multiplication (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_multiplication, res, lhs, rhs);
@@ -1117,7 +1117,7 @@ dump_multiplication_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_division (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_division, res, lhs, rhs);
@@ -1131,7 +1131,7 @@ dump_division_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_remainder (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_remainder, res, lhs, rhs);
@@ -1145,7 +1145,7 @@ dump_remainder_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_addition (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_addition, res, lhs, rhs);
@@ -1159,7 +1159,7 @@ dump_addition_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_substraction (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_substraction, res, lhs, rhs);
@@ -1173,7 +1173,7 @@ dump_substraction_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_left_shift (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_shift_left, res, lhs, rhs);
@@ -1187,7 +1187,7 @@ dump_left_shift_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_right_shift (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_shift_right, res, lhs, rhs);
@@ -1201,7 +1201,7 @@ dump_right_shift_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_right_shift_ex (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_shift_uright, res, lhs, rhs);
@@ -1215,7 +1215,7 @@ dump_right_shift_ex_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_less_than (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_less_than, res, lhs, rhs);
@@ -1229,7 +1229,7 @@ dump_less_than_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_greater_than (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_greater_than, res, lhs, rhs);
@@ -1243,7 +1243,7 @@ dump_greater_than_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_less_or_equal_than (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_less_or_equal_than, res, lhs, rhs);
@@ -1257,7 +1257,7 @@ dump_less_or_equal_than_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_greater_or_equal_than (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_greater_or_equal_than, res, lhs, rhs);
@@ -1271,7 +1271,7 @@ dump_greater_or_equal_than_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_instanceof (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_instanceof, res, lhs, rhs);
@@ -1285,7 +1285,7 @@ dump_instanceof_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_in (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_in, res, lhs, rhs);
@@ -1299,7 +1299,7 @@ dump_in_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_equal_value (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_equal_value, res, lhs, rhs);
@@ -1313,7 +1313,7 @@ dump_equal_value_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_not_equal_value (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_not_equal_value, res, lhs, rhs);
@@ -1327,7 +1327,7 @@ dump_not_equal_value_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_equal_value_type (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_equal_value_type, res, lhs, rhs);
@@ -1341,7 +1341,7 @@ dump_equal_value_type_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_not_equal_value_type (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_not_equal_value_type, res, lhs, rhs);
@@ -1355,7 +1355,7 @@ dump_not_equal_value_type_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_bitwise_and (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_and, res, lhs, rhs);
@@ -1369,7 +1369,7 @@ dump_bitwise_and_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_bitwise_xor (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_xor, res, lhs, rhs);
@@ -1383,7 +1383,7 @@ dump_bitwise_xor_res (operand lhs, operand rhs)
   return res;
 }
 
-void
+static void
 dump_bitwise_or (operand res, operand lhs, operand rhs)
 {
   dump_triple_address (getop_b_or, res, lhs, rhs);
