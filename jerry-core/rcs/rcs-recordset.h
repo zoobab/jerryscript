@@ -120,6 +120,8 @@ public:
       static cpointer_t compress (record_t *pointer_p);
       static record_t *decompress (cpointer_t pointer_cp);
 
+      bool operator == (const cpointer_t& ptr);
+
       static cpointer_t null_cp ();
 
       static const int conval = 3;

@@ -105,6 +105,17 @@ rcs_recordset_t::record_t::cpointer_t::decompress (rcs_cpointer_t compressed_poi
 } /* rcs_recordset_t::record_t::cpointer_t::decompress */
 
 /**
+ * Compare to another pointer
+ *
+ * @return true (equal) / false (not equal)
+ */
+bool
+rcs_recordset_t::record_t::cpointer_t::operator == (const cpointer_t& ptr) /**< pointer to compare with */
+{
+  return (packed_value == ptr.packed_value);
+} /* rcs_recordset_t::record_t::cpointer_t::operator == (const cpointer_t&) */
+
+/**
  * Create NULL compressed pointer
  *
  * @return NULL compressed pointer
