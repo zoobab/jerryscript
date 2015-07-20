@@ -216,7 +216,7 @@ typedef struct opcode_t
   } data;
 } opcode_t;
 
-enum __opcode_idx
+typedef enum
 {
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
   VM_OP_ ## opcode_name_uppercase,
@@ -230,7 +230,7 @@ enum __opcode_idx
 #include "vm-opcodes.inc.h"
 
   VM_OP__COUNT /**< number of opcodes */
-};
+} vm_op_t;
 
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
   ecma_completion_value_t opfunc_##opcode_name (opcode_t, int_data_t*);

@@ -1060,7 +1060,8 @@ rewrite_function_end (varg_list_type vlt)
   idx_t id1, id2;
   split_opcode_counter (oc, &id1, &id2);
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_FUNCTION_END, id1, id2);
-  serializer_rewrite_op_meta (STACK_TOP (function_ends), create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
+  serializer_rewrite_op_meta (STACK_TOP (function_ends),
+                              create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
   STACK_DROP (function_ends, 1);
 }
 
