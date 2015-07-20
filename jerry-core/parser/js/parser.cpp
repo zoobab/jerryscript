@@ -1196,23 +1196,17 @@ parse_unary_expression (operand *this_arg_gl, operand *prop_gl)
 }
 
 static operand
-dump_evaluate_if_identifier_or_constant (operand expr)
+dump_evaluate_if_reference (operand expr)
 {
   if (expr.type == OPERAND_IDENTIFIER)
   {
     expr = dump_variable_assignment_res (expr);
   }
-  else if (expr.type == OPERAND_STRING)
-  {
-    expr = dump_string_assignment_res (expr.lit_id);
-  }
-  else if (expr.type == OPERAND_NUMBER)
-  {
-    expr = dump_number_assignment_res (expr.lit_id);
-  }
   else
   {
-    JERRY_ASSERT (expr.type == OPERAND_TMP);
+    JERRY_ASSERT (expr.type == OPERAND_TMP
+                  || expr.type == OPERAND_STRING
+                  || expr.type == OPERAND_NUMBER);
   }
 
   return expr;
@@ -1235,7 +1229,7 @@ parse_multiplicative_expression (void)
 
     skip_newlines ();
 
-    expr = dump_evaluate_if_identifier_or_constant (expr);
+    expr = dump_evaluate_if_reference (expr);
 
     operand expr_rhs = parse_unary_expression (NULL, NULL);
     skip_newlines ();
@@ -1277,10 +1271,7 @@ parse_additive_expression (void)
 
     skip_newlines ();
 
-    if (operand_is_reference (expr))
-    {
-      expr = dump_evaluate_if_identifier_or_constant (expr);
-    }
+    expr = dump_evaluate_if_reference (expr);
 
     operand expr_rhs = parse_multiplicative_expression ();
     skip_newlines ();
@@ -1308,9 +1299,6 @@ parse_additive_expression (void)
     }
     else
     {
-      expr = dump_evaluate_if_identifier_or_constant (expr);
-      expr_rhs = dump_evaluate_if_identifier_or_constant (expr_rhs);
-
       if (tt == TOK_PLUS)
       {
         expr = dump_addition_res (expr, expr_rhs);
@@ -1346,7 +1334,7 @@ parse_shift_expression (void)
 
     skip_newlines ();
 
-    expr = dump_evaluate_if_identifier_or_constant (expr);
+    expr = dump_evaluate_if_reference (expr);
 
     operand expr_rhs = parse_additive_expression ();
     skip_newlines ();
@@ -1387,28 +1375,28 @@ parse_relational_expression (bool in_allowed)
     {
       case TOK_LESS:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_less_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_GREATER:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_greater_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_LESS_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_less_or_equal_than_res (expr, parse_shift_expression ());
         break;
       }
       case TOK_GREATER_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_greater_or_equal_than_res (expr, parse_shift_expression ());
         break;
@@ -1417,7 +1405,7 @@ parse_relational_expression (bool in_allowed)
       {
         if (is_keyword (KW_INSTANCEOF))
         {
-          expr = dump_evaluate_if_identifier_or_constant (expr);
+          expr = dump_evaluate_if_reference (expr);
           skip_newlines ();
           expr = dump_instanceof_res (expr, parse_shift_expression ());
           break;
@@ -1426,7 +1414,7 @@ parse_relational_expression (bool in_allowed)
         {
           if (in_allowed)
           {
-            expr = dump_evaluate_if_identifier_or_constant (expr);
+            expr = dump_evaluate_if_reference (expr);
             skip_newlines ();
             expr = dump_in_res (expr, parse_shift_expression ());
             break;
@@ -1461,28 +1449,28 @@ parse_equality_expression (bool in_allowed)
     {
       case TOK_DOUBLE_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_equal_value_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_NOT_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_not_equal_value_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_TRIPLE_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_equal_value_type_res (expr, parse_relational_expression (in_allowed));
         break;
       }
       case TOK_NOT_DOUBLE_EQ:
       {
-        expr = dump_evaluate_if_identifier_or_constant (expr);
+        expr = dump_evaluate_if_reference (expr);
         skip_newlines ();
         expr = dump_not_equal_value_type_res (expr, parse_relational_expression (in_allowed));
         break;
@@ -1511,7 +1499,7 @@ parse_bitwise_and_expression (bool in_allowed)
   {
     if (tok.type == TOK_AND)
     {
-      expr = dump_evaluate_if_identifier_or_constant (expr);
+      expr = dump_evaluate_if_reference (expr);
       skip_newlines ();
       expr = dump_bitwise_and_res (expr, parse_equality_expression (in_allowed));
     }
@@ -1538,7 +1526,7 @@ parse_bitwise_xor_expression (bool in_allowed)
   {
     if (tok.type == TOK_XOR)
     {
-      expr = dump_evaluate_if_identifier_or_constant (expr);
+      expr = dump_evaluate_if_reference (expr);
       skip_newlines ();
       expr = dump_bitwise_xor_res (expr, parse_bitwise_and_expression (in_allowed));
     }
@@ -1565,7 +1553,7 @@ parse_bitwise_or_expression (bool in_allowed)
   {
     if (tok.type == TOK_OR)
     {
-      expr = dump_evaluate_if_identifier_or_constant (expr);
+      expr = dump_evaluate_if_reference (expr);
       skip_newlines ();
       expr = dump_bitwise_or_res (expr, parse_bitwise_xor_expression (in_allowed));
     }
@@ -1799,7 +1787,7 @@ parse_expression (bool in_allowed, /**< flag indicating if 'in' is allowed insid
     skip_newlines ();
     if (token_is (TOK_COMMA))
     {
-      dump_evaluate_if_identifier_or_constant (expr);
+      dump_evaluate_if_reference (expr);
 
       skip_newlines ();
       expr = parse_assignment_expression (in_allowed);
@@ -2874,7 +2862,7 @@ parse_statement (jsp_label_t *outermost_stmt_label_p) /**< outermost (first) lab
       lexer_save_token (tok);
       tok = temp;
       operand expr = parse_expression (true, JSP_EVAL_RET_STORE_DUMP);
-      dump_evaluate_if_identifier_or_constant (expr);
+      dump_evaluate_if_reference (expr);
       insert_semicolon ();
     }
   }
