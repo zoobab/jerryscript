@@ -215,19 +215,29 @@ operand_is_generally_encodable (operand op)
           || op.type == OPERAND_IDENTIFIER);
 }
 
-bool
-operand_is_constant (operand op)
+static bool
+operand_is_string (operand op)
 {
   JERRY_ASSERT (!operand_is_empty (op));
 
-  return (op.type == OPERAND_STRING
-          || op.type == OPERAND_NUMBER);
+  return (op.type == OPERAND_STRING);
 }
 
 bool
 operand_is_number (operand op)
 {
+  JERRY_ASSERT (!operand_is_empty (op));
+
   return (op.type == OPERAND_NUMBER);
+}
+
+bool
+operand_is_constant (operand op)
+{
+  JERRY_ASSERT (!operand_is_empty (op));
+
+  return (operand_is_number (op)
+          || operand_is_string (op));
 }
 
 ecma_number_t
@@ -276,6 +286,38 @@ number_operand (lit_cpointer_t lit_cp)
   ret.lit_id = lit_cp;
 
   return ret;
+}
+
+static operand
+dump_evaluate_if_constant (operand op)
+{
+  if (operand_is_constant (op))
+  {
+    if (operand_is_number (op))
+    {
+#ifndef JERRY_NDEBUG
+      literal_t lit = lit_get_literal_by_cp (op.lit_id);
+      JERRY_ASSERT (lit_literal_is_num (lit));
+#endif /* !JERRY_NDEBUG */
+
+      return dump_number_assignment_res (op.lit_id);
+    }
+    else
+    {
+      JERRY_ASSERT (operand_is_string (op));
+
+#ifndef JERRY_NDEBUG
+      literal_t lit = lit_get_literal_by_cp (op.lit_id);
+      JERRY_ASSERT (lit_literal_is_utf8_string (lit));
+#endif /* !JERRY_NDEBUG */
+
+      return dump_string_assignment_res (op.lit_id);
+    }
+  }
+  else
+  {
+    return op;
+  }
 }
 
 static operand
@@ -391,8 +433,10 @@ create_op_meta_for_res_and_obj (opcode_t (*getop) (idx_t, idx_t, idx_t), operand
   JERRY_ASSERT (obj != NULL);
   JERRY_ASSERT (res != NULL);
 
-  JERRY_ASSERT (operand_is_generally_encodable (*res));
-  JERRY_ASSERT (operand_is_generally_encodable (*obj));
+  /* res can rewritten */
+  JERRY_ASSERT (operand_is_empty (*res) || operand_is_generally_encodable (*res));
+  /* obj can be empty for anonymous function expression */
+  JERRY_ASSERT (operand_is_empty (*res) || operand_is_generally_encodable (*obj));
 
   const opcode_t opcode = getop (res->uid, obj->uid, INVALID_VALUE);
   return create_op_meta (opcode, res->lit_id, obj->lit_id, NOT_A_LITERAL);
@@ -508,6 +552,8 @@ static void
 dump_prop_setter_op_meta (op_meta last, operand op)
 {
   JERRY_ASSERT (last.op.op_idx == OPCODE (prop_getter));
+
+  op = dump_evaluate_if_constant (op);
 
   const opcode_t opcode = getop_prop_setter (last.op.data.prop_getter.obj,
                                              last.op.data.prop_getter.prop,
@@ -737,10 +783,40 @@ dump_null_assignment_res (void)
 void
 dump_variable_assignment (operand res, operand var)
 {
-  const opcode_t opcode = getop_assignment (res.uid,
-                                            OPCODE_ARG_TYPE_VARIABLE,
-                                            var.uid);
-  serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, NOT_A_LITERAL, var.lit_id));
+  JERRY_ASSERT (operand_is_generally_encodable (res));
+
+  if (operand_is_constant (var))
+  {
+    if (operand_is_number (var))
+    {
+#ifndef JERRY_NDEBUG
+      literal_t lit = lit_get_literal_by_cp (var.lit_id);
+      JERRY_ASSERT (lit_literal_is_num (lit));
+#endif /* !JERRY_NDEBUG */
+
+      dump_number_assignment (res, var.lit_id);
+    }
+    else
+    {
+      JERRY_ASSERT (operand_is_string (var));
+
+#ifndef JERRY_NDEBUG
+      literal_t lit = lit_get_literal_by_cp (var.lit_id);
+      JERRY_ASSERT (lit_literal_is_utf8_string (lit));
+#endif /* !JERRY_NDEBUG */
+
+      dump_string_assignment (res, var.lit_id);
+    }
+  }
+  else
+  {
+    JERRY_ASSERT (operand_is_generally_encodable (var));
+
+    const opcode_t opcode = getop_assignment (res.uid,
+                                              OPCODE_ARG_TYPE_VARIABLE,
+                                              var.uid);
+    serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, NOT_A_LITERAL, var.lit_id));
+  }
 }
 
 operand
@@ -853,6 +929,9 @@ dump_call_additional_info (opcode_call_flags_t flags, /**< call flags */
 void
 dump_varg (operand op)
 {
+  op = dump_evaluate_if_constant (op);
+  JERRY_ASSERT (operand_is_generally_encodable (op));
+
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_VARG, op.uid, INVALID_VALUE);
   serializer_dump_op_meta (create_op_meta (opcode, NOT_A_LITERAL, op.lit_id, NOT_A_LITERAL));
 }
@@ -875,6 +954,8 @@ dump_prop_name_and_value (operand name, operand value)
     JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
+
+  JERRY_ASSERT (operand_is_generally_encodable (tmp));
 
   const opcode_t opcode = getop_meta (OPCODE_META_TYPE_VARG_PROP_DATA, tmp.uid, value.uid);
   serializer_dump_op_meta (create_op_meta (opcode, NOT_A_LITERAL, NOT_A_LITERAL, value.lit_id));
@@ -933,6 +1014,9 @@ dump_prop_setter_decl (operand name, operand func)
 static void
 dump_prop_getter (operand res, operand obj, operand prop)
 {
+  obj = dump_evaluate_if_constant (obj);
+  prop = dump_evaluate_if_constant (prop);
+
   dump_triple_address (getop_prop_getter, res, obj, prop);
 }
 
@@ -947,6 +1031,9 @@ dump_prop_getter_res (operand obj, operand prop)
 void
 dump_prop_setter (operand res, operand obj, operand prop)
 {
+  obj = dump_evaluate_if_constant (obj);
+  prop = dump_evaluate_if_constant (prop);
+
   dump_triple_address (getop_prop_setter, res, obj, prop);
 }
 
@@ -1368,6 +1455,9 @@ dump_in_res (operand lhs, operand rhs)
 static void
 dump_equal_value (operand res, operand lhs, operand rhs)
 {
+  lhs = dump_evaluate_if_constant (lhs);
+  rhs = dump_evaluate_if_constant (rhs);
+
   dump_triple_address (getop_equal_value, res, lhs, rhs);
 }
 
@@ -1396,6 +1486,9 @@ dump_not_equal_value_res (operand lhs, operand rhs)
 static void
 dump_equal_value_type (operand res, operand lhs, operand rhs)
 {
+  lhs = dump_evaluate_if_constant (lhs);
+  rhs = dump_evaluate_if_constant (rhs);
+
   dump_triple_address (getop_equal_value_type, res, lhs, rhs);
 }
 
