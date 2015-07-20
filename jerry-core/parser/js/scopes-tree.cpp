@@ -282,16 +282,16 @@ generate_opcode (scopes_tree tree, opcode_counter_t opc_index, lit_id_hash_table
     {
       switch (om->op.data.assignment.type_value_right)
       {
-        case OPCODE_ARG_TYPE_SIMPLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
         {
           change_uid (om, lit_ids, 0x100);
           break;
         }
-        case OPCODE_ARG_TYPE_NUMBER:
-        case OPCODE_ARG_TYPE_NUMBER_NEGATE:
-        case OPCODE_ARG_TYPE_REGEXP:
-        case OPCODE_ARG_TYPE_STRING:
-        case OPCODE_ARG_TYPE_VARIABLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_STRING:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE:
         {
           change_uid (om, lit_ids, 0x101);
           break;
@@ -420,16 +420,16 @@ count_new_literals_in_opcode (scopes_tree tree, opcode_counter_t opc_index)
     {
       switch (om->op.data.assignment.type_value_right)
       {
-        case OPCODE_ARG_TYPE_SIMPLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
         {
           insert_uids_to_lit_id_map (om, 0x100);
           break;
         }
-        case OPCODE_ARG_TYPE_NUMBER:
-        case OPCODE_ARG_TYPE_NUMBER_NEGATE:
-        case OPCODE_ARG_TYPE_REGEXP:
-        case OPCODE_ARG_TYPE_STRING:
-        case OPCODE_ARG_TYPE_VARIABLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_STRING:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE:
         {
           insert_uids_to_lit_id_map (om, 0x101);
           break;

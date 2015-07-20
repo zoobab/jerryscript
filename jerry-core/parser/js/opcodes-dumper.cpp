@@ -688,7 +688,7 @@ static void
 dump_boolean_assignment (operand op, bool is_true)
 {
   const opcode_t opcode = getop_assignment (op.uid,
-                                            OPCODE_ARG_TYPE_SIMPLE,
+                                            VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
                                             is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
 }
@@ -704,7 +704,7 @@ dump_boolean_assignment_res (bool is_true)
 static void
 dump_string_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_STRING, LITERAL_TO_REWRITE);
+  const opcode_t opcode = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_STRING, LITERAL_TO_REWRITE);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, lit_id));
 }
 
@@ -719,7 +719,7 @@ dump_string_assignment_res (lit_cpointer_t lit_id)
 static void
 dump_number_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_NUMBER, LITERAL_TO_REWRITE);
+  const opcode_t opcode = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER, LITERAL_TO_REWRITE);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, lit_id));
 }
 
@@ -734,7 +734,7 @@ dump_number_assignment_res (lit_cpointer_t lit_id)
 static void
 dump_regexp_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const opcode_t opcode = getop_assignment (op.uid, OPCODE_ARG_TYPE_REGEXP, LITERAL_TO_REWRITE);
+  const opcode_t opcode = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP, LITERAL_TO_REWRITE);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, lit_id));
 }
 
@@ -750,7 +750,7 @@ void
 dump_undefined_assignment (operand op)
 {
   const opcode_t opcode = getop_assignment (op.uid,
-                                            OPCODE_ARG_TYPE_SIMPLE,
+                                            VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
                                             ECMA_SIMPLE_VALUE_UNDEFINED);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
 }
@@ -767,7 +767,7 @@ static void
 dump_null_assignment (operand op)
 {
   const opcode_t opcode = getop_assignment (op.uid,
-                                            OPCODE_ARG_TYPE_SIMPLE,
+                                            VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
                                             ECMA_SIMPLE_VALUE_NULL);
   serializer_dump_op_meta (create_op_meta (opcode, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
 }
@@ -813,7 +813,7 @@ dump_variable_assignment (operand res, operand var)
     JERRY_ASSERT (operand_is_generally_encodable (var));
 
     const opcode_t opcode = getop_assignment (res.uid,
-                                              OPCODE_ARG_TYPE_VARIABLE,
+                                              VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE,
                                               var.uid);
     serializer_dump_op_meta (create_op_meta (opcode, res.lit_id, NOT_A_LITERAL, var.lit_id));
   }

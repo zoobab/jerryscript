@@ -44,13 +44,13 @@ typedef uint8_t idx_t; /** index values */
  */
 typedef enum
 {
-  OPCODE_ARG_TYPE_SIMPLE, /**< ecma_simple_value_t */
-  OPCODE_ARG_TYPE_NUMBER, /**< index of number literal */
-  OPCODE_ARG_TYPE_NUMBER_NEGATE, /**< index of number literal with negation */
-  OPCODE_ARG_TYPE_STRING, /**< index of string literal */
-  OPCODE_ARG_TYPE_VARIABLE, /**< index of string literal with variable name */
-  OPCODE_ARG_TYPE_REGEXP /**< index of string literal with regular expression */
-} opcode_arg_type_operand;
+  VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE, /**< ecma_simple_value_t */
+  VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER, /**< index of number literal */
+  VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE, /**< index of number literal with negation */
+  VM_OP_ASSIGNMENT_VAL_TYPE_STRING, /**< index of string literal */
+  VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE, /**< index of string literal with variable name */
+  VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP /**< index of string literal with regular expression */
+} vm_op_assignment_val_type_t;
 
 /**
  * Types of data in 'meta' opcode.

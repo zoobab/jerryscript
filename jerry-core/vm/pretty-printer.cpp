@@ -245,11 +245,11 @@ pp_op_meta (const opcode_t *opcodes_p,
       printf ("%s = ", VAR (1));
       switch (opm.op.data.assignment.type_value_right)
       {
-        case OPCODE_ARG_TYPE_STRING: printf ("'%s': STRING;", VAR (3)); break;
-        case OPCODE_ARG_TYPE_NUMBER: printf ("%s: NUMBER;", VAR (3)); break;
-        case OPCODE_ARG_TYPE_NUMBER_NEGATE: printf ("-%s: NUMBER;", VAR (3)); break;
-        case OPCODE_ARG_TYPE_VARIABLE: printf ("%s : TYPEOF(%s);", VAR (3), VAR (3)); break;
-        case OPCODE_ARG_TYPE_SIMPLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_STRING: printf ("'%s': STRING;", VAR (3)); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER: printf ("%s: NUMBER;", VAR (3)); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE: printf ("-%s: NUMBER;", VAR (3)); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE: printf ("%s : TYPEOF(%s);", VAR (3), VAR (3)); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
         {
           switch (opm.op.data.assignment.value_right)
           {

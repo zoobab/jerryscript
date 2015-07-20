@@ -87,19 +87,19 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
                    int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.assignment.var_left;
-  const opcode_arg_type_operand type_value_right = (opcode_arg_type_operand) opdata.data.assignment.type_value_right;
+  const vm_op_assignment_val_type_t val_type = (vm_op_assignment_val_type_t) opdata.data.assignment.type_value_right;
   const idx_t src_val_descr = opdata.data.assignment.value_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  if (type_value_right == OPCODE_ARG_TYPE_SIMPLE)
+  if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE)
   {
     ret_value = set_variable_value (int_data,
                                     int_data->pos,
                                     dst_var_idx,
                                     ecma_make_simple_value ((ecma_simple_value_t) src_val_descr));
   }
-  else if (type_value_right == OPCODE_ARG_TYPE_STRING)
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_STRING)
   {
     lit_cpointer_t lit_cp = serializer_get_literal_cp_by_uid (src_val_descr, int_data->opcodes_p, int_data->pos);
     ecma_string_t *string_p = ecma_new_ecma_string_from_lit_cp (lit_cp);
@@ -111,7 +111,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
 
     ecma_deref_ecma_string (string_p);
   }
-  else if (type_value_right == OPCODE_ARG_TYPE_VARIABLE)
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE)
   {
     ECMA_TRY_CATCH (var_value,
                     get_variable_value (int_data,
@@ -126,7 +126,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
 
     ECMA_FINALIZE (var_value);
   }
-  else if (type_value_right == OPCODE_ARG_TYPE_NUMBER)
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER)
   {
     ecma_number_t *num_p = int_data->tmp_num_p;
 
@@ -141,7 +141,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
                                     dst_var_idx,
                                     ecma_make_number_value (num_p));
   }
-  else if (type_value_right == OPCODE_ARG_TYPE_NUMBER_NEGATE)
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE)
   {
     ecma_number_t *num_p = int_data->tmp_num_p;
 
@@ -158,7 +158,7 @@ opfunc_assignment (opcode_t opdata, /**< operation data */
   }
   else
   {
-    JERRY_ASSERT (type_value_right == OPCODE_ARG_TYPE_REGEXP);
+    JERRY_ASSERT (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP);
 
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
     lit_cpointer_t lit_cp = serializer_get_literal_cp_by_uid (src_val_descr,
