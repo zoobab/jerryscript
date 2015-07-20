@@ -1276,39 +1276,15 @@ parse_additive_expression (void)
     operand expr_rhs = parse_multiplicative_expression ();
     skip_newlines ();
 
-    if (operand_is_number (expr)
-        && operand_is_number (expr_rhs))
+    if (tt == TOK_PLUS)
     {
-      ecma_number_t left_num = operand_get_number (expr);
-      ecma_number_t right_num = operand_get_number (expr_rhs);
-      ecma_number_t ret;
-
-      if (tt == TOK_PLUS)
-      {
-        ret = ecma_number_add (left_num, right_num);
-      }
-      else
-      {
-        JERRY_ASSERT (tt == TOK_MINUS);
-
-        ret = ecma_number_substract (left_num, right_num);
-      }
-
-      literal_t lit = lit_find_or_create_literal_from_num (ret);
-      expr = number_operand (lit_cpointer_t::compress (lit));
+      expr = dump_addition_res (expr, expr_rhs);
     }
     else
     {
-      if (tt == TOK_PLUS)
-      {
-        expr = dump_addition_res (expr, expr_rhs);
-      }
-      else
-      {
-        JERRY_ASSERT (tt == TOK_MINUS);
+      JERRY_ASSERT (tt == TOK_MINUS);
 
-        expr = dump_substraction_res (expr, expr_rhs);
-      }
+      expr = dump_substraction_res (expr, expr_rhs);
     }
   }
 
