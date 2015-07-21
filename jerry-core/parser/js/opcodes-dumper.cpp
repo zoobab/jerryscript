@@ -243,7 +243,6 @@ operand_get_number (operand op)
 {
   JERRY_ASSERT (operand_is_number (op));
 
-
   literal_t lit = lit_get_literal_by_cp (op.lit_id);
   JERRY_ASSERT (lit_literal_is_num (lit));
 
@@ -430,63 +429,122 @@ last_dumped_op_meta (void)
 }
 
 static void
-dump_no_args (vm_op_t opcode)
+dump_instruction (vm_op_t opcode,
+                  const operand ops [],
+                  uint32_t ops_num)
 {
-  vm_assert_opcode_args_num_0 (opcode);
+  if (ops_num == 0)
+  {
+    vm_assert_opcode_args_num_0 (opcode);
+  }
+  else if (ops_num == 1)
+  {
+    vm_assert_opcode_args_num_1 (opcode);
+  }
+  else if (ops_num == 2)
+  {
+    vm_assert_opcode_args_num_2 (opcode);
+  }
+  else
+  {
+    JERRY_ASSERT (ops_num == 3);
+
+    vm_assert_opcode_args_num_3 (opcode);
+  }
 
   vm_instr_t instr;
 
-  instr.op_idx = opcode;
-  instr.args_set.arg1 = VM_IDX_EMPTY;
-  instr.args_set.arg2 = VM_IDX_EMPTY;
-  instr.args_set.arg3 = VM_IDX_EMPTY;
+  vm_idx_t instruction_args[3] = { VM_IDX_EMPTY, VM_IDX_EMPTY, VM_IDX_EMPTY };
+  lit_cpointer_t lit_ids[3] = { NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL };
 
-  serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
+  for (uint32_t i = 0; i < ops_num; i++)
+  {
+    vm_op_arg_type_t type_mask = vm_get_opcode_type_mask_for_arg (opcode, i);
+
+    if (operand_is_empty (ops[i]))
+    {
+      JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_EMPTY);
+    }
+    else
+    {
+      switch (ops[i].type)
+      {
+        case OPERAND_IDENTIFIER:
+        {
+          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_IDENTIFIER);
+
+          instruction_args[i] = ops[i].uid;
+          lit_ids[i] = ops[i].lit_id;
+          break;
+        }
+        case OPERAND_NUMBER:
+        {
+          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_NUMBER);
+
+          instruction_args[i] = ops[i].uid;
+          lit_ids[i] = ops[i].lit_id;
+          break;
+        }
+        case OPERAND_STRING:
+        {
+          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_STRING);
+
+          instruction_args[i] = ops[i].uid;
+          lit_ids[i] = ops[i].lit_id;
+          break;
+        }
+        case OPERAND_INTEGER_CONST:
+        {
+          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_INTEGER_CONST);
+
+          instruction_args[i] = ops[i].uid;
+          lit_ids[i] = NOT_A_LITERAL;
+          break;
+        }
+        case OPERAND_TMP:
+        {
+          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_REGISTER);
+
+          instruction_args[i] = ops[i].uid;
+          lit_ids[i] = NOT_A_LITERAL;
+          break;
+        }
+      }
+    }
+  }
+
+  instr.op_idx = opcode;
+  instr.args_set.arg1 = instruction_args[0];
+  instr.args_set.arg2 = instruction_args[1];
+  instr.args_set.arg3 = instruction_args[2];
+
+  serializer_dump_op_meta (create_op_meta (instr, lit_ids[0], lit_ids[1], lit_ids[2]));
+}
+
+static void
+dump_no_args (vm_op_t opcode)
+{
+  dump_instruction (opcode, NULL, 0);
 }
 
 static void
 dump_single_address (vm_op_t opcode, operand op)
 {
-  vm_assert_opcode_args_num_1 (opcode);
-
-  vm_instr_t instr;
-
-  instr.op_idx = opcode;
-  instr.args_set.arg1 = op.uid;
-  instr.args_set.arg2 = VM_IDX_EMPTY;
-  instr.args_set.arg3 = VM_IDX_EMPTY;
-
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_instruction (opcode, &op, 1);
 }
 
 static void
 dump_double_address (vm_op_t opcode, operand res, operand obj)
 {
-  vm_assert_opcode_args_num_2 (opcode);
-
-  vm_instr_t instr;
-
-  instr.op_idx = opcode;
-  instr.args_set.arg1 = res.uid;
-  instr.args_set.arg2 = obj.uid;
-  instr.args_set.arg3 = VM_IDX_EMPTY;
-
-  serializer_dump_op_meta (create_op_meta (instr, res.lit_id, obj.lit_id, NOT_A_LITERAL));
+  operand ops[2] = { res, obj };
+  dump_instruction (opcode, ops, 2);
 }
 
 static void
 dump_triple_address (vm_op_t opcode, operand res, operand lhs, operand rhs)
 {
-  vm_assert_opcode_args_num_3 (opcode);
-
-  vm_instr_t instr;
-
-  instr.op_idx = opcode;
-  instr.args_set.arg1 = res.uid;
-  instr.args_set.arg2 = lhs.uid;
-  instr.args_set.arg3 = rhs.uid;
-
-  serializer_dump_op_meta (create_op_meta (instr, res.lit_id, lhs.lit_id, rhs.lit_id));
+  operand ops[3] = { res, lhs, rhs };
+  dump_instruction (opcode, ops, 3);
 }
 
 static operand
