@@ -502,26 +502,24 @@ dump_prop_setter_op_meta (op_meta last, operand op)
 }
 
 static operand
-dump_triple_address_and_prop_setter_res (void (*dumper) (operand, operand, operand),
-                                         op_meta last, operand op)
+dump_triple_address_and_prop_setter_res (vm_op_t opcode, op_meta last, operand op)
 {
   JERRY_ASSERT (last.op.op_idx == VM_OP_PROP_GETTER);
   const operand obj = create_operand_from_tmp_and_lit (last.op.data.prop_getter.obj, last.lit_id[1]);
   const operand prop = create_operand_from_tmp_and_lit (last.op.data.prop_getter.prop, last.lit_id[2]);
   const operand tmp = dump_prop_getter_res (obj, prop);
-  dumper (tmp, tmp, op);
+  dump_triple_address (opcode, tmp, tmp, op);
   dump_prop_setter (obj, prop, tmp);
   return tmp;
 }
 
 static operand
-dump_prop_setter_or_triple_address_res (void (*dumper) (operand, operand, operand),
-                                        operand res, operand op)
+dump_prop_setter_or_triple_address_res (vm_op_t opcode, operand res, operand op)
 {
   const op_meta last = STACK_TOP (prop_getters);
   if (last.op.op_idx == VM_OP_PROP_GETTER)
   {
-    res = dump_triple_address_and_prop_setter_res (dumper, last, op);
+    res = dump_triple_address_and_prop_setter_res (opcode, last, op);
   }
   else
   {
@@ -534,7 +532,7 @@ dump_prop_setter_or_triple_address_res (void (*dumper) (operand, operand, operan
       PARSE_ERROR (JSP_EARLY_ERROR_REFERENCE, "Invalid left-hand-side expression", LIT_ITERATOR_POS_ZERO);
     }
 
-    dumper (res, res, op);
+    dump_triple_address (opcode, res, res, op);
   }
   STACK_DROP (prop_getters, 1);
   return res;
@@ -832,40 +830,10 @@ dump_null_assignment_res (void)
 void
 dump_variable_assignment (operand res, operand var)
 {
-  JERRY_ASSERT (operand_is_generally_encodable (res));
-
-  if (operand_is_constant (var))
-  {
-    if (operand_is_number (var))
-    {
-#ifndef JERRY_NDEBUG
-      literal_t lit = lit_get_literal_by_cp (var.lit_id);
-      JERRY_ASSERT (lit_literal_is_num (lit));
-#endif /* !JERRY_NDEBUG */
-
-      dump_number_assignment (res, var.lit_id);
-    }
-    else
-    {
-      JERRY_ASSERT (operand_is_string (var));
-
-#ifndef JERRY_NDEBUG
-      literal_t lit = lit_get_literal_by_cp (var.lit_id);
-      JERRY_ASSERT (lit_literal_is_utf8_string (lit));
-#endif /* !JERRY_NDEBUG */
-
-      dump_string_assignment (res, var.lit_id);
-    }
-  }
-  else
-  {
-    JERRY_ASSERT (operand_is_generally_encodable (var));
-
-    dump_triple_address (VM_OP_ASSIGNMENT,
-                         res,
-                         int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE),
-                         var);
-  }
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       res,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE),
+                       var);
 }
 
 operand
@@ -1734,67 +1702,67 @@ dump_prop_setter_or_variable_assignment_res (operand res, operand op)
 operand
 dump_prop_setter_or_addition_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_addition, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_ADDITION, res, op);
 }
 
 operand
 dump_prop_setter_or_multiplication_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_multiplication, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_MULTIPLICATION, res, op);
 }
 
 operand
 dump_prop_setter_or_division_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_division, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_DIVISION, res, op);
 }
 
 operand
 dump_prop_setter_or_remainder_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_remainder, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_REMAINDER, res, op);
 }
 
 operand
 dump_prop_setter_or_substraction_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_substraction, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_SUBSTRACTION, res, op);
 }
 
 operand
 dump_prop_setter_or_left_shift_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_left_shift, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_SHIFT_LEFT, res, op);
 }
 
 operand
 dump_prop_setter_or_right_shift_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_right_shift, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_SHIFT_RIGHT, res, op);
 }
 
 operand
 dump_prop_setter_or_right_shift_ex_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_right_shift_ex, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_SHIFT_URIGHT, res, op);
 }
 
 operand
 dump_prop_setter_or_bitwise_and_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_bitwise_and, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_AND, res, op);
 }
 
 operand
 dump_prop_setter_or_bitwise_xor_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_bitwise_xor, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_XOR, res, op);
 }
 
 operand
 dump_prop_setter_or_bitwise_or_res (operand res, operand op)
 {
-  return dump_prop_setter_or_triple_address_res (dump_bitwise_or, res, op);
+  return dump_prop_setter_or_triple_address_res (VM_OP_B_OR, res, op);
 }
 
 void
