@@ -205,15 +205,6 @@ operand_is_reference (operand op)
 }
 
 static bool
-operand_is_generally_encodable (operand op)
-{
-  JERRY_ASSERT (!operand_is_empty (op));
-
-  return (op.type == OPERAND_TMP
-          || op.type == OPERAND_IDENTIFIER);
-}
-
-static bool
 operand_is_string (operand op)
 {
   JERRY_ASSERT (!operand_is_empty (op));
@@ -373,8 +364,6 @@ jsp_create_operand_for_in_special_reg (void)
 static uint8_t
 name_to_native_call_id (operand obj)
 {
-  JERRY_ASSERT (operand_is_generally_encodable (obj));
-
   if (obj.type != OPERAND_IDENTIFIER)
   {
     return OPCODE_NATIVE_CALL__COUNT;
@@ -964,8 +953,6 @@ dump_call_additional_info (opcode_call_flags_t flags, /**< call flags */
 void
 dump_varg (operand op)
 {
-  JERRY_ASSERT (operand_is_generally_encodable (op));
-
   const vm_instr_t instr = getop_meta (OPCODE_META_TYPE_VARG, op.uid, VM_IDX_EMPTY);
   serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, op.lit_id, NOT_A_LITERAL));
 }
@@ -988,8 +975,6 @@ dump_prop_name_and_value (operand name, operand value)
     JERRY_ASSERT (lit_literal_is_num (lit));
     tmp = dump_number_assignment_res (name.lit_id);
   }
-
-  JERRY_ASSERT (operand_is_generally_encodable (tmp));
 
   const vm_instr_t instr = getop_meta (OPCODE_META_TYPE_VARG_PROP_DATA, tmp.uid, value.uid);
   serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, NOT_A_LITERAL, value.lit_id));
