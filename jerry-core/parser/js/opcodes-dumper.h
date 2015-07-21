@@ -25,6 +25,7 @@ typedef enum __attr_packed___
   OPERAND_IDENTIFIER,
   OPERAND_NUMBER,
   OPERAND_STRING,
+  OPERAND_SIMPLE, /**< see also: ecma_simple_value_t */
   OPERAND_INTEGER_CONST, /**< any integer constant that can be
                           *   encoded into an idx (see also: VM_OP_ARG_TYPE_INTEGER_CONST) */
   OPERAND_TMP
@@ -49,6 +50,8 @@ typedef enum __attr_packed___
 } varg_list_type;
 
 operand empty_operand (void);
+operand null_operand (void);
+operand bool_operand (bool);
 operand string_operand (lit_cpointer_t);
 operand number_operand (lit_cpointer_t);
 operand identifier_operand (lit_cpointer_t);

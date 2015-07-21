@@ -285,6 +285,30 @@ int_const_operand (vm_idx_t value)
 }
 
 operand
+null_operand (void)
+{
+  operand ret;
+
+  ret.type = OPERAND_SIMPLE;
+  ret.uid = ECMA_SIMPLE_VALUE_NULL;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+}
+
+operand
+bool_operand (bool value)
+{
+  operand ret;
+
+  ret.type = OPERAND_SIMPLE;
+  ret.uid = value ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+}
+
+operand
 number_operand (lit_cpointer_t lit_cp)
 {
   operand ret;
@@ -488,6 +512,29 @@ dump_instruction (vm_op_t opcode,
 
           instruction_args[i] = op.uid;
           lit_ids[i] = op.lit_id;
+          break;
+        }
+        case OPERAND_SIMPLE:
+        {
+          operand op = ops[i];
+          if (!(type_mask & VM_OP_ARG_TYPE_INTEGER_CONST))
+          {
+            ecma_simple_value_t simple_value = (ecma_simple_value_t) ops[i].uid;
+            if (simple_value == ECMA_SIMPLE_VALUE_NULL)
+            {
+              op = dump_null_assignment_res ();
+            }
+            else
+            {
+              JERRY_ASSERT (simple_value == ECMA_SIMPLE_VALUE_TRUE
+                            || simple_value == ECMA_SIMPLE_VALUE_FALSE);
+
+              op = dump_boolean_assignment_res (simple_value == ECMA_SIMPLE_VALUE_TRUE);
+            }
+          }
+
+          instruction_args[i] = op.uid;
+          lit_ids[i] = NOT_A_LITERAL;
           break;
         }
         case OPERAND_INTEGER_CONST:
