@@ -42,13 +42,13 @@ static const char* opcode_names[] =
 static uint8_t opcode_sizes[] =
 {
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
-  0,
-#define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
   1,
-#define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
+#define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
   2,
-#define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
+#define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
   3,
+#define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
+  4,
 
 #include "vm-opcodes.inc.h"
 };

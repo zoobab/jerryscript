@@ -307,7 +307,8 @@ VM_OP_3 (meta,                  META,
          data_1,                VM_OP_ARG_TYPE_INTEGER_CONST |
                                 VM_OP_ARG_TYPE_VARIABLE,
          data_2,                VM_OP_ARG_TYPE_INTEGER_CONST |
-                                VM_OP_ARG_TYPE_VARIABLE)
+                                VM_OP_ARG_TYPE_VARIABLE |
+                                VM_OP_ARG_TYPE_EMPTY)
 
 #undef VM_OP_0
 #undef VM_OP_1

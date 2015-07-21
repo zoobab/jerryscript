@@ -458,7 +458,8 @@ parse_argument_list (varg_list_type vlt, operand obj, uint8_t *args_count, opera
       {
         call_flags = (opcode_call_flags_t) (call_flags | OPCODE_CALL_FLAGS_HAVE_THIS_ARG);
 
-        if (this_arg_p->type == OPERAND_IDENTIFIER)
+        if (this_arg_p->type == OPERAND_IDENTIFIER
+            || operand_is_constant (*this_arg_p))
         {
           /*
            * FIXME:
@@ -776,11 +777,11 @@ parse_literal (void)
 {
   switch (tok.type)
   {
-    case TOK_NUMBER: return dump_number_assignment_res (token_data_as_lit_cp ());
-    case TOK_STRING: return dump_string_assignment_res (token_data_as_lit_cp ());
+    case TOK_NUMBER: return number_operand (token_data_as_lit_cp ());
+    case TOK_STRING: return string_operand (token_data_as_lit_cp ());
     case TOK_REGEXP: return dump_regexp_assignment_res (token_data_as_lit_cp ());
-    case TOK_NULL: return dump_null_assignment_res ();
-    case TOK_BOOL: return dump_boolean_assignment_res ((bool) token_data ());
+    case TOK_NULL: return null_operand ();
+    case TOK_BOOL: return bool_operand ((bool) token_data ());
     default:
     {
       EMIT_ERROR (JSP_EARLY_ERROR_SYNTAX, "Expected literal");
@@ -1204,7 +1205,9 @@ dump_evaluate_if_reference (operand expr)
   {
     JERRY_ASSERT (expr.type == OPERAND_TMP
                   || expr.type == OPERAND_STRING
-                  || expr.type == OPERAND_NUMBER);
+                  || expr.type == OPERAND_NUMBER
+                  || expr.type == OPERAND_SIMPLE
+                  || expr.type == OPERAND_INTEGER_CONST);
   }
 
   return expr;
