@@ -307,38 +307,6 @@ number_operand (lit_cpointer_t lit_cp)
 }
 
 static operand
-dump_evaluate_if_constant (operand op)
-{
-  if (operand_is_constant (op))
-  {
-    if (operand_is_number (op))
-    {
-#ifndef JERRY_NDEBUG
-      literal_t lit = lit_get_literal_by_cp (op.lit_id);
-      JERRY_ASSERT (lit_literal_is_num (lit));
-#endif /* !JERRY_NDEBUG */
-
-      return dump_number_assignment_res (op.lit_id);
-    }
-    else
-    {
-      JERRY_ASSERT (operand_is_string (op));
-
-#ifndef JERRY_NDEBUG
-      literal_t lit = lit_get_literal_by_cp (op.lit_id);
-      JERRY_ASSERT (lit_literal_is_utf8_string (lit));
-#endif /* !JERRY_NDEBUG */
-
-      return dump_string_assignment_res (op.lit_id);
-    }
-  }
-  else
-  {
-    return op;
-  }
-}
-
-static operand
 create_operand_from_tmp_and_lit (vm_idx_t tmp, lit_cpointer_t lit_id)
 {
   if (tmp != VM_IDX_REWRITE_LITERAL_UID)
@@ -525,8 +493,6 @@ static void
 dump_prop_setter_op_meta (op_meta last, operand op)
 {
   JERRY_ASSERT (last.op.op_idx == VM_OP_PROP_GETTER);
-
-  op = dump_evaluate_if_constant (op);
 
   operand obj = create_operand_from_tmp_and_lit (last.op.data.prop_getter.obj,
                                                  last.lit_id[1]);
@@ -1009,7 +975,6 @@ dump_call_additional_info (opcode_call_flags_t flags, /**< call flags */
 void
 dump_varg (operand op)
 {
-  op = dump_evaluate_if_constant (op);
   JERRY_ASSERT (operand_is_generally_encodable (op));
 
   const vm_instr_t instr = getop_meta (OPCODE_META_TYPE_VARG, op.uid, VM_IDX_EMPTY);
@@ -1094,9 +1059,6 @@ dump_prop_setter_decl (operand name, operand func)
 static void
 dump_prop_getter (operand res, operand obj, operand prop)
 {
-  obj = dump_evaluate_if_constant (obj);
-  prop = dump_evaluate_if_constant (prop);
-
   dump_triple_address (VM_OP_PROP_GETTER, res, obj, prop);
 }
 
@@ -1111,9 +1073,6 @@ dump_prop_getter_res (operand obj, operand prop)
 void
 dump_prop_setter (operand res, operand obj, operand prop)
 {
-  obj = dump_evaluate_if_constant (obj);
-  prop = dump_evaluate_if_constant (prop);
-
   dump_triple_address (VM_OP_PROP_SETTER, res, obj, prop);
 }
 
@@ -1535,9 +1494,6 @@ dump_in_res (operand lhs, operand rhs)
 static void
 dump_equal_value (operand res, operand lhs, operand rhs)
 {
-  lhs = dump_evaluate_if_constant (lhs);
-  rhs = dump_evaluate_if_constant (rhs);
-
   dump_triple_address (VM_OP_EQUAL_VALUE, res, lhs, rhs);
 }
 
@@ -1566,9 +1522,6 @@ dump_not_equal_value_res (operand lhs, operand rhs)
 static void
 dump_equal_value_type (operand res, operand lhs, operand rhs)
 {
-  lhs = dump_evaluate_if_constant (lhs);
-  rhs = dump_evaluate_if_constant (rhs);
-
   dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, lhs, rhs);
 }
 
