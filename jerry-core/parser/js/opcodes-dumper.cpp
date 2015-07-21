@@ -725,71 +725,47 @@ dumper_is_eval_literal (operand obj) /**< byte-code operand */
   return is_eval_lit;
 } /* dumper_is_eval_literal */
 
-static void
-dump_boolean_assignment (operand op, bool is_true)
-{
-  dump_triple_address (VM_OP_ASSIGNMENT,
-                       op,
-                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
-                       int_const_operand (is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE));
-}
-
 operand
 dump_boolean_assignment_res (bool is_true)
 {
   operand op = tmp_operand ();
-  dump_boolean_assignment (op, is_true);
-  return op;
-}
-
-static void
-dump_string_assignment (operand op, lit_cpointer_t lit_id)
-{
   dump_triple_address (VM_OP_ASSIGNMENT,
                        op,
-                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_STRING),
-                       string_operand (lit_id));
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
+                       int_const_operand (is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE));
+  return op;
 }
 
 operand
 dump_string_assignment_res (lit_cpointer_t lit_id)
 {
   operand op = tmp_operand ();
-  dump_string_assignment (op, lit_id);
-  return op;
-}
-
-static void
-dump_number_assignment (operand op, lit_cpointer_t lit_id)
-{
   dump_triple_address (VM_OP_ASSIGNMENT,
                        op,
-                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER),
-                       number_operand (lit_id));
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_STRING),
+                       string_operand (lit_id));
+  return op;
 }
 
 operand
 dump_number_assignment_res (lit_cpointer_t lit_id)
 {
   operand op = tmp_operand ();
-  dump_number_assignment (op, lit_id);
-  return op;
-}
-
-static void
-dump_regexp_assignment (operand op, lit_cpointer_t lit_id)
-{
   dump_triple_address (VM_OP_ASSIGNMENT,
                        op,
-                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP),
-                       string_operand (lit_id));
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER),
+                       number_operand (lit_id));
+  return op;
 }
 
 operand
 dump_regexp_assignment_res (lit_cpointer_t lit_id)
 {
   operand op = tmp_operand ();
-  dump_regexp_assignment (op, lit_id);
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP),
+                       string_operand (lit_id));
   return op;
 }
 
@@ -810,20 +786,14 @@ dump_undefined_assignment_res (void)
   return op;
 }
 
-static void
-dump_null_assignment (operand op)
-{
-  dump_triple_address (VM_OP_ASSIGNMENT,
-                       op,
-                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
-                       int_const_operand (ECMA_SIMPLE_VALUE_NULL));
-}
-
 operand
 dump_null_assignment_res (void)
 {
   operand op = tmp_operand ();
-  dump_null_assignment (op);
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
+                       int_const_operand (ECMA_SIMPLE_VALUE_NULL));
   return op;
 }
 
@@ -1024,17 +994,11 @@ dump_prop_setter_decl (operand name, operand func)
   serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
 }
 
-static void
-dump_prop_getter (operand res, operand obj, operand prop)
-{
-  dump_triple_address (VM_OP_PROP_GETTER, res, obj, prop);
-}
-
 operand
 dump_prop_getter_res (operand obj, operand prop)
 {
   const operand res = tmp_operand ();
-  dump_prop_getter (res, obj, prop);
+  dump_triple_address (VM_OP_PROP_GETTER, res, obj, prop);
   return res;
 }
 
@@ -1074,137 +1038,85 @@ rewrite_function_end (varg_list_type vlt)
   STACK_DROP (function_ends, 1);
 }
 
-static void
-dump_this (operand op)
-{
-  dump_single_address (VM_OP_THIS_BINDING, op);
-}
-
 operand
 dump_this_res (void)
 {
   const operand res = tmp_operand ();
-  dump_this (res);
+  dump_single_address (VM_OP_THIS_BINDING, res);
   return res;
-}
-
-static void
-dump_post_increment (operand res, operand obj)
-{
-  dump_double_address (VM_OP_POST_INCR, res, obj);
 }
 
 operand
 dump_post_increment_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_post_increment (res, op);
+  dump_double_address (VM_OP_POST_INCR, res, op);
   return res;
-}
-
-static void
-dump_post_decrement (operand res, operand obj)
-{
-  dump_double_address (VM_OP_POST_DECR, res, obj);
 }
 
 operand
 dump_post_decrement_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_post_decrement (res, op);
+  dump_double_address (VM_OP_POST_DECR, res, op);
   return res;
-}
-
-static void
-dump_pre_increment (operand res, operand obj)
-{
-  dump_double_address (VM_OP_PRE_INCR, res, obj);
 }
 
 operand
 dump_pre_increment_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_pre_increment (res, op);
+  dump_double_address (VM_OP_PRE_INCR, res, op);
   return res;
-}
-
-static void
-dump_pre_decrement (operand res, operand obj)
-{
-  dump_double_address (VM_OP_PRE_DECR, res, obj);
 }
 
 operand
 dump_pre_decrement_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_pre_decrement (res, op);
+  dump_double_address (VM_OP_PRE_DECR, res, op);
   return res;
-}
-
-static void
-dump_unary_plus (operand res, operand obj)
-{
-  dump_double_address (VM_OP_UNARY_PLUS, res, obj);
 }
 
 operand
 dump_unary_plus_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_unary_plus (res, op);
+  dump_double_address (VM_OP_UNARY_PLUS, res, op);
   return res;
-}
-
-static void
-dump_unary_minus (operand res, operand obj)
-{
-  dump_double_address (VM_OP_UNARY_MINUS, res, obj);
 }
 
 operand
 dump_unary_minus_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_unary_minus (res, op);
+  dump_double_address (VM_OP_UNARY_MINUS, res, op);
   return res;
-}
-
-static void
-dump_bitwise_not (operand res, operand obj)
-{
-  dump_double_address (VM_OP_B_NOT, res, obj);
 }
 
 operand
 dump_bitwise_not_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_bitwise_not (res, op);
+  dump_double_address (VM_OP_B_NOT, res, op);
   return res;
-}
-
-static void
-dump_logical_not (operand res, operand obj)
-{
-  dump_double_address (VM_OP_LOGICAL_NOT, res, obj);
 }
 
 operand
 dump_logical_not_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_logical_not (res, op);
+  dump_double_address (VM_OP_LOGICAL_NOT, res, op);
   return res;
 }
 
-static void
-dump_delete (operand res, operand op, bool is_strict, locus loc)
+operand
+dump_delete_res (operand op, bool is_strict, locus loc)
 {
   if (op.type == OPERAND_IDENTIFIER)
   {
+    const operand res = tmp_operand ();
+
     literal_t lit = lit_get_literal_by_cp (op.lit_id);
 
     JERRY_ASSERT (lit_literal_is_utf8_string (lit));
@@ -1212,12 +1124,16 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
     jsp_early_error_check_delete (is_strict, loc);
 
     dump_double_address (VM_OP_DELETE_VAR, res, op);
+
+    return res;
   }
   else if (op.type == OPERAND_TMP)
   {
     const op_meta last_op_meta = last_dumped_op_meta ();
     if (last_op_meta.op.op_idx == VM_OP_PROP_GETTER)
     {
+      const operand res = tmp_operand ();
+
       const vm_instr_counter_t oc = (vm_instr_counter_t) (serializer_get_current_instruction_counter () - 1);
       serializer_set_writing_position (oc);
 
@@ -1227,333 +1143,195 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
                                                             last_op_meta.lit_id[1]),
                            create_operand_from_tmp_and_lit (last_op_meta.op.data.prop_getter.prop,
                                                             last_op_meta.lit_id[2]));
+
+      return res;
     }
     else
     {
-      dump_boolean_assignment (res, true);
+      return dump_boolean_assignment_res (true);
     }
   }
   else
   {
     JERRY_ASSERT (op.type == OPERAND_STRING
                   || op.type == OPERAND_NUMBER);
-    dump_boolean_assignment (res, true);
+    return dump_boolean_assignment_res (true);
   }
-}
-
-operand
-dump_delete_res (operand op, bool is_strict, locus loc)
-{
-  const operand res = tmp_operand ();
-  dump_delete (res, op, is_strict, loc);
-  return res;
-}
-
-static void
-dump_typeof (operand res, operand op)
-{
-  dump_double_address (VM_OP_TYPEOF, res, op);
 }
 
 operand
 dump_typeof_res (operand op)
 {
   const operand res = tmp_operand ();
-  dump_typeof (res, op);
+  dump_double_address (VM_OP_TYPEOF, res, op);
   return res;
-}
-
-static void
-dump_multiplication (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_MULTIPLICATION, res, lhs, rhs);
 }
 
 operand
 dump_multiplication_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_multiplication (res, lhs, rhs);
+  dump_triple_address (VM_OP_MULTIPLICATION, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_division (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_DIVISION, res, lhs, rhs);
 }
 
 operand
 dump_division_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_division (res, lhs, rhs);
+  dump_triple_address (VM_OP_DIVISION, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_remainder (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_REMAINDER, res, lhs, rhs);
 }
 
 operand
 dump_remainder_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_remainder (res, lhs, rhs);
+  dump_triple_address (VM_OP_REMAINDER, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_addition (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_ADDITION, res, lhs, rhs);
 }
 
 operand
 dump_addition_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_addition (res, lhs, rhs);
+  dump_triple_address (VM_OP_ADDITION, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_substraction (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_SUBSTRACTION, res, lhs, rhs);
 }
 
 operand
 dump_substraction_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_substraction (res, lhs, rhs);
+  dump_triple_address (VM_OP_SUBSTRACTION, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_left_shift (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_SHIFT_LEFT, res, lhs, rhs);
 }
 
 operand
 dump_left_shift_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_left_shift (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_LEFT, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_right_shift (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_SHIFT_RIGHT, res, lhs, rhs);
 }
 
 operand
 dump_right_shift_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_right_shift (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_RIGHT, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_right_shift_ex (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_SHIFT_URIGHT, res, lhs, rhs);
 }
 
 operand
 dump_right_shift_ex_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_right_shift_ex (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_URIGHT, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_less_than (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_LESS_THAN, res, lhs, rhs);
 }
 
 operand
 dump_less_than_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_less_than (res, lhs, rhs);
+  dump_triple_address (VM_OP_LESS_THAN, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_greater_than (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_GREATER_THAN, res, lhs, rhs);
 }
 
 operand
 dump_greater_than_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_greater_than (res, lhs, rhs);
+  dump_triple_address (VM_OP_GREATER_THAN, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_less_or_equal_than (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_LESS_OR_EQUAL_THAN, res, lhs, rhs);
 }
 
 operand
 dump_less_or_equal_than_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_less_or_equal_than (res, lhs, rhs);
+  dump_triple_address (VM_OP_LESS_OR_EQUAL_THAN, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_greater_or_equal_than (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_GREATER_OR_EQUAL_THAN, res, lhs, rhs);
 }
 
 operand
 dump_greater_or_equal_than_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_greater_or_equal_than (res, lhs, rhs);
+  dump_triple_address (VM_OP_GREATER_OR_EQUAL_THAN, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_instanceof (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_INSTANCEOF, res, lhs, rhs);
 }
 
 operand
 dump_instanceof_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_instanceof (res, lhs, rhs);
+  dump_triple_address (VM_OP_INSTANCEOF, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_in (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_IN, res, lhs, rhs);
 }
 
 operand
 dump_in_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_in (res, lhs, rhs);
+  dump_triple_address (VM_OP_IN, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_equal_value (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_EQUAL_VALUE, res, lhs, rhs);
 }
 
 operand
 dump_equal_value_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_equal_value (res, lhs, rhs);
+  dump_triple_address (VM_OP_EQUAL_VALUE, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_not_equal_value (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_NOT_EQUAL_VALUE, res, lhs, rhs);
 }
 
 operand
 dump_not_equal_value_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_not_equal_value (res, lhs, rhs);
+  dump_triple_address (VM_OP_NOT_EQUAL_VALUE, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_equal_value_type (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, lhs, rhs);
 }
 
 operand
 dump_equal_value_type_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_equal_value_type (res, lhs, rhs);
+  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_not_equal_value_type (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_NOT_EQUAL_VALUE_TYPE, res, lhs, rhs);
 }
 
 operand
 dump_not_equal_value_type_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_not_equal_value_type (res, lhs, rhs);
+  dump_triple_address (VM_OP_NOT_EQUAL_VALUE_TYPE, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_bitwise_and (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_AND, res, lhs, rhs);
 }
 
 operand
 dump_bitwise_and_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_bitwise_and (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_AND, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_bitwise_xor (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_XOR, res, lhs, rhs);
 }
 
 operand
 dump_bitwise_xor_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_bitwise_xor (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_XOR, res, lhs, rhs);
   return res;
-}
-
-static void
-dump_bitwise_or (operand res, operand lhs, operand rhs)
-{
-  dump_triple_address (VM_OP_B_OR, res, lhs, rhs);
 }
 
 operand
 dump_bitwise_or_res (operand lhs, operand rhs)
 {
   const operand res = tmp_operand ();
-  dump_bitwise_or (res, lhs, rhs);
+  dump_triple_address (VM_OP_B_OR, res, lhs, rhs);
   return res;
 }
 
