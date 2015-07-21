@@ -228,33 +228,48 @@ typedef struct
 vm_instr_counter_t vm_calc_instr_counter_from_idx_idx (const vm_idx_t oc_idx_1, const vm_idx_t oc_idx_2);
 vm_instr_counter_t vm_read_meta_instr_counter (opcode_meta_type expected_type, int_data_t *int_data);
 
+/**
+ * Byte-code instruction
+ */
 typedef struct vm_instr_t
 {
-  vm_idx_t op_idx;
+  vm_idx_t op_idx; /**< opcode */
+
   union
   {
+    union
+    {
 #define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
-    struct \
-    { \
-      vm_idx_t arg1; \
-    } opcode_name;
+      struct \
+      { \
+        vm_idx_t arg1; \
+      } opcode_name;
 
 #define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
-    struct \
-    { \
-      vm_idx_t arg1; \
-      vm_idx_t arg2; \
-    } opcode_name;
+      struct \
+      { \
+        vm_idx_t arg1; \
+        vm_idx_t arg2; \
+      } opcode_name;
+
 #define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
-    struct \
-    { \
-      vm_idx_t arg1; \
-      vm_idx_t arg2; \
-      vm_idx_t arg3; \
-    } opcode_name;
+      struct \
+      { \
+        vm_idx_t arg1; \
+        vm_idx_t arg2; \
+        vm_idx_t arg3; \
+      } opcode_name;
 
 #include "vm-opcodes.inc.h"
-  } data;
+    } data;
+
+    struct
+    {
+      vm_idx_t arg1; /**< 1st argument idx */
+      vm_idx_t arg2; /**< 2nd argument idx */
+      vm_idx_t arg3; /**< 3rd argument idx */
+    } args_set;
+  };
 } vm_instr_t;
 
 typedef enum

@@ -425,90 +425,6 @@ is_native_call (operand obj)
   return name_to_native_call_id (obj) < OPCODE_NATIVE_CALL__COUNT;
 }
 
-static op_meta
-create_op_meta_for_res_and_obj (vm_instr_t (*getop) (vm_idx_t, vm_idx_t, vm_idx_t), operand *res, operand *obj)
-{
-  JERRY_ASSERT (obj != NULL);
-  JERRY_ASSERT (res != NULL);
-
-  /* res can rewritten */
-  JERRY_ASSERT (operand_is_empty (*res) || operand_is_generally_encodable (*res));
-  /* obj can be empty for anonymous function expression */
-  JERRY_ASSERT (operand_is_empty (*res) || operand_is_generally_encodable (*obj));
-
-  const vm_instr_t instr = getop (res->uid, obj->uid, VM_IDX_EMPTY);
-  return create_op_meta (instr, res->lit_id, obj->lit_id, NOT_A_LITERAL);
-}
-
-static op_meta
-create_op_meta_for_obj (vm_instr_t (*getop) (vm_idx_t, vm_idx_t), operand *obj)
-{
-  JERRY_ASSERT (obj != NULL);
-
-  const vm_instr_t instr = getop (obj->uid, VM_IDX_EMPTY);
-  return create_op_meta (instr, obj->lit_id, NOT_A_LITERAL, NOT_A_LITERAL);
-}
-
-static op_meta
-create_op_meta_for_native_call (operand res, operand obj)
-{
-  JERRY_ASSERT (is_native_call (obj));
-
-  const vm_instr_t instr = getop_native_call (res.uid, name_to_native_call_id (obj), VM_IDX_EMPTY);
-  return create_op_meta (instr, res.lit_id, NOT_A_LITERAL, NOT_A_LITERAL);
-}
-
-static op_meta
-create_op_meta_for_vlt (varg_list_type vlt, operand *res, operand *obj)
-{
-  op_meta ret;
-  switch (vlt)
-  {
-    case VARG_FUNC_EXPR:
-    {
-      ret = create_op_meta_for_res_and_obj (getop_func_expr_n, res, obj);
-      break;
-    }
-    case VARG_CONSTRUCT_EXPR:
-    {
-      ret = create_op_meta_for_res_and_obj (getop_construct_n, res, obj);
-      break;
-    }
-    case VARG_CALL_EXPR:
-    {
-      JERRY_ASSERT (obj != NULL);
-      if (is_native_call (*obj))
-      {
-        ret = create_op_meta_for_native_call (*res, *obj);
-      }
-      else
-      {
-        ret = create_op_meta_for_res_and_obj (getop_call_n, res, obj);
-      }
-      break;
-    }
-    case VARG_FUNC_DECL:
-    {
-      JERRY_ASSERT (res == NULL);
-      ret = create_op_meta_for_obj (getop_func_decl_n, obj);
-      break;
-    }
-    case VARG_ARRAY_DECL:
-    {
-      JERRY_ASSERT (obj == NULL);
-      ret = create_op_meta_for_obj (getop_array_decl, res);
-      break;
-    }
-    case VARG_OBJ_DECL:
-    {
-      JERRY_ASSERT (obj == NULL);
-      ret = create_op_meta_for_obj (getop_obj_decl, res);
-      break;
-    }
-  }
-  return ret;
-}
-
 static void
 split_instr_counter (vm_instr_counter_t oc, vm_idx_t *id1, vm_idx_t *id2)
 {
@@ -526,23 +442,62 @@ last_dumped_op_meta (void)
 }
 
 static void
-dump_single_address (vm_instr_t (*getop) (vm_idx_t), operand op)
+dump_no_args (vm_op_t opcode)
 {
-  const vm_instr_t instr = getop (op.uid);
+  vm_assert_opcode_args_num_0 (opcode);
+
+  vm_instr_t instr;
+
+  instr.op_idx = opcode;
+  instr.args_set.arg1 = VM_IDX_EMPTY;
+  instr.args_set.arg2 = VM_IDX_EMPTY;
+  instr.args_set.arg3 = VM_IDX_EMPTY;
+
+  serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
+}
+
+static void
+dump_single_address (vm_op_t opcode, operand op)
+{
+  vm_assert_opcode_args_num_1 (opcode);
+
+  vm_instr_t instr;
+
+  instr.op_idx = opcode;
+  instr.args_set.arg1 = op.uid;
+  instr.args_set.arg2 = VM_IDX_EMPTY;
+  instr.args_set.arg3 = VM_IDX_EMPTY;
+
   serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
 }
 
 static void
-dump_double_address (vm_instr_t (*getop) (vm_idx_t, vm_idx_t), operand res, operand obj)
+dump_double_address (vm_op_t opcode, operand res, operand obj)
 {
-  const vm_instr_t instr = getop (res.uid, obj.uid);
+  vm_assert_opcode_args_num_2 (opcode);
+
+  vm_instr_t instr;
+
+  instr.op_idx = opcode;
+  instr.args_set.arg1 = res.uid;
+  instr.args_set.arg2 = obj.uid;
+  instr.args_set.arg3 = VM_IDX_EMPTY;
+
   serializer_dump_op_meta (create_op_meta (instr, res.lit_id, obj.lit_id, NOT_A_LITERAL));
 }
 
 static void
-dump_triple_address (vm_instr_t (*getop) (vm_idx_t, vm_idx_t, vm_idx_t), operand res, operand lhs, operand rhs)
+dump_triple_address (vm_op_t opcode, operand res, operand lhs, operand rhs)
 {
-  const vm_instr_t instr = getop (res.uid, lhs.uid, rhs.uid);
+  vm_assert_opcode_args_num_3 (opcode);
+
+  vm_instr_t instr;
+
+  instr.op_idx = opcode;
+  instr.args_set.arg1 = res.uid;
+  instr.args_set.arg2 = lhs.uid;
+  instr.args_set.arg3 = rhs.uid;
+
   serializer_dump_op_meta (create_op_meta (instr, res.lit_id, lhs.lit_id, rhs.lit_id));
 }
 
@@ -554,8 +509,8 @@ dump_prop_setter_op_meta (op_meta last, operand op)
   op = dump_evaluate_if_constant (op);
 
   const vm_instr_t instr = getop_prop_setter (last.op.data.prop_getter.obj,
-                                               last.op.data.prop_getter.prop,
-                                               op.uid);
+                                              last.op.data.prop_getter.prop,
+                                              op.uid);
   serializer_dump_op_meta (create_op_meta (instr, last.lit_id[1], last.lit_id[2], op.lit_id));
 }
 
@@ -596,6 +551,109 @@ dump_prop_setter_or_triple_address_res (void (*dumper) (operand, operand, operan
   }
   STACK_DROP (prop_getters, 1);
   return res;
+}
+
+static void
+dump_op_meta_for_vlt (varg_list_type vlt, operand *res, operand *obj)
+{
+  switch (vlt)
+  {
+    case VARG_FUNC_EXPR:
+    {
+      vm_instr_t instr;
+
+      instr.op_idx = VM_OP_FUNC_EXPR_N;
+      instr.args_set.arg1 = res->uid;
+      instr.args_set.arg2 = obj->uid;
+      instr.args_set.arg3 = VM_IDX_REWRITE_GENERAL_CASE;
+
+      serializer_dump_op_meta (create_op_meta (instr, res->lit_id, obj->lit_id, NOT_A_LITERAL));
+      break;
+    }
+    case VARG_CONSTRUCT_EXPR:
+    {
+      vm_instr_t instr;
+
+      instr.op_idx = VM_OP_CONSTRUCT_N;
+      instr.args_set.arg1 = res->uid;
+      instr.args_set.arg2 = obj->uid;
+      instr.args_set.arg3 = VM_IDX_REWRITE_GENERAL_CASE;
+
+      serializer_dump_op_meta (create_op_meta (instr, res->lit_id, obj->lit_id, NOT_A_LITERAL));
+      break;
+    }
+    case VARG_CALL_EXPR:
+    {
+      JERRY_ASSERT (obj != NULL);
+      if (is_native_call (*obj))
+      {
+        uint8_t native_call_id = name_to_native_call_id (*obj);
+
+        vm_instr_t instr;
+
+        instr.op_idx = VM_OP_NATIVE_CALL;
+        instr.args_set.arg1 = res->uid;
+        instr.args_set.arg2 = native_call_id;
+        instr.args_set.arg3 = VM_IDX_REWRITE_GENERAL_CASE;
+
+        serializer_dump_op_meta (create_op_meta (instr, res->lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+      }
+      else
+      {
+        vm_instr_t instr;
+
+        instr.op_idx = VM_OP_CALL_N;
+        instr.args_set.arg1 = res->uid;
+        instr.args_set.arg2 = obj->uid;
+        instr.args_set.arg3 = VM_IDX_REWRITE_GENERAL_CASE;
+
+        serializer_dump_op_meta (create_op_meta (instr, res->lit_id, obj->lit_id, NOT_A_LITERAL));
+      }
+      break;
+    }
+    case VARG_FUNC_DECL:
+    {
+      JERRY_ASSERT (res == NULL);
+
+      vm_instr_t instr;
+
+      instr.op_idx = VM_OP_FUNC_DECL_N;
+      instr.args_set.arg1 = obj->uid;
+      instr.args_set.arg2 = VM_IDX_REWRITE_GENERAL_CASE;
+      instr.args_set.arg3 = VM_IDX_EMPTY;
+
+      serializer_dump_op_meta (create_op_meta (instr, obj->lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+      break;
+    }
+    case VARG_ARRAY_DECL:
+    {
+      JERRY_ASSERT (obj == NULL);
+
+      vm_instr_t instr;
+
+      instr.op_idx = VM_OP_ARRAY_DECL;
+      instr.args_set.arg1 = res->uid;
+      instr.args_set.arg2 = VM_IDX_REWRITE_GENERAL_CASE;
+      instr.args_set.arg3 = VM_IDX_EMPTY;
+
+      serializer_dump_op_meta (create_op_meta (instr, res->lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+      break;
+    }
+    case VARG_OBJ_DECL:
+    {
+      JERRY_ASSERT (obj == NULL);
+
+      vm_instr_t instr;
+
+      instr.op_idx = VM_OP_OBJ_DECL;
+      instr.args_set.arg1 = res->uid;
+      instr.args_set.arg2 = VM_IDX_REWRITE_GENERAL_CASE;
+      instr.args_set.arg3 = VM_IDX_EMPTY;
+
+      serializer_dump_op_meta (create_op_meta (instr, res->lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+      break;
+    }
+  }
 }
 
 static vm_instr_counter_t
@@ -686,8 +744,8 @@ static void
 dump_boolean_assignment (operand op, bool is_true)
 {
   const vm_instr_t instr = getop_assignment (op.uid,
-                                              VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
-                                              is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
+                                             VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
+                                             is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
   serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
 }
 
@@ -836,19 +894,19 @@ dump_varg_header_for_rewrite (varg_list_type vlt, operand obj)
     case VARG_CALL_EXPR:
     {
       operand res = empty_operand ();
-      serializer_dump_op_meta (create_op_meta_for_vlt (vlt, &res, &obj));
+      dump_op_meta_for_vlt (vlt, &res, &obj);
       break;
     }
     case VARG_FUNC_DECL:
     {
-      serializer_dump_op_meta (create_op_meta_for_vlt (vlt, NULL, &obj));
+      dump_op_meta_for_vlt (vlt, NULL, &obj);
       break;
     }
     case VARG_ARRAY_DECL:
     case VARG_OBJ_DECL:
     {
       operand res = empty_operand ();
-      serializer_dump_op_meta (create_op_meta_for_vlt (vlt, &res, NULL));
+      dump_op_meta_for_vlt (vlt, &res, NULL);
       break;
     }
   }
@@ -1012,7 +1070,7 @@ dump_prop_getter (operand res, operand obj, operand prop)
   obj = dump_evaluate_if_constant (obj);
   prop = dump_evaluate_if_constant (prop);
 
-  dump_triple_address (getop_prop_getter, res, obj, prop);
+  dump_triple_address (VM_OP_PROP_GETTER, res, obj, prop);
 }
 
 operand
@@ -1029,7 +1087,7 @@ dump_prop_setter (operand res, operand obj, operand prop)
   obj = dump_evaluate_if_constant (obj);
   prop = dump_evaluate_if_constant (prop);
 
-  dump_triple_address (getop_prop_setter, res, obj, prop);
+  dump_triple_address (VM_OP_PROP_SETTER, res, obj, prop);
 }
 
 void
@@ -1065,7 +1123,7 @@ rewrite_function_end (varg_list_type vlt)
 static void
 dump_this (operand op)
 {
-  dump_single_address (getop_this_binding, op);
+  dump_single_address (VM_OP_THIS_BINDING, op);
 }
 
 operand
@@ -1079,7 +1137,7 @@ dump_this_res (void)
 static void
 dump_post_increment (operand res, operand obj)
 {
-  dump_double_address (getop_post_incr, res, obj);
+  dump_double_address (VM_OP_POST_INCR, res, obj);
 }
 
 operand
@@ -1093,7 +1151,7 @@ dump_post_increment_res (operand op)
 static void
 dump_post_decrement (operand res, operand obj)
 {
-  dump_double_address (getop_post_decr, res, obj);
+  dump_double_address (VM_OP_POST_DECR, res, obj);
 }
 
 operand
@@ -1107,7 +1165,7 @@ dump_post_decrement_res (operand op)
 static void
 dump_pre_increment (operand res, operand obj)
 {
-  dump_double_address (getop_pre_incr, res, obj);
+  dump_double_address (VM_OP_PRE_INCR, res, obj);
 }
 
 operand
@@ -1121,7 +1179,7 @@ dump_pre_increment_res (operand op)
 static void
 dump_pre_decrement (operand res, operand obj)
 {
-  dump_double_address (getop_pre_decr, res, obj);
+  dump_double_address (VM_OP_PRE_DECR, res, obj);
 }
 
 operand
@@ -1135,7 +1193,7 @@ dump_pre_decrement_res (operand op)
 static void
 dump_unary_plus (operand res, operand obj)
 {
-  dump_double_address (getop_unary_plus, res, obj);
+  dump_double_address (VM_OP_UNARY_PLUS, res, obj);
 }
 
 operand
@@ -1149,7 +1207,7 @@ dump_unary_plus_res (operand op)
 static void
 dump_unary_minus (operand res, operand obj)
 {
-  dump_double_address (getop_unary_minus, res, obj);
+  dump_double_address (VM_OP_UNARY_MINUS, res, obj);
 }
 
 operand
@@ -1163,7 +1221,7 @@ dump_unary_minus_res (operand op)
 static void
 dump_bitwise_not (operand res, operand obj)
 {
-  dump_double_address (getop_b_not, res, obj);
+  dump_double_address (VM_OP_B_NOT, res, obj);
 }
 
 operand
@@ -1177,7 +1235,7 @@ dump_bitwise_not_res (operand op)
 static void
 dump_logical_not (operand res, operand obj)
 {
-  dump_double_address (getop_logical_not, res, obj);
+  dump_double_address (VM_OP_LOGICAL_NOT, res, obj);
 }
 
 operand
@@ -1199,8 +1257,7 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
 
     jsp_early_error_check_delete (is_strict, loc);
 
-    const vm_instr_t instr = getop_delete_var (res.uid, VM_IDX_REWRITE_LITERAL_UID);
-    serializer_dump_op_meta (create_op_meta (instr, res.lit_id, op.lit_id, NOT_A_LITERAL));
+    dump_double_address (VM_OP_DELETE_VAR, res, op);
   }
   else if (op.type == OPERAND_TMP)
   {
@@ -1210,12 +1267,12 @@ dump_delete (operand res, operand op, bool is_strict, locus loc)
       const vm_instr_counter_t oc = (vm_instr_counter_t) (serializer_get_current_instruction_counter () - 1);
       serializer_set_writing_position (oc);
 
-      const vm_instr_t instr = getop_delete_prop (res.uid,
-                                                   last_op_meta.op.data.prop_getter.obj,
-                                                   last_op_meta.op.data.prop_getter.prop);
-      serializer_dump_op_meta (create_op_meta (instr, res.lit_id,
-                                               last_op_meta.lit_id[1],
-                                               last_op_meta.lit_id[2]));
+      dump_triple_address (VM_OP_DELETE_PROP,
+                           res,
+                           create_operand_from_tmp_and_lit (last_op_meta.op.data.prop_getter.obj,
+                                                            last_op_meta.lit_id[1]),
+                           create_operand_from_tmp_and_lit (last_op_meta.op.data.prop_getter.prop,
+                                                            last_op_meta.lit_id[2]));
     }
     else
     {
@@ -1241,7 +1298,7 @@ dump_delete_res (operand op, bool is_strict, locus loc)
 static void
 dump_typeof (operand res, operand op)
 {
-  dump_double_address (getop_typeof, res, op);
+  dump_double_address (VM_OP_TYPEOF, res, op);
 }
 
 operand
@@ -1255,7 +1312,7 @@ dump_typeof_res (operand op)
 static void
 dump_multiplication (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_multiplication, res, lhs, rhs);
+  dump_triple_address (VM_OP_MULTIPLICATION, res, lhs, rhs);
 }
 
 operand
@@ -1269,7 +1326,7 @@ dump_multiplication_res (operand lhs, operand rhs)
 static void
 dump_division (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_division, res, lhs, rhs);
+  dump_triple_address (VM_OP_DIVISION, res, lhs, rhs);
 }
 
 operand
@@ -1283,7 +1340,7 @@ dump_division_res (operand lhs, operand rhs)
 static void
 dump_remainder (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_remainder, res, lhs, rhs);
+  dump_triple_address (VM_OP_REMAINDER, res, lhs, rhs);
 }
 
 operand
@@ -1297,7 +1354,7 @@ dump_remainder_res (operand lhs, operand rhs)
 static void
 dump_addition (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_addition, res, lhs, rhs);
+  dump_triple_address (VM_OP_ADDITION, res, lhs, rhs);
 }
 
 operand
@@ -1311,7 +1368,7 @@ dump_addition_res (operand lhs, operand rhs)
 static void
 dump_substraction (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_substraction, res, lhs, rhs);
+  dump_triple_address (VM_OP_SUBSTRACTION, res, lhs, rhs);
 }
 
 operand
@@ -1325,7 +1382,7 @@ dump_substraction_res (operand lhs, operand rhs)
 static void
 dump_left_shift (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_shift_left, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_LEFT, res, lhs, rhs);
 }
 
 operand
@@ -1339,7 +1396,7 @@ dump_left_shift_res (operand lhs, operand rhs)
 static void
 dump_right_shift (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_shift_right, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_RIGHT, res, lhs, rhs);
 }
 
 operand
@@ -1353,7 +1410,7 @@ dump_right_shift_res (operand lhs, operand rhs)
 static void
 dump_right_shift_ex (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_shift_uright, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_SHIFT_URIGHT, res, lhs, rhs);
 }
 
 operand
@@ -1367,7 +1424,7 @@ dump_right_shift_ex_res (operand lhs, operand rhs)
 static void
 dump_less_than (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_less_than, res, lhs, rhs);
+  dump_triple_address (VM_OP_LESS_THAN, res, lhs, rhs);
 }
 
 operand
@@ -1381,7 +1438,7 @@ dump_less_than_res (operand lhs, operand rhs)
 static void
 dump_greater_than (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_greater_than, res, lhs, rhs);
+  dump_triple_address (VM_OP_GREATER_THAN, res, lhs, rhs);
 }
 
 operand
@@ -1395,7 +1452,7 @@ dump_greater_than_res (operand lhs, operand rhs)
 static void
 dump_less_or_equal_than (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_less_or_equal_than, res, lhs, rhs);
+  dump_triple_address (VM_OP_LESS_OR_EQUAL_THAN, res, lhs, rhs);
 }
 
 operand
@@ -1409,7 +1466,7 @@ dump_less_or_equal_than_res (operand lhs, operand rhs)
 static void
 dump_greater_or_equal_than (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_greater_or_equal_than, res, lhs, rhs);
+  dump_triple_address (VM_OP_GREATER_OR_EQUAL_THAN, res, lhs, rhs);
 }
 
 operand
@@ -1423,7 +1480,7 @@ dump_greater_or_equal_than_res (operand lhs, operand rhs)
 static void
 dump_instanceof (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_instanceof, res, lhs, rhs);
+  dump_triple_address (VM_OP_INSTANCEOF, res, lhs, rhs);
 }
 
 operand
@@ -1437,7 +1494,7 @@ dump_instanceof_res (operand lhs, operand rhs)
 static void
 dump_in (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_in, res, lhs, rhs);
+  dump_triple_address (VM_OP_IN, res, lhs, rhs);
 }
 
 operand
@@ -1454,7 +1511,7 @@ dump_equal_value (operand res, operand lhs, operand rhs)
   lhs = dump_evaluate_if_constant (lhs);
   rhs = dump_evaluate_if_constant (rhs);
 
-  dump_triple_address (getop_equal_value, res, lhs, rhs);
+  dump_triple_address (VM_OP_EQUAL_VALUE, res, lhs, rhs);
 }
 
 operand
@@ -1468,7 +1525,7 @@ dump_equal_value_res (operand lhs, operand rhs)
 static void
 dump_not_equal_value (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_not_equal_value, res, lhs, rhs);
+  dump_triple_address (VM_OP_NOT_EQUAL_VALUE, res, lhs, rhs);
 }
 
 operand
@@ -1485,7 +1542,7 @@ dump_equal_value_type (operand res, operand lhs, operand rhs)
   lhs = dump_evaluate_if_constant (lhs);
   rhs = dump_evaluate_if_constant (rhs);
 
-  dump_triple_address (getop_equal_value_type, res, lhs, rhs);
+  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, lhs, rhs);
 }
 
 operand
@@ -1499,7 +1556,7 @@ dump_equal_value_type_res (operand lhs, operand rhs)
 static void
 dump_not_equal_value_type (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_not_equal_value_type, res, lhs, rhs);
+  dump_triple_address (VM_OP_NOT_EQUAL_VALUE_TYPE, res, lhs, rhs);
 }
 
 operand
@@ -1513,7 +1570,7 @@ dump_not_equal_value_type_res (operand lhs, operand rhs)
 static void
 dump_bitwise_and (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_and, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_AND, res, lhs, rhs);
 }
 
 operand
@@ -1527,7 +1584,7 @@ dump_bitwise_and_res (operand lhs, operand rhs)
 static void
 dump_bitwise_xor (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_xor, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_XOR, res, lhs, rhs);
 }
 
 operand
@@ -1541,7 +1598,7 @@ dump_bitwise_xor_res (operand lhs, operand rhs)
 static void
 dump_bitwise_or (operand res, operand lhs, operand rhs)
 {
-  dump_triple_address (getop_b_or, res, lhs, rhs);
+  dump_triple_address (VM_OP_B_OR, res, lhs, rhs);
 }
 
 operand
@@ -1876,7 +1933,7 @@ void
 dump_case_clause_check_for_rewrite (operand switch_expr, operand case_expr)
 {
   const operand res = tmp_operand ();
-  dump_triple_address (getop_equal_value_type, res, switch_expr, case_expr);
+  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, switch_expr, case_expr);
   STACK_PUSH (case_clauses, serializer_get_current_instruction_counter ());
   const vm_instr_t instr = getop_is_true_jmp_down (res.uid, VM_IDX_REWRITE_GENERAL_CASE, VM_IDX_REWRITE_GENERAL_CASE);
   serializer_dump_op_meta (create_op_meta (instr, NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
@@ -2096,7 +2153,7 @@ dump_end_try_catch_finally (void)
 void
 dump_throw (operand op)
 {
-  dump_single_address (getop_throw_value, op);
+  dump_single_address (VM_OP_THROW_VALUE, op);
 }
 
 bool
@@ -2121,8 +2178,7 @@ dumper_variable_declaration_exists (lit_cpointer_t lit_id)
 void
 dump_variable_declaration (lit_cpointer_t lit_id)
 {
-  const vm_instr_t instr = getop_var_decl (VM_IDX_REWRITE_LITERAL_UID);
-  serializer_dump_op_meta (create_op_meta (instr, lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_single_address (VM_OP_VAR_DECL, string_operand (lit_id));
 }
 
 /**
@@ -2167,8 +2223,7 @@ rewrite_scope_code_flags (vm_instr_counter_t scope_code_flags_oc, /**< position 
 void
 dump_ret (void)
 {
-  serializer_dump_op_meta (create_op_meta (getop_ret (),
-                                           NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_no_args (VM_OP_RET);
 }
 
 void
@@ -2193,7 +2248,7 @@ rewrite_reg_var_decl (void)
 void
 dump_retval (operand op)
 {
-  dump_single_address (getop_retval, op);
+  dump_single_address (VM_OP_RETVAL, op);
 }
 
 void
