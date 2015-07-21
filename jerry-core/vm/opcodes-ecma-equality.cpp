@@ -25,7 +25,7 @@
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_equal_value (opcode_t opdata, /**< operation data */
+opfunc_equal_value (vm_instr_t opdata, /**< operation data */
                     int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.equal_value.dst;
@@ -64,7 +64,7 @@ opfunc_equal_value (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_not_equal_value (opcode_t opdata, /**< operation data */
+opfunc_not_equal_value (vm_instr_t opdata, /**< operation data */
                         int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.not_equal_value.dst;
@@ -105,7 +105,7 @@ opfunc_not_equal_value (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_equal_value_type (opcode_t opdata, /**< operation data */
+opfunc_equal_value_type (vm_instr_t opdata, /**< operation data */
                          int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.equal_value_type.dst;
@@ -140,7 +140,7 @@ opfunc_equal_value_type (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_not_equal_value_type (opcode_t opdata, /**< operation data */
+opfunc_not_equal_value_type (vm_instr_t opdata, /**< operation data */
                              int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.not_equal_value_type.dst;

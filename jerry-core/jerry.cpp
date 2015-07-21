@@ -1333,12 +1333,12 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 
   parser_set_show_opcodes (is_show_opcodes);
 
-  const opcode_t *opcodes_p;
+  const vm_instr_t *instrs_p;
   jsp_status_t parse_status;
 
   parse_status = parser_parse_script (source_p,
                                       source_size,
-                                      &opcodes_p);
+                                      &instrs_p);
 
   if (parse_status != JSP_STATUS_OK)
   {
@@ -1357,7 +1357,7 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 
   bool is_show_mem_stats_per_opcode = ((jerry_flags & JERRY_FLAG_MEM_STATS_PER_OPCODE) != 0);
 
-  vm_init (opcodes_p, is_show_mem_stats_per_opcode);
+  vm_init (instrs_p, is_show_mem_stats_per_opcode);
 
   return true;
 } /* jerry_parse */

@@ -44,9 +44,9 @@ static const opfunc __opfuncs[VM_OP__COUNT] =
 #include "vm-opcodes.inc.h"
 };
 
-JERRY_STATIC_ASSERT (sizeof (opcode_t) <= 4);
+JERRY_STATIC_ASSERT (sizeof (vm_instr_t) <= 4);
 
-const opcode_t *__program = NULL;
+const vm_instr_t *__program = NULL;
 
 #ifdef MEM_STATS
 static const char *__op_names[VM_OP__COUNT] =
@@ -121,7 +121,7 @@ interp_mem_get_stats (mem_heap_stats_t *out_heap_stats_p,
 
 static void
 interp_mem_stats_context_enter (int_data_t *int_data_p,
-                                opcode_counter_t block_position)
+                                vm_instr_counter_t block_position)
 {
   if (likely (!interp_mem_stats_enabled))
   {
@@ -159,7 +159,7 @@ interp_mem_stats_context_enter (int_data_t *int_data_p,
 
 static void
 interp_mem_stats_context_exit (int_data_t *int_data_p,
-                               opcode_counter_t block_position)
+                               vm_instr_counter_t block_position)
 {
   if (likely (!interp_mem_stats_enabled))
   {
@@ -228,8 +228,8 @@ interp_mem_stats_context_exit (int_data_t *int_data_p,
 }
 
 static void
-interp_mem_stats_opcode_enter (const opcode_t *opcodes_p,
-                               opcode_counter_t opcode_position,
+interp_mem_stats_opcode_enter (const vm_instr_t *instrs_p,
+                               vm_instr_counter_t instr_position,
                                mem_heap_stats_t *out_heap_stats_p,
                                mem_pools_stats_t *out_pools_stats_p)
 {
@@ -250,17 +250,17 @@ interp_mem_stats_opcode_enter (const opcode_t *opcodes_p,
                         out_pools_stats_p,
                         true, false);
 
-  opcode_t opcode = vm_get_opcode (opcodes_p, opcode_position);
+  vm_instr_t instr = vm_get_instr (instrs_p, instr_position);
 
   printf ("%s-- Opcode: %s (position %u) --\n",
-          indent_prefix, __op_names[opcode.op_idx], (uint32_t) opcode_position);
+          indent_prefix, __op_names[instr.op_idx], (uint32_t) instr_position);
 
   interp_mem_stats_print_indentation += INTERP_MEM_PRINT_INDENTATION_STEP;
 }
 
 static void
 interp_mem_stats_opcode_exit (int_data_t *int_data_p,
-                              opcode_counter_t opcode_position,
+                              vm_instr_counter_t instr_position,
                               mem_heap_stats_t *heap_stats_before_p,
                               mem_pools_stats_t *pools_stats_before_p)
 {
@@ -295,7 +295,7 @@ interp_mem_stats_opcode_exit (int_data_t *int_data_p,
   int_data_p->context_peak_allocated_pool_chunks = JERRY_MAX (int_data_p->context_peak_allocated_pool_chunks,
                                                               pools_stats_after.allocated_chunks);
 
-  opcode_t opcode = vm_get_opcode (int_data_p->opcodes_p, opcode_position);
+  vm_instr_t instr = vm_get_instr (int_data_p->instrs_p, instr_position);
 
   printf ("%s Allocated heap bytes:  %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
@@ -343,7 +343,7 @@ interp_mem_stats_opcode_exit (int_data_t *int_data_p,
   }
 
   printf ("%s-- End of execution of opcode %s (position %u) --\n\n",
-          indent_prefix, __op_names[opcode.op_idx], opcode_position);
+          indent_prefix, __op_names[instr.op_idx], instr_position);
 }
 #endif /* MEM_STATS */
 
@@ -351,7 +351,7 @@ interp_mem_stats_opcode_exit (int_data_t *int_data_p,
  * Initialize interpreter.
  */
 void
-vm_init (const opcode_t *program_p, /**< pointer to byte-code program */
+vm_init (const vm_instr_t *program_p, /**< pointer to byte-code program */
          bool dump_mem_stats) /** dump per-opcode memory usage change statistics */
 {
 #ifdef MEM_STATS
@@ -388,7 +388,7 @@ vm_run_global (void)
 #endif /* MEM_STATS */
 
   bool is_strict = false;
-  opcode_counter_t start_pos = 0;
+  vm_instr_counter_t start_pos = 0;
 
   opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (__program,
                                                               start_pos++);
@@ -466,12 +466,12 @@ vm_loop (int_data_t *int_data_p, /**< interpreter context */
                     || (run_scope_p->start_oc <= int_data_p->pos
                         && int_data_p->pos <= run_scope_p->end_oc));
 
-      const opcode_t *curr = &int_data_p->opcodes_p[int_data_p->pos];
+      const vm_instr_t *curr = &int_data_p->instrs_p[int_data_p->pos];
 
 #ifdef MEM_STATS
-      const opcode_counter_t opcode_pos = int_data_p->pos;
+      const vm_instr_counter_t opcode_pos = int_data_p->pos;
 
-      interp_mem_stats_opcode_enter (int_data_p->opcodes_p,
+      interp_mem_stats_opcode_enter (int_data_p->instrs_p,
                                      opcode_pos,
                                      &heap_stats_before,
                                      &pools_stats_before);
@@ -497,7 +497,7 @@ vm_loop (int_data_t *int_data_p, /**< interpreter context */
 
     if (ecma_is_completion_value_jump (completion))
     {
-      opcode_counter_t target = ecma_get_jump_target_from_completion_value (completion);
+      vm_instr_counter_t target = ecma_get_jump_target_from_completion_value (completion);
 
       /*
        * TODO:
@@ -524,11 +524,11 @@ vm_loop (int_data_t *int_data_p, /**< interpreter context */
 } /* vm_loop */
 
 /**
- * Run the code, starting from specified opcode
+ * Run the code, starting from specified instruction position
  */
 ecma_completion_value_t
-vm_run_from_pos (const opcode_t *opcodes_p, /**< byte-code array */
-                 opcode_counter_t start_pos, /**< identifier of starting opcode */
+vm_run_from_pos (const vm_instr_t *instrs_p, /**< byte-code array */
+                 vm_instr_counter_t start_pos, /**< position of starting instruction */
                  ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
                  ecma_object_t *lex_env_p, /**< lexical environment to use */
                  bool is_strict, /**< is the code is strict mode code (ECMA-262 v5, 10.1.1) */
@@ -536,7 +536,7 @@ vm_run_from_pos (const opcode_t *opcodes_p, /**< byte-code array */
 {
   ecma_completion_value_t completion;
 
-  const opcode_t *curr = &opcodes_p[start_pos];
+  const vm_instr_t *curr = &instrs_p[start_pos];
   JERRY_ASSERT (curr->op_idx == VM_OP_REG_VAR_DECL);
 
   const idx_t min_reg_num = curr->data.reg_var_decl.min;
@@ -548,8 +548,8 @@ vm_run_from_pos (const opcode_t *opcodes_p, /**< byte-code array */
   MEM_DEFINE_LOCAL_ARRAY (regs, regs_num, ecma_value_t);
 
   int_data_t int_data;
-  int_data.opcodes_p = opcodes_p;
-  int_data.pos = (opcode_counter_t) (start_pos + 1);
+  int_data.instrs_p = instrs_p;
+  int_data.pos = (vm_instr_counter_t) (start_pos + 1);
   int_data.this_binding = this_binding_value;
   int_data.lex_env_p = lex_env_p;
   int_data.is_strict = is_strict;
@@ -588,28 +588,28 @@ vm_run_from_pos (const opcode_t *opcodes_p, /**< byte-code array */
 } /* vm_run_from_pos */
 
 /**
- * Get specified opcode from the program.
+ * Get specified instruction from the program.
  */
-opcode_t
-vm_get_opcode (const opcode_t *opcodes_p, /**< byte-code array */
-               opcode_counter_t counter) /**< opcode counter */
+vm_instr_t
+vm_get_instr (const vm_instr_t *instrs_p, /**< byte-code array */
+              vm_instr_counter_t counter) /**< instruction counter */
 {
-  return opcodes_p[ counter ];
-} /* vm_get_opcode */
+  return instrs_p[ counter ];
+} /* vm_get_instr */
 
 /**
- * Get scope code flags from opcode specified by opcode counter
+ * Get scope code flags from instruction at specified position
  *
  * @return mask of scope code flags
  */
 opcode_scope_code_flags_t
-vm_get_scope_flags (const opcode_t *opcodes_p, /**< byte-code array */
-                    opcode_counter_t counter) /**< opcode counter */
+vm_get_scope_flags (const vm_instr_t *instrs_p, /**< byte-code array */
+                    vm_instr_counter_t counter) /**< instruction counter */
 {
-  opcode_t flags_opcode = vm_get_opcode (opcodes_p, counter);
-  JERRY_ASSERT (flags_opcode.op_idx == VM_OP_META
-                && flags_opcode.data.meta.type == OPCODE_META_TYPE_SCOPE_CODE_FLAGS);
-  return (opcode_scope_code_flags_t) flags_opcode.data.meta.data_1;
+  vm_instr_t flags_instr = vm_get_instr (instrs_p, counter);
+  JERRY_ASSERT (flags_instr.op_idx == VM_OP_META
+                && flags_instr.data.meta.type == OPCODE_META_TYPE_SCOPE_CODE_FLAGS);
+  return (opcode_scope_code_flags_t) flags_instr.data.meta.data_1;
 } /* vm_get_scope_flags */
 
 /**

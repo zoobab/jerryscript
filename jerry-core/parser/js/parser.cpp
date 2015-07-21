@@ -1918,7 +1918,7 @@ jsp_parse_for_statement (jsp_label_t *outermost_stmt_label_p, /**< outermost (fi
 
   // Setup ContinueTarget
   jsp_label_setup_continue_target (outermost_stmt_label_p,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 
   // Increment
   lexer_seek (increment_loc);
@@ -2025,7 +2025,7 @@ jsp_parse_for_in_statement_iterator (operand *base_p, /**< out: base value of me
  * Note:
  *      Layout of generate byte-code is the following:
  *                        tmp <- Collection (Expression)
- *                        for_in instruction (tmp, opcode counter of for-in end mark)
+ *                        for_in instruction (tmp, instruction counter of for-in end mark)
  *                         {
  *                          Assignment of OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME to
  *                          Iterator (VariableDeclarationNoIn / LeftHandSideExpression)
@@ -2079,7 +2079,7 @@ jsp_parse_for_in_statement (jsp_label_t *outermost_stmt_label_p, /**< outermost 
   skip_token ();
 
   // Dump for-in instruction
-  opcode_counter_t for_in_oc = dump_for_in_for_rewrite (collection);
+  vm_instr_counter_t for_in_oc = dump_for_in_for_rewrite (collection);
 
   // Dump assignment VariableDeclarationNoIn / LeftHandSideExpression <- OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME
   lexer_seek (iterator_loc);
@@ -2109,7 +2109,7 @@ jsp_parse_for_in_statement (jsp_label_t *outermost_stmt_label_p, /**< outermost 
 
   // Setup ContinueTarget
   jsp_label_setup_continue_target (outermost_stmt_label_p,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 
   // Write position of for-in end to for_in instruction
   rewrite_for_in (for_in_oc);
@@ -2259,7 +2259,7 @@ parse_do_while_statement (jsp_label_t *outermost_stmt_label_p) /**< outermost (f
   parse_statement (NULL);
 
   jsp_label_setup_continue_target (outermost_stmt_label_p,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 
   token_after_newlines_must_be_keyword (KW_WHILE);
   const operand cond = parse_expression_inside_parens ();
@@ -2288,7 +2288,7 @@ parse_while_statement (jsp_label_t *outermost_stmt_label_p) /**< outermost (firs
   parse_statement (NULL);
 
   jsp_label_setup_continue_target (outermost_stmt_label_p,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 
   rewrite_jump_to_end ();
 
@@ -2316,7 +2316,7 @@ parse_with_statement (void)
 
   bool is_raised = jsp_label_raise_nested_jumpable_border ();
 
-  opcode_counter_t with_begin_oc = dump_with_for_rewrite (expr);
+  vm_instr_counter_t with_begin_oc = dump_with_for_rewrite (expr);
   skip_newlines ();
   parse_statement (NULL);
   rewrite_with (with_begin_oc);
@@ -2440,7 +2440,7 @@ parse_switch_statement (void)
   skip_token ();
 
   jsp_label_rewrite_jumps_and_pop (&label,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 
   finish_dumping_case_clauses ();
 }
@@ -2593,7 +2593,7 @@ parse_iterational_statement (jsp_label_t *outermost_named_stmt_label_p) /**< out
   }
 
   jsp_label_rewrite_jumps_and_pop (&label,
-                                   serializer_get_current_opcode_counter ());
+                                   serializer_get_current_instruction_counter ());
 } /* parse_iterational_statement */
 
 /* statement
@@ -2829,7 +2829,7 @@ parse_statement (jsp_label_t *outermost_stmt_label_p) /**< outermost (first) lab
       parse_statement (outermost_stmt_label_p != NULL ? outermost_stmt_label_p : &label);
 
       jsp_label_rewrite_jumps_and_pop (&label,
-                                       serializer_get_current_opcode_counter ());
+                                       serializer_get_current_instruction_counter ());
     }
     else
     {
@@ -2919,7 +2919,7 @@ preparse_scope (bool is_global)
   const locus start_loc = tok.loc;
   const token_type end_tt = is_global ? TOK_EOF : TOK_CLOSE_BRACE;
 
-  opcode_counter_t scope_code_flags_oc = dump_scope_code_flags_for_rewrite ();
+  vm_instr_counter_t scope_code_flags_oc = dump_scope_code_flags_for_rewrite ();
 
   bool is_use_strict = false;
   bool is_ref_arguments_identifier = false;
@@ -3158,10 +3158,10 @@ parser_parse_program (const jerry_api_char_t *source_p, /**< source code buffer 
                       bool in_eval, /**< flag indicating if we are parsing body of eval code */
                       bool is_strict, /**< flag, indicating whether current code
                                        *   inherited strict mode from code of an outer scope */
-                      const opcode_t **out_opcodes_p) /**< out: generated byte-code array
-                                                       *  (in case there were no syntax errors) */
+                      const vm_instr_t **out_instrs_p) /**< out: generated byte-code array
+                                                        *  (in case there were no syntax errors) */
 {
-  JERRY_ASSERT (out_opcodes_p != NULL);
+  JERRY_ASSERT (out_instrs_p != NULL);
 
   inside_function = in_function;
   inside_eval = in_eval;
@@ -3222,7 +3222,7 @@ parser_parse_program (const jerry_api_char_t *source_p, /**< source code buffer 
 
     jsp_early_error_free ();
 
-    *out_opcodes_p = serializer_merge_scopes_into_bytecode ();
+    *out_instrs_p = serializer_merge_scopes_into_bytecode ();
 
     dumper_free ();
 
@@ -3241,7 +3241,7 @@ parser_parse_program (const jerry_api_char_t *source_p, /**< source code buffer 
     JERRY_ASSERT (!is_parse_finished);
 #endif /* !JERRY_NDEBUG */
 
-    *out_opcodes_p = NULL;
+    *out_instrs_p = NULL;
 
     jsp_label_remove_all_labels ();
     jsp_mm_free_all ();
@@ -3275,10 +3275,10 @@ parser_parse_program (const jerry_api_char_t *source_p, /**< source code buffer 
 jsp_status_t
 parser_parse_script (const jerry_api_char_t *source, /**< source script */
                      size_t source_size, /**< source script size it bytes */
-                     const opcode_t **opcodes_p) /**< out: generated byte-code array
-                                                  *  (in case there were no syntax errors) */
+                     const vm_instr_t **out_instrs_p) /**< out: generated byte-code array
+                                                       *  (in case there were no syntax errors) */
 {
-  return parser_parse_program (source, source_size, false, false, false, opcodes_p);
+  return parser_parse_program (source, source_size, false, false, false, out_instrs_p);
 } /* parser_parse_script */
 
 /**
@@ -3292,10 +3292,10 @@ parser_parse_eval (const jerry_api_char_t *source, /**< string passed to eval() 
                    size_t source_size, /**< string size in bytes */
                    bool is_strict, /**< flag, indicating whether eval is called
                                     *   from strict code in direct mode */
-                   const opcode_t **opcodes_p) /**< out: generated byte-code array
-                                                *  (in case there were no syntax errors) */
+                   const vm_instr_t **out_instrs_p) /**< out: generated byte-code array
+                                                     *  (in case there were no syntax errors) */
 {
-  return parser_parse_program (source, source_size, false, true, is_strict, opcodes_p);
+  return parser_parse_program (source, source_size, false, true, is_strict, out_instrs_p);
 } /* parser_parse_eval */
 
 /**
@@ -3313,8 +3313,8 @@ parser_parse_new_function (const jerry_api_char_t **params, /**< array of argume
                                                              *                                       body) call */
                            const size_t *params_size, /**< sizes of arguments strings */
                            size_t params_count, /**< total number of arguments passed to new Function (...) */
-                           const opcode_t **out_opcodes_p) /**< out: generated byte-code array
-                                                            *  (in case there were no syntax errors) */
+                           const vm_instr_t **out_instrs_p) /**< out: generated byte-code array
+                                                             *  (in case there were no syntax errors) */
 {
   // Process arguments
   JERRY_ASSERT (params_count > 0);
@@ -3328,7 +3328,7 @@ parser_parse_new_function (const jerry_api_char_t **params, /**< array of argume
                                true,
                                false,
                                false,
-                               out_opcodes_p);
+                               out_instrs_p);
 } /* parser_parse_new_function */
 
 /**

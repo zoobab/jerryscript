@@ -28,13 +28,13 @@
  * 'Native call' opcode handler.
  */
 ecma_completion_value_t
-opfunc_native_call (opcode_t opdata, /**< operation data */
+opfunc_native_call (vm_instr_t opdata, /**< operation data */
                     int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.native_call.lhs;
   const idx_t native_call_id_idx = opdata.data.native_call.name;
   const idx_t args_number = opdata.data.native_call.arg_list;
-  const opcode_counter_t lit_oc = int_data->pos;
+  const vm_instr_counter_t lit_oc = int_data->pos;
 
   JERRY_ASSERT (native_call_id_idx < OPCODE_NATIVE_CALL__COUNT);
 

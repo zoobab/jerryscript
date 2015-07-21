@@ -103,7 +103,7 @@ do_number_arithmetic (int_data_t *int_data, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_addition (opcode_t opdata, /**< operation data */
+opfunc_addition (vm_instr_t opdata, /**< operation data */
                  int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.addition.dst;
@@ -169,7 +169,7 @@ opfunc_addition (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_substraction (opcode_t opdata, /**< operation data */
+opfunc_substraction (vm_instr_t opdata, /**< operation data */
                      int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.substraction.dst;
@@ -204,7 +204,7 @@ opfunc_substraction (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_multiplication (opcode_t opdata, /**< operation data */
+opfunc_multiplication (vm_instr_t opdata, /**< operation data */
                        int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.multiplication.dst;
@@ -239,7 +239,7 @@ opfunc_multiplication (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_division (opcode_t opdata, /**< operation data */
+opfunc_division (vm_instr_t opdata, /**< operation data */
                  int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.division.dst;
@@ -274,7 +274,7 @@ opfunc_division (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_remainder (opcode_t opdata, /**< operation data */
+opfunc_remainder (vm_instr_t opdata, /**< operation data */
                   int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.remainder.dst;
@@ -309,7 +309,7 @@ opfunc_remainder (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_unary_plus (opcode_t opdata, /**< operation data */
+opfunc_unary_plus (vm_instr_t opdata, /**< operation data */
                    int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.remainder.dst;
@@ -346,7 +346,7 @@ opfunc_unary_plus (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_unary_minus (opcode_t opdata, /**< operation data */
+opfunc_unary_minus (vm_instr_t opdata, /**< operation data */
                     int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.remainder.dst;

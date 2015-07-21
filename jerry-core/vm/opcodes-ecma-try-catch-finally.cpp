@@ -27,13 +27,13 @@
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_try_block (opcode_t opdata, /**< operation data */
+opfunc_try_block (vm_instr_t opdata, /**< operation data */
                   int_data_t *int_data) /**< interpreter context */
 {
   const idx_t block_end_oc_idx_1 = opdata.data.try_block.oc_idx_1;
   const idx_t block_end_oc_idx_2 = opdata.data.try_block.oc_idx_2;
-  const opcode_counter_t try_end_oc = (opcode_counter_t) (
-    calc_opcode_counter_from_idx_idx (block_end_oc_idx_1, block_end_oc_idx_2) + int_data->pos);
+  const vm_instr_counter_t try_end_oc = (vm_instr_counter_t) (
+    vm_calc_instr_counter_from_idx_idx (block_end_oc_idx_1, block_end_oc_idx_2) + int_data->pos);
 
   int_data->pos++;
 
@@ -43,23 +43,23 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
                 || (ecma_is_completion_value_empty (try_completion) && int_data->pos == try_end_oc));
   int_data->pos = try_end_oc;
 
-  opcode_t next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
-  JERRY_ASSERT (next_opcode.op_idx == VM_OP_META);
+  vm_instr_t next_instr = vm_get_instr (int_data->instrs_p, int_data->pos);
+  JERRY_ASSERT (next_instr.op_idx == VM_OP_META);
 
-  if (next_opcode.data.meta.type == OPCODE_META_TYPE_CATCH)
+  if (next_instr.data.meta.type == OPCODE_META_TYPE_CATCH)
   {
-    const opcode_counter_t catch_end_oc = (opcode_counter_t) (
-      read_meta_opcode_counter (OPCODE_META_TYPE_CATCH, int_data) + int_data->pos);
+    const vm_instr_counter_t catch_end_oc = (vm_instr_counter_t) (
+      vm_read_meta_instr_counter (OPCODE_META_TYPE_CATCH, int_data) + int_data->pos);
     int_data->pos++;
 
     if (ecma_is_completion_value_throw (try_completion))
     {
-      next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
-      JERRY_ASSERT (next_opcode.op_idx == VM_OP_META);
-      JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_CATCH_EXCEPTION_IDENTIFIER);
+      next_instr = vm_get_instr (int_data->instrs_p, int_data->pos);
+      JERRY_ASSERT (next_instr.op_idx == VM_OP_META);
+      JERRY_ASSERT (next_instr.data.meta.type == OPCODE_META_TYPE_CATCH_EXCEPTION_IDENTIFIER);
 
-      lit_cpointer_t catch_exc_val_var_name_lit_cp = serializer_get_literal_cp_by_uid (next_opcode.data.meta.data_1,
-                                                                                       int_data->opcodes_p,
+      lit_cpointer_t catch_exc_val_var_name_lit_cp = serializer_get_literal_cp_by_uid (next_instr.data.meta.data_1,
+                                                                                       int_data->instrs_p,
                                                                                        int_data->pos);
       int_data->pos++;
 
@@ -98,13 +98,13 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
     int_data->pos = catch_end_oc;
   }
 
-  next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos);
-  JERRY_ASSERT (next_opcode.op_idx == VM_OP_META);
+  next_instr = vm_get_instr (int_data->instrs_p, int_data->pos);
+  JERRY_ASSERT (next_instr.op_idx == VM_OP_META);
 
-  if (next_opcode.data.meta.type == OPCODE_META_TYPE_FINALLY)
+  if (next_instr.data.meta.type == OPCODE_META_TYPE_FINALLY)
   {
-    const opcode_counter_t finally_end_oc = (opcode_counter_t) (
-      read_meta_opcode_counter (OPCODE_META_TYPE_FINALLY, int_data) + int_data->pos);
+    const vm_instr_counter_t finally_end_oc = (vm_instr_counter_t) (
+      vm_read_meta_instr_counter (OPCODE_META_TYPE_FINALLY, int_data) + int_data->pos);
     int_data->pos++;
 
     vm_run_scope_t run_scope_finally = { int_data->pos, finally_end_oc };
@@ -121,9 +121,9 @@ opfunc_try_block (opcode_t opdata, /**< operation data */
     }
   }
 
-  next_opcode = vm_get_opcode (int_data->opcodes_p, int_data->pos++);
-  JERRY_ASSERT (next_opcode.op_idx == VM_OP_META);
-  JERRY_ASSERT (next_opcode.data.meta.type == OPCODE_META_TYPE_END_TRY_CATCH_FINALLY);
+  next_instr = vm_get_instr (int_data->instrs_p, int_data->pos++);
+  JERRY_ASSERT (next_instr.op_idx == VM_OP_META);
+  JERRY_ASSERT (next_instr.data.meta.type == OPCODE_META_TYPE_END_TRY_CATCH_FINALLY);
 
   return try_completion;
 } /* opfunc_try_block */

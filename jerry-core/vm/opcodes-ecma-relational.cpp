@@ -25,7 +25,7 @@
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_less_than (opcode_t opdata, /**< operation data */
+opfunc_less_than (vm_instr_t opdata, /**< operation data */
                   int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.less_than.dst;
@@ -73,7 +73,7 @@ opfunc_less_than (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_greater_than (opcode_t opdata, /**< operation data */
+opfunc_greater_than (vm_instr_t opdata, /**< operation data */
                      int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.greater_than.dst;
@@ -121,7 +121,7 @@ opfunc_greater_than (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_less_or_equal_than (opcode_t opdata, /**< operation data */
+opfunc_less_or_equal_than (vm_instr_t opdata, /**< operation data */
                            int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.less_or_equal_than.dst;
@@ -176,7 +176,7 @@ opfunc_less_or_equal_than (opcode_t opdata, /**< operation data */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_greater_or_equal_than (opcode_t opdata, /**< operation data */
+opfunc_greater_or_equal_than (vm_instr_t opdata, /**< operation data */
                               int_data_t *int_data) /**< interpreter context */
 {
   const idx_t dst_var_idx = opdata.data.greater_or_equal_than.dst;
@@ -231,7 +231,7 @@ opfunc_greater_or_equal_than (opcode_t opdata, /**< operation data */
  *         returned value must be freed with ecma_free_completion_value.
  */
 ecma_completion_value_t
-opfunc_instanceof (opcode_t opdata __attr_unused___, /**< operation data */
+opfunc_instanceof (vm_instr_t opdata __attr_unused___, /**< operation data */
                    int_data_t *int_data __attr_unused___) /**< interpreter context */
 {
   const idx_t dst_idx = opdata.data.instanceof.dst;
@@ -277,7 +277,7 @@ opfunc_instanceof (opcode_t opdata __attr_unused___, /**< operation data */
  *         returned value must be freed with ecma_free_completion_value.
  */
 ecma_completion_value_t
-opfunc_in (opcode_t opdata __attr_unused___, /**< operation data */
+opfunc_in (vm_instr_t opdata __attr_unused___, /**< operation data */
            int_data_t *int_data __attr_unused___) /**< interpreter context */
 {
   const idx_t dst_idx = opdata.data.in.dst;

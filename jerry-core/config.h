@@ -163,7 +163,7 @@
 #endif /* CONFIG_ECMA_COMPACT_PROFILE */
 
 /**
- * Run GC after execution of each opcode
+ * Run GC after execution of each byte-code instruction
  */
 // #define CONFIG_VM_RUN_GC_AFTER_EACH_OPCODE
 
