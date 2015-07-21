@@ -1810,6 +1810,148 @@ vm_read_meta_instr_counter (opcode_meta_type expected_type, /**< expected type o
   return vm_calc_instr_counter_from_idx_idx (data_1, data_2);
 } /* vm_read_meta_instr_counter */
 
+/**
+ * Assert that arguments number for this opcode is zero
+ */
+void
+vm_assert_opcode_args_num_0 (vm_op_t opcode) /**< opcode */
+{
+  bool is_args_num_0 = false;
+#define VM_OP_0(opcode_name, opcode_name_uppercase) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_args_num_0 = true; \
+  }
+
+#include "vm-opcodes.inc.h"
+
+  JERRY_ASSERT (is_args_num_0);
+} /* vm_assert_opcode_args_num_0 */
+
+/**
+ * Assert that arguments number for this opcode is zero
+ */
+void
+vm_assert_opcode_args_num_1 (vm_op_t opcode) /**< opcode */
+{
+  bool is_args_num_1 = false;
+#define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_args_num_1 = true; \
+  }
+
+#include "vm-opcodes.inc.h"
+
+  JERRY_ASSERT (is_args_num_1);
+} /* vm_assert_opcode_args_num_1 */
+
+/**
+ * Assert that arguments number for this opcode is zero
+ */
+void
+vm_assert_opcode_args_num_2 (vm_op_t opcode) /**< opcode */
+{
+  bool is_args_num_2 = false;
+#define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_args_num_2 = true; \
+  }
+
+#include "vm-opcodes.inc.h"
+
+  JERRY_ASSERT (is_args_num_2);
+} /* vm_assert_opcode_args_num_2 */
+
+/**
+ * Assert that arguments number for this opcode is zero
+ */
+void
+vm_assert_opcode_args_num_3 (vm_op_t opcode) /**< opcode */
+{
+  bool is_args_num_3 = false;
+#define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_args_num_3 = true; \
+  }
+
+#include "vm-opcodes.inc.h"
+
+  JERRY_ASSERT (is_args_num_3);
+} /* vm_assert_opcode_args_num_3 */
+
+/**
+ * Get type mask for the opcode's specified argument
+ *
+ * @return type mask, describing possible data types,
+ *         that can be encoded into specified argument
+ *         of instruction with the opcode
+ */
+vm_op_arg_type_t
+vm_get_opcode_type_mask_for_arg (vm_op_t opcode, /**< opcode */
+                                 uint32_t arg_index) /**< zero-based argument index */
+{
+  vm_op_arg_type_t ret = VM_OP_ARG_TYPE__EMPTY_SET;
+  bool is_found = false;
+
+#define VM_OP_0(opcode_name, opcode_name_uppercase) \
+  JERRY_ASSERT (opcode != VM_OP_ ## opcode_name_uppercase);
+#define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_found = true; \
+    \
+    JERRY_ASSERT (arg_index < 1); \
+    \
+    ret = (vm_op_arg_type_t) (arg1_type); \
+  }
+#define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_found = true; \
+    \
+    JERRY_ASSERT (arg_index < 2); \
+    \
+    if (arg_index == 0) \
+    { \
+      ret = (vm_op_arg_type_t) (arg1_type); \
+    } \
+    else \
+    { \
+      ret = (vm_op_arg_type_t) (arg2_type); \
+    } \
+  }
+#define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
+  if (opcode == VM_OP_ ## opcode_name_uppercase) \
+  { \
+    is_found = true; \
+    \
+    JERRY_ASSERT (arg_index < 3); \
+    \
+    if (arg_index == 0) \
+    { \
+      ret = (vm_op_arg_type_t) (arg1_type); \
+    } \
+    else if (arg_index == 1) \
+    { \
+      ret = (vm_op_arg_type_t) (arg2_type); \
+    } \
+    else \
+    { \
+      ret = (vm_op_arg_type_t) (arg3_type); \
+    } \
+  }
+
+#include "vm-opcodes.inc.h"
+
+  JERRY_ASSERT (is_found);
+
+  return ret;
+} /* vm_get_opcode_type_mask_for_arg */
+
+
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
         vm_instr_t getop_##opcode_name (void) \
         { \

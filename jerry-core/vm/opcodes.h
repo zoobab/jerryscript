@@ -163,6 +163,7 @@ typedef enum : vm_idx_t
  */
 typedef enum
 {
+  VM_OP_ARG_TYPE__EMPTY_SET    = (0u),      /**< initializer for empty type set */
   VM_OP_ARG_TYPE_EMPTY         = (1u << 0), /**< empty argument (no value) */
   VM_OP_ARG_TYPE_REGISTER      = (1u << 1), /**< register variable (index) */
   VM_OP_ARG_TYPE_IDENTIFIER    = (1u << 2), /**< identifier - named variable (string literal) */
@@ -296,6 +297,11 @@ typedef ecma_completion_value_t (*opfunc) (vm_instr_t, int_data_t *);
 
 #include "vm-opcodes.inc.h"
 
+extern void vm_assert_opcode_args_num_0 (vm_op_t);
+extern void vm_assert_opcode_args_num_1 (vm_op_t);
+extern void vm_assert_opcode_args_num_2 (vm_op_t);
+extern void vm_assert_opcode_args_num_3 (vm_op_t);
+extern vm_op_arg_type_t vm_get_opcode_type_mask_for_arg (vm_op_t, uint32_t);
 
 typedef struct
 {
