@@ -468,18 +468,26 @@ dump_instruction (vm_op_t opcode,
         }
         case OPERAND_NUMBER:
         {
-          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_NUMBER);
+          operand op = ops[i];
+          if (!(type_mask & VM_OP_ARG_TYPE_NUMBER))
+          {
+            op = dump_number_assignment_res (op.lit_id);
+          }
 
-          instruction_args[i] = ops[i].uid;
-          lit_ids[i] = ops[i].lit_id;
+          instruction_args[i] = op.uid;
+          lit_ids[i] = op.lit_id;
           break;
         }
         case OPERAND_STRING:
         {
-          JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_STRING);
+          operand op = ops[i];
+          if (!(type_mask & VM_OP_ARG_TYPE_STRING))
+          {
+            op = dump_number_assignment_res (op.lit_id);
+          }
 
-          instruction_args[i] = ops[i].uid;
-          lit_ids[i] = ops[i].lit_id;
+          instruction_args[i] = op.uid;
+          lit_ids[i] = op.lit_id;
           break;
         }
         case OPERAND_INTEGER_CONST:
