@@ -2027,7 +2027,7 @@ jsp_parse_for_in_statement_iterator (operand *base_p, /**< out: base value of me
  *                        tmp <- Collection (Expression)
  *                        for_in instruction (tmp, instruction counter of for-in end mark)
  *                         {
- *                          Assignment of OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME to
+ *                          Assignment of VM_REG_SPECIAL_FOR_IN_PROPERTY_NAME to
  *                          Iterator (VariableDeclarationNoIn / LeftHandSideExpression)
  *                         }
  *                         Body (Statement)
@@ -2081,7 +2081,7 @@ jsp_parse_for_in_statement (jsp_label_t *outermost_stmt_label_p, /**< outermost 
   // Dump for-in instruction
   vm_instr_counter_t for_in_oc = dump_for_in_for_rewrite (collection);
 
-  // Dump assignment VariableDeclarationNoIn / LeftHandSideExpression <- OPCODE_REG_SPECIAL_FOR_IN_PROPERTY_NAME
+  // Dump assignment VariableDeclarationNoIn / LeftHandSideExpression <- VM_REG_SPECIAL_FOR_IN_PROPERTY_NAME
   lexer_seek (iterator_loc);
   tok = lexer_next_token ();
 

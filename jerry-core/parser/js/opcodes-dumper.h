@@ -32,7 +32,7 @@ typedef struct
 {
   operand_type type;
 
-  idx_t uid;
+  vm_idx_t uid;
   lit_cpointer_t lit_id;
 } operand;
 
@@ -74,7 +74,7 @@ operand dump_boolean_assignment_res (bool);
 operand dump_string_assignment_res (lit_cpointer_t);
 operand dump_number_assignment_res (lit_cpointer_t);
 operand dump_regexp_assignment_res (lit_cpointer_t);
-operand dump_smallint_assignment_res (idx_t);
+operand dump_smallint_assignment_res (vm_idx_t);
 void dump_undefined_assignment (operand);
 operand dump_undefined_assignment_res (void);
 operand dump_null_assignment_res (void);

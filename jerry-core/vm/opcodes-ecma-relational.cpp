@@ -28,9 +28,9 @@ ecma_completion_value_t
 opfunc_less_than (vm_instr_t opdata, /**< operation data */
                   int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t dst_var_idx = opdata.data.less_than.dst;
-  const idx_t left_var_idx = opdata.data.less_than.var_left;
-  const idx_t right_var_idx = opdata.data.less_than.var_right;
+  const vm_idx_t dst_var_idx = opdata.data.less_than.dst;
+  const vm_idx_t left_var_idx = opdata.data.less_than.var_left;
+  const vm_idx_t right_var_idx = opdata.data.less_than.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -76,9 +76,9 @@ ecma_completion_value_t
 opfunc_greater_than (vm_instr_t opdata, /**< operation data */
                      int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t dst_var_idx = opdata.data.greater_than.dst;
-  const idx_t left_var_idx = opdata.data.greater_than.var_left;
-  const idx_t right_var_idx = opdata.data.greater_than.var_right;
+  const vm_idx_t dst_var_idx = opdata.data.greater_than.dst;
+  const vm_idx_t left_var_idx = opdata.data.greater_than.var_left;
+  const vm_idx_t right_var_idx = opdata.data.greater_than.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -124,9 +124,9 @@ ecma_completion_value_t
 opfunc_less_or_equal_than (vm_instr_t opdata, /**< operation data */
                            int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t dst_var_idx = opdata.data.less_or_equal_than.dst;
-  const idx_t left_var_idx = opdata.data.less_or_equal_than.var_left;
-  const idx_t right_var_idx = opdata.data.less_or_equal_than.var_right;
+  const vm_idx_t dst_var_idx = opdata.data.less_or_equal_than.dst;
+  const vm_idx_t left_var_idx = opdata.data.less_or_equal_than.var_left;
+  const vm_idx_t right_var_idx = opdata.data.less_or_equal_than.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -179,9 +179,9 @@ ecma_completion_value_t
 opfunc_greater_or_equal_than (vm_instr_t opdata, /**< operation data */
                               int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t dst_var_idx = opdata.data.greater_or_equal_than.dst;
-  const idx_t left_var_idx = opdata.data.greater_or_equal_than.var_left;
-  const idx_t right_var_idx = opdata.data.greater_or_equal_than.var_right;
+  const vm_idx_t dst_var_idx = opdata.data.greater_or_equal_than.dst;
+  const vm_idx_t left_var_idx = opdata.data.greater_or_equal_than.var_left;
+  const vm_idx_t right_var_idx = opdata.data.greater_or_equal_than.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -234,9 +234,9 @@ ecma_completion_value_t
 opfunc_instanceof (vm_instr_t opdata __attr_unused___, /**< operation data */
                    int_data_t *int_data __attr_unused___) /**< interpreter context */
 {
-  const idx_t dst_idx = opdata.data.instanceof.dst;
-  const idx_t left_var_idx = opdata.data.instanceof.var_left;
-  const idx_t right_var_idx = opdata.data.instanceof.var_right;
+  const vm_idx_t dst_idx = opdata.data.instanceof.dst;
+  const vm_idx_t left_var_idx = opdata.data.instanceof.var_left;
+  const vm_idx_t right_var_idx = opdata.data.instanceof.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -280,9 +280,9 @@ ecma_completion_value_t
 opfunc_in (vm_instr_t opdata __attr_unused___, /**< operation data */
            int_data_t *int_data __attr_unused___) /**< interpreter context */
 {
-  const idx_t dst_idx = opdata.data.in.dst;
-  const idx_t left_var_idx = opdata.data.in.var_left;
-  const idx_t right_var_idx = opdata.data.in.var_right;
+  const vm_idx_t dst_idx = opdata.data.in.dst;
+  const vm_idx_t left_var_idx = opdata.data.in.var_left;
+  const vm_idx_t right_var_idx = opdata.data.in.var_right;
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 

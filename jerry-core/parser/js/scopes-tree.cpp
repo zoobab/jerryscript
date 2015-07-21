@@ -21,7 +21,7 @@
 
 static hash_table lit_id_to_uid = null_hash;
 static vm_instr_counter_t global_oc;
-static idx_t next_uid;
+static vm_idx_t next_uid;
 
 static void
 assert_tree (scopes_tree t)
@@ -29,7 +29,7 @@ assert_tree (scopes_tree t)
   JERRY_ASSERT (t != NULL);
 }
 
-static idx_t
+static vm_idx_t
 get_uid (op_meta *op, uint8_t i)
 {
   JERRY_ASSERT (i < 4);
@@ -38,7 +38,7 @@ get_uid (op_meta *op, uint8_t i)
 }
 
 static void
-set_uid (op_meta *op, uint8_t i, idx_t uid)
+set_uid (op_meta *op, uint8_t i, vm_idx_t uid)
 {
   JERRY_ASSERT (i < 4);
   raw_instr *raw = (raw_instr *) &op->op;
@@ -114,7 +114,7 @@ start_new_block_if_necessary (void)
       hash_table_free (lit_id_to_uid);
       lit_id_to_uid = null_hash;
     }
-    lit_id_to_uid = hash_table_init (sizeof (lit_cpointer_t), sizeof (idx_t), HASH_SIZE, lit_id_hash);
+    lit_id_to_uid = hash_table_init (sizeof (lit_cpointer_t), sizeof (vm_idx_t), HASH_SIZE, lit_id_hash);
   }
 }
 
@@ -151,16 +151,16 @@ change_uid (op_meta *om, lit_id_hash_table *lit_ids, uint16_t mask)
   {
     if (is_possible_literal (mask, i))
     {
-      if (get_uid (om, i) == LITERAL_TO_REWRITE)
+      if (get_uid (om, i) == VM_IDX_REWRITE_LITERAL_UID)
       {
         JERRY_ASSERT (om->lit_id[i].packed_value != MEM_CP_NULL);
         lit_cpointer_t lit_id = om->lit_id[i];
-        idx_t *uid = (idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
+        vm_idx_t *uid = (vm_idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
         if (uid == NULL)
         {
           hash_table_insert (lit_id_to_uid, &lit_id, &next_uid);
           lit_id_hash_table_insert (lit_ids, next_uid, global_oc, lit_id);
-          uid = (idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
+          uid = (vm_idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
           JERRY_ASSERT (uid != NULL);
           JERRY_ASSERT (*uid == next_uid);
           next_uid++;
@@ -186,15 +186,15 @@ insert_uids_to_lit_id_map (op_meta *om, uint16_t mask)
   {
     if (is_possible_literal (mask, i))
     {
-      if (get_uid (om, i) == LITERAL_TO_REWRITE)
+      if (get_uid (om, i) == VM_IDX_REWRITE_LITERAL_UID)
       {
         JERRY_ASSERT (om->lit_id[i].packed_value != MEM_CP_NULL);
         lit_cpointer_t lit_id = om->lit_id[i];
-        idx_t *uid = (idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
+        vm_idx_t *uid = (vm_idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
         if (uid == NULL)
         {
           hash_table_insert (lit_id_to_uid, &lit_id, &next_uid);
-          uid = (idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
+          uid = (vm_idx_t *) hash_table_lookup (lit_id_to_uid, &lit_id);
           JERRY_ASSERT (uid != NULL);
           JERRY_ASSERT (*uid == next_uid);
           next_uid++;
@@ -360,11 +360,11 @@ generate_opcode (scopes_tree tree, vm_instr_counter_t instr_pos, lit_id_hash_tab
   return om->op;
 }
 
-static idx_t
+static vm_idx_t
 count_new_literals_in_opcode (scopes_tree tree, vm_instr_counter_t instr_pos)
 {
   start_new_block_if_necessary ();
-  idx_t current_uid = next_uid;
+  vm_idx_t current_uid = next_uid;
   op_meta *om = extract_op_meta (tree, instr_pos);
   switch (om->op.op_idx)
   {
@@ -493,7 +493,7 @@ count_new_literals_in_opcode (scopes_tree tree, vm_instr_counter_t instr_pos)
       break;
     }
   }
-  return (idx_t) (next_uid - current_uid);
+  return (vm_idx_t) (next_uid - current_uid);
 }
 
 /* Before filling literal indexes 'hash' table we shall initiate it with number of neccesary literal indexes.

@@ -60,7 +60,7 @@ do_strict_eval_arguments_check (ecma_object_t *ref_base_lex_env_p, /**< base of 
  */
 bool
 is_reg_variable (int_data_t *int_data, /**< interpreter context */
-                 idx_t var_idx) /**< variable identifier */
+                 vm_idx_t var_idx) /**< variable identifier */
 {
   return (var_idx >= int_data->min_reg_num && var_idx <= int_data->max_reg_num);
 } /* is_reg_variable */
@@ -73,7 +73,7 @@ is_reg_variable (int_data_t *int_data, /**< interpreter context */
  */
 ecma_completion_value_t
 get_variable_value (int_data_t *int_data, /**< interpreter context */
-                    idx_t var_idx, /**< variable identifier */
+                    vm_idx_t var_idx, /**< variable identifier */
                     bool do_eval_or_arguments_check) /** run 'strict eval or arguments reference' check
                                                           See also: do_strict_eval_arguments_check */
 {
@@ -126,7 +126,7 @@ get_variable_value (int_data_t *int_data, /**< interpreter context */
 ecma_completion_value_t
 set_variable_value (int_data_t *int_data, /**< interpreter context */
                     vm_instr_counter_t lit_oc, /**< instruction counter for literal */
-                    idx_t var_idx, /**< variable identifier */
+                    vm_idx_t var_idx, /**< variable identifier */
                     ecma_value_t value) /**< value to set */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();

@@ -27,7 +27,7 @@ ecma_completion_value_t
 opfunc_is_true_jmp_down (vm_instr_t opdata, /**< operation data */
                          int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t cond_var_idx = opdata.data.is_true_jmp_down.value;
+  const vm_idx_t cond_var_idx = opdata.data.is_true_jmp_down.value;
   const vm_instr_counter_t offset = vm_calc_instr_counter_from_idx_idx (opdata.data.is_true_jmp_down.opcode_1,
                                                                         opdata.data.is_true_jmp_down.opcode_2);
 
@@ -60,7 +60,7 @@ ecma_completion_value_t
 opfunc_is_true_jmp_up (vm_instr_t opdata, /**< operation data */
                        int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t cond_var_idx = opdata.data.is_true_jmp_up.value;
+  const vm_idx_t cond_var_idx = opdata.data.is_true_jmp_up.value;
   const vm_instr_counter_t offset = vm_calc_instr_counter_from_idx_idx (opdata.data.is_true_jmp_up.opcode_1,
                                                                         opdata.data.is_true_jmp_up.opcode_2);
 
@@ -99,7 +99,7 @@ ecma_completion_value_t
 opfunc_is_false_jmp_down (vm_instr_t opdata, /**< operation data */
                           int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t cond_var_idx = opdata.data.is_false_jmp_down.value;
+  const vm_idx_t cond_var_idx = opdata.data.is_false_jmp_down.value;
   const vm_instr_counter_t offset = vm_calc_instr_counter_from_idx_idx (opdata.data.is_false_jmp_down.opcode_1,
                                                                         opdata.data.is_false_jmp_down.opcode_2);
 
@@ -132,7 +132,7 @@ ecma_completion_value_t
 opfunc_is_false_jmp_up (vm_instr_t opdata, /**< operation data */
                         int_data_t *int_data) /**< interpreter context */
 {
-  const idx_t cond_var_idx = opdata.data.is_false_jmp_up.value;
+  const vm_idx_t cond_var_idx = opdata.data.is_false_jmp_up.value;
   const vm_instr_counter_t offset = vm_calc_instr_counter_from_idx_idx (opdata.data.is_false_jmp_up.opcode_1,
                                                                         opdata.data.is_false_jmp_up.opcode_2);
 

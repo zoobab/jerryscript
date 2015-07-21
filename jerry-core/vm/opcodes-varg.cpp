@@ -48,7 +48,7 @@ fill_varg_list (int_data_t *int_data, /**< interpreter context */
       JERRY_ASSERT (next_instr.op_idx == VM_OP_META);
       JERRY_ASSERT (next_instr.data.meta.type == OPCODE_META_TYPE_VARG);
 
-      const idx_t varg_var_idx = next_instr.data.meta.data_1;
+      const vm_idx_t varg_var_idx = next_instr.data.meta.data_1;
 
       ecma_completion_value_t get_arg_completion = get_variable_value (int_data, varg_var_idx, false);
 
