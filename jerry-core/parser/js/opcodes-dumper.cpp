@@ -274,6 +274,26 @@ string_operand (lit_cpointer_t lit_cp)
   return ret;
 }
 
+static operand
+int_const_operand (vm_idx_t value)
+{
+  operand ret;
+
+  /*
+   * Suppressing 'comparison always true due to limited range of data type' warning.
+   *
+   * Comparison can be always true, if VM_IDX_GENERAL_VALUE_FIRST == 0, but this can be changed.
+   */
+  int32_t signed_value = value;
+  JERRY_ASSERT (signed_value >= VM_IDX_GENERAL_VALUE_FIRST && signed_value <= VM_IDX_GENERAL_VALUE_LAST);
+
+  ret.type = OPERAND_INTEGER_CONST;
+  ret.uid = value;
+  ret.lit_id = NOT_A_LITERAL;
+
+  return ret;
+}
+
 operand
 number_operand (lit_cpointer_t lit_cp)
 {
@@ -508,10 +528,11 @@ dump_prop_setter_op_meta (op_meta last, operand op)
 
   op = dump_evaluate_if_constant (op);
 
-  const vm_instr_t instr = getop_prop_setter (last.op.data.prop_getter.obj,
-                                              last.op.data.prop_getter.prop,
-                                              op.uid);
-  serializer_dump_op_meta (create_op_meta (instr, last.lit_id[1], last.lit_id[2], op.lit_id));
+  operand obj = create_operand_from_tmp_and_lit (last.op.data.prop_getter.obj,
+                                                 last.lit_id[1]);
+  operand prop = create_operand_from_tmp_and_lit (last.op.data.prop_getter.prop,
+                                                  last.lit_id[2]);
+  dump_triple_address (VM_OP_PROP_SETTER, obj, prop, op);
 }
 
 static operand
@@ -743,10 +764,10 @@ dumper_is_eval_literal (operand obj) /**< byte-code operand */
 static void
 dump_boolean_assignment (operand op, bool is_true)
 {
-  const vm_instr_t instr = getop_assignment (op.uid,
-                                             VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
-                                             is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
+                       int_const_operand (is_true ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE));
 }
 
 operand
@@ -760,8 +781,10 @@ dump_boolean_assignment_res (bool is_true)
 static void
 dump_string_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const vm_instr_t instr = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_STRING, VM_IDX_REWRITE_LITERAL_UID);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, lit_id));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_STRING),
+                       string_operand (lit_id));
 }
 
 operand
@@ -775,8 +798,10 @@ dump_string_assignment_res (lit_cpointer_t lit_id)
 static void
 dump_number_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const vm_instr_t instr = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER, VM_IDX_REWRITE_LITERAL_UID);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, lit_id));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER),
+                       number_operand (lit_id));
 }
 
 operand
@@ -790,8 +815,10 @@ dump_number_assignment_res (lit_cpointer_t lit_id)
 static void
 dump_regexp_assignment (operand op, lit_cpointer_t lit_id)
 {
-  const vm_instr_t instr = getop_assignment (op.uid, VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP, VM_IDX_REWRITE_LITERAL_UID);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, lit_id));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP),
+                       string_operand (lit_id));
 }
 
 operand
@@ -805,10 +832,10 @@ dump_regexp_assignment_res (lit_cpointer_t lit_id)
 void
 dump_undefined_assignment (operand op)
 {
-  const vm_instr_t instr = getop_assignment (op.uid,
-                                              VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
-                                              ECMA_SIMPLE_VALUE_UNDEFINED);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
+                       int_const_operand (ECMA_SIMPLE_VALUE_UNDEFINED));
 }
 
 operand
@@ -822,10 +849,10 @@ dump_undefined_assignment_res (void)
 static void
 dump_null_assignment (operand op)
 {
-  const vm_instr_t instr = getop_assignment (op.uid,
-                                              VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE,
-                                              ECMA_SIMPLE_VALUE_NULL);
-  serializer_dump_op_meta (create_op_meta (instr, op.lit_id, NOT_A_LITERAL, NOT_A_LITERAL));
+  dump_triple_address (VM_OP_ASSIGNMENT,
+                       op,
+                       int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE),
+                       int_const_operand (ECMA_SIMPLE_VALUE_NULL));
 }
 
 operand
@@ -868,10 +895,10 @@ dump_variable_assignment (operand res, operand var)
   {
     JERRY_ASSERT (operand_is_generally_encodable (var));
 
-    const vm_instr_t instr = getop_assignment (res.uid,
-                                                VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE,
-                                                var.uid);
-    serializer_dump_op_meta (create_op_meta (instr, res.lit_id, NOT_A_LITERAL, var.lit_id));
+    dump_triple_address (VM_OP_ASSIGNMENT,
+                         res,
+                         int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE),
+                         var);
   }
 }
 

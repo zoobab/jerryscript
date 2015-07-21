@@ -25,6 +25,8 @@ typedef enum __attr_packed___
   OPERAND_IDENTIFIER,
   OPERAND_NUMBER,
   OPERAND_STRING,
+  OPERAND_INTEGER_CONST, /**< any integer constant that can be
+                          *   encoded into an idx (see also: VM_OP_ARG_TYPE_INTEGER_CONST) */
   OPERAND_TMP
 } operand_type;
 

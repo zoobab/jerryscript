@@ -169,7 +169,8 @@ typedef enum
   VM_OP_ARG_TYPE_IDENTIFIER    = (1u << 2), /**< identifier - named variable (string literal) */
   VM_OP_ARG_TYPE_STRING        = (1u << 3), /**< string constant value (string literal) */
   VM_OP_ARG_TYPE_NUMBER        = (1u << 4), /**< number constant value (number literal) */
-  VM_OP_ARG_TYPE_INTEGER_CONST = (1u << 5), /**< a 8-bit integer constant (any vm_idx_t) */
+  VM_OP_ARG_TYPE_INTEGER_CONST = (1u << 5), /**< a 8-bit integer constant (any vm_idx_t
+                                                 from [VM_IDX_GENERAL_VALUE_FIRST; VM_IDX_GENERAL_VALUE_LAST] range) */
 
   /** variable - an identifier or a register */
   VM_OP_ARG_TYPE_VARIABLE      = (VM_OP_ARG_TYPE_REGISTER | VM_OP_ARG_TYPE_IDENTIFIER)
