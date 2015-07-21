@@ -776,7 +776,7 @@ parse_literal (void)
 {
   switch (tok.type)
   {
-    case TOK_NUMBER: return number_operand (token_data_as_lit_cp ());
+    case TOK_NUMBER: return dump_number_assignment_res (token_data_as_lit_cp ());
     case TOK_STRING: return dump_string_assignment_res (token_data_as_lit_cp ());
     case TOK_REGEXP: return dump_regexp_assignment_res (token_data_as_lit_cp ());
     case TOK_NULL: return dump_null_assignment_res ();
