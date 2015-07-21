@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include "ecma-helpers.h"
+#include "ecma-number-arithmetic.h"
+
 #include "opcodes-dumper.h"
 
 #include "serializer.h"
@@ -592,12 +595,125 @@ dump_triple_address (vm_op_t opcode, operand res, operand lhs, operand rhs)
   dump_instruction (opcode, ops, 3);
 }
 
+static bool
+dumper_calculate_if_const_number (vm_op_t opcode,
+                                  operand lhs,
+                                  operand rhs,
+                                  operand *out_operand_p)
+{
+  JERRY_ASSERT (out_operand_p != NULL);
+
+  if (opcode == VM_OP_B_SHIFT_LEFT
+      || opcode == VM_OP_B_SHIFT_RIGHT
+      || opcode == VM_OP_B_SHIFT_URIGHT
+      || opcode == VM_OP_B_AND
+      || opcode == VM_OP_B_OR
+      || opcode == VM_OP_B_XOR
+      || opcode == VM_OP_ADDITION
+      || opcode == VM_OP_SUBSTRACTION
+      || opcode == VM_OP_MULTIPLICATION
+      || opcode == VM_OP_DIVISION
+      || opcode == VM_OP_REMAINDER
+      /* || opcode == VM_OP_B_NOT
+      || opcode == VM_OP_LOGICAL_NOT
+      || opcode == VM_OP_LESS_THAN
+      || opcode == VM_OP_GREATER_THAN
+      || opcode == VM_OP_GREATER_OR_EQUAL_THAN
+      || opcode == VM_OP_LESS_OR_EQUAL_THAN
+      || opcode == VM_OP_EQUAL_VALUE
+      || opcode == VM_OP_NOT_EQUAL_VALUE
+      || opcode == VM_OP_EQUAL_VALUE_TYPE
+      || opcode == VM_OP_NOT_EQUAL_VALUE_TYPE */)
+  {
+    if (operand_is_number (lhs) && operand_is_number (rhs))
+    {
+      ecma_number_t ret_num;
+
+      /*
+       * TODO:
+       *      Combine with do_number_bitwise_logic and do_number_arithmetic
+       */
+      ecma_number_t num_left = operand_get_number (lhs);
+      ecma_number_t num_right = operand_get_number (rhs);
+
+      int32_t left_int32 = ecma_number_to_int32 (num_left);
+      // int32_t right_int32 = ecma_number_to_int32 (num_right);
+
+      uint32_t left_uint32 = ecma_number_to_uint32 (num_left);
+      uint32_t right_uint32 = ecma_number_to_uint32 (num_right);
+
+      if (opcode == VM_OP_B_SHIFT_LEFT)
+      {
+        ret_num = ecma_int32_to_number (left_int32 << (right_uint32 & 0x1F));
+      }
+      else if (opcode == VM_OP_B_SHIFT_RIGHT)
+      {
+        ret_num = ecma_int32_to_number (left_int32 >> (right_uint32 & 0x1F));
+      }
+      else if (opcode == VM_OP_B_SHIFT_URIGHT)
+      {
+        ret_num = ecma_uint32_to_number (left_uint32 >> (right_uint32 & 0x1F));
+      }
+      else if (opcode == VM_OP_B_AND)
+      {
+        ret_num = ecma_int32_to_number ((int32_t) (left_uint32 & right_uint32));
+      }
+      else if (opcode == VM_OP_B_OR)
+      {
+        ret_num = ecma_int32_to_number ((int32_t) (left_uint32 | right_uint32));
+      }
+      else if (opcode == VM_OP_B_XOR)
+      {
+        ret_num = ecma_int32_to_number ((int32_t) (left_uint32 ^ right_uint32));
+      }
+      else if (opcode == VM_OP_ADDITION)
+      {
+        ret_num = ecma_number_add (num_left, num_right);
+      }
+      else if (opcode == VM_OP_SUBSTRACTION)
+      {
+        ret_num = ecma_number_substract (num_left, num_right);
+      }
+      else if (opcode == VM_OP_MULTIPLICATION)
+      {
+        ret_num = ecma_number_multiply (num_left, num_right);
+      }
+      else if (opcode == VM_OP_DIVISION)
+      {
+        ret_num = ecma_number_divide (num_left, num_right);
+      }
+      else
+      {
+        JERRY_ASSERT (opcode == VM_OP_REMAINDER);
+
+        ret_num = ecma_op_number_remainder (num_left, num_right);
+      }
+
+      literal_t ret_num_lit = lit_find_or_create_literal_from_num (ret_num);
+
+      *out_operand_p = number_operand (lit_cpointer_t::compress (ret_num_lit));
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 static operand
 dump_triple_address_res (vm_op_t opcode, operand lhs, operand rhs)
 {
-  const operand res = tmp_operand ();
-  dump_triple_address (opcode, res, lhs, rhs);
-  return res;
+  operand res;
+  if (dumper_calculate_if_const_number (opcode, lhs, rhs, &res))
+  {
+    return res;
+  }
+  else
+  {
+    res = tmp_operand ();
+    dump_triple_address (opcode, res, lhs, rhs);
+    return res;
+  }
 }
 
 static void
