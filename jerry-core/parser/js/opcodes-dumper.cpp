@@ -845,6 +845,22 @@ dumper_try_calculate_if_const (vm_op_t opcode,
 }
 
 static operand
+dump_double_address_res (vm_op_t opcode, operand rhs)
+{
+  operand res;
+  if (dumper_try_calculate_if_const (opcode, rhs, empty_operand (), &res))
+  {
+    return res;
+  }
+  else
+  {
+    res = tmp_operand ();
+    dump_double_address (opcode, res, rhs);
+    return res;
+  }
+}
+
+static operand
 dump_triple_address_res (vm_op_t opcode, operand lhs, operand rhs)
 {
   operand res;
@@ -1428,65 +1444,49 @@ dump_this_res (void)
 operand
 dump_post_increment_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_POST_INCR, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_POST_INCR, op);
 }
 
 operand
 dump_post_decrement_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_POST_DECR, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_POST_DECR, op);
 }
 
 operand
 dump_pre_increment_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_PRE_INCR, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_PRE_INCR, op);
 }
 
 operand
 dump_pre_decrement_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_PRE_DECR, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_PRE_DECR, op);
 }
 
 operand
 dump_unary_plus_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_UNARY_PLUS, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_UNARY_PLUS, op);
 }
 
 operand
 dump_unary_minus_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_UNARY_MINUS, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_UNARY_MINUS, op);
 }
 
 operand
 dump_bitwise_not_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_B_NOT, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_B_NOT, op);
 }
 
 operand
 dump_logical_not_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_LOGICAL_NOT, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_LOGICAL_NOT, op);
 }
 
 operand
@@ -1541,9 +1541,7 @@ dump_delete_res (operand op, bool is_strict, locus loc)
 operand
 dump_typeof_res (operand op)
 {
-  const operand res = tmp_operand ();
-  dump_double_address (VM_OP_TYPEOF, res, op);
-  return res;
+  return dump_double_address_res (VM_OP_TYPEOF, op);
 }
 
 operand
