@@ -225,7 +225,8 @@ lit_find_literal_by_num (ecma_number_t num) /**< a number to search for */
 
     ecma_number_t lit_num = static_cast<lit_number_record_t *>(lit)->get_number ();
 
-    if (lit_num == num)
+    if (lit_num == num
+        && ecma_number_is_negative (lit_num) == ecma_number_is_negative (num))
     {
       return lit;
     }
