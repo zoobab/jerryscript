@@ -207,6 +207,16 @@ operand_is_reference (operand op)
   return (op.type == OPERAND_IDENTIFIER);
 }
 
+static bool
+operand_is_boolean (operand op)
+{
+  JERRY_ASSERT (!operand_is_empty (op));
+
+  return (op.type == OPERAND_SIMPLE
+          && (op.uid == ECMA_SIMPLE_VALUE_TRUE
+              || op.uid == ECMA_SIMPLE_VALUE_FALSE));
+}
+
 bool
 operand_is_number (operand op)
 {
@@ -224,6 +234,14 @@ operand_is_constant (operand op)
           || op.type == OPERAND_INTEGER_CONST
           || op.type == OPERAND_STRING
           || op.type == OPERAND_NUMBER);
+}
+
+static bool
+operand_get_boolean (operand op)
+{
+  JERRY_ASSERT (operand_is_boolean (op));
+
+  return (op.uid == ECMA_SIMPLE_VALUE_TRUE);
 }
 
 ecma_number_t
@@ -609,10 +627,10 @@ dump_triple_address (vm_op_t opcode, operand res, operand lhs, operand rhs)
 }
 
 static bool
-dumper_calculate_if_const_number (vm_op_t opcode,
-                                  operand lhs,
-                                  operand rhs,
-                                  operand *out_operand_p)
+dumper_try_calculate_if_const (vm_op_t opcode,
+                               operand first_arg,
+                               operand second_arg,
+                               operand *out_operand_p)
 {
   JERRY_ASSERT (out_operand_p != NULL);
 
@@ -626,19 +644,13 @@ dumper_calculate_if_const_number (vm_op_t opcode,
       || opcode == VM_OP_SUBSTRACTION
       || opcode == VM_OP_MULTIPLICATION
       || opcode == VM_OP_DIVISION
-      || opcode == VM_OP_REMAINDER
-      /* || opcode == VM_OP_B_NOT
-      || opcode == VM_OP_LOGICAL_NOT
-      || opcode == VM_OP_LESS_THAN
-      || opcode == VM_OP_GREATER_THAN
-      || opcode == VM_OP_GREATER_OR_EQUAL_THAN
-      || opcode == VM_OP_LESS_OR_EQUAL_THAN
-      || opcode == VM_OP_EQUAL_VALUE
-      || opcode == VM_OP_NOT_EQUAL_VALUE
-      || opcode == VM_OP_EQUAL_VALUE_TYPE
-      || opcode == VM_OP_NOT_EQUAL_VALUE_TYPE */)
+      || opcode == VM_OP_REMAINDER)
   {
-    if (operand_is_number (lhs) && operand_is_number (rhs))
+    JERRY_ASSERT (!operand_is_empty (first_arg));
+    JERRY_ASSERT (!operand_is_empty (second_arg));
+
+    if (operand_is_number (first_arg)
+        && operand_is_number (second_arg))
     {
       ecma_number_t ret_num;
 
@@ -646,8 +658,8 @@ dumper_calculate_if_const_number (vm_op_t opcode,
        * TODO:
        *      Combine with do_number_bitwise_logic and do_number_arithmetic
        */
-      ecma_number_t num_left = operand_get_number (lhs);
-      ecma_number_t num_right = operand_get_number (rhs);
+      ecma_number_t num_left = operand_get_number (first_arg);
+      ecma_number_t num_right = operand_get_number (second_arg);
 
       int32_t left_int32 = ecma_number_to_int32 (num_left);
       // int32_t right_int32 = ecma_number_to_int32 (num_right);
@@ -709,6 +721,125 @@ dumper_calculate_if_const_number (vm_op_t opcode,
       return true;
     }
   }
+  else if (opcode == VM_OP_LESS_THAN
+           || opcode == VM_OP_GREATER_THAN
+           || opcode == VM_OP_GREATER_OR_EQUAL_THAN
+           || opcode == VM_OP_LESS_OR_EQUAL_THAN
+           || opcode == VM_OP_EQUAL_VALUE
+           || opcode == VM_OP_NOT_EQUAL_VALUE
+           || opcode == VM_OP_EQUAL_VALUE_TYPE
+           || opcode == VM_OP_NOT_EQUAL_VALUE_TYPE)
+  {
+    JERRY_ASSERT (!operand_is_empty (first_arg));
+    JERRY_ASSERT (!operand_is_empty (second_arg));
+
+    if (operand_is_number (first_arg)
+        && operand_is_number (second_arg))
+    {
+      ecma_number_t num_left = operand_get_number (first_arg);
+      ecma_number_t num_right = operand_get_number (second_arg);
+
+      if (!ecma_number_is_nan (num_left)
+          && !ecma_number_is_nan (num_right))
+      {
+        bool is_true;
+
+        if (opcode == VM_OP_LESS_THAN)
+        {
+          is_true = (num_left < num_right);
+        }
+        else if (opcode == VM_OP_GREATER_THAN)
+        {
+          is_true = (num_right < num_left);
+        }
+        else if (opcode == VM_OP_GREATER_OR_EQUAL_THAN)
+        {
+          is_true = !(num_left < num_right);
+        }
+        else if (opcode == VM_OP_LESS_OR_EQUAL_THAN)
+        {
+          is_true = !(num_right < num_left);
+        }
+        else if (opcode == VM_OP_EQUAL_VALUE
+                 || opcode == VM_OP_EQUAL_VALUE_TYPE)
+        {
+          is_true = (num_left == num_right);
+        }
+        else
+        {
+          JERRY_ASSERT (opcode == VM_OP_NOT_EQUAL_VALUE
+                        || opcode == VM_OP_NOT_EQUAL_VALUE_TYPE);
+
+          is_true = !(num_left == num_right);
+        }
+
+        *out_operand_p = bool_operand ((is_true));
+
+        return true;
+      }
+    }
+  }
+  else if (opcode == VM_OP_B_NOT
+           || opcode == VM_OP_UNARY_PLUS
+           || opcode == VM_OP_UNARY_MINUS)
+  {
+    JERRY_ASSERT (!operand_is_empty (first_arg));
+    JERRY_ASSERT (operand_is_empty (second_arg));
+
+    if (operand_is_number (first_arg))
+    {
+      ecma_number_t ret_num;
+
+      ecma_number_t num = operand_get_number (first_arg);
+
+      if (opcode == VM_OP_B_NOT)
+      {
+        uint32_t num_uint32 = ecma_number_to_uint32 (num);
+        ret_num = ecma_int32_to_number ((int32_t) ~num_uint32);
+      }
+      else if (opcode == VM_OP_UNARY_PLUS)
+      {
+        ret_num = num;
+      }
+      else
+      {
+        JERRY_ASSERT (opcode == VM_OP_UNARY_MINUS);
+
+        ret_num = ecma_number_negate (num);
+      }
+
+      literal_t ret_num_lit = lit_find_or_create_literal_from_num (ret_num);
+
+      *out_operand_p = number_operand (lit_cpointer_t::compress (ret_num_lit));
+
+      return true;
+    }
+  }
+  else if (opcode == VM_OP_LOGICAL_NOT)
+  {
+    JERRY_ASSERT (!operand_is_empty (first_arg));
+    JERRY_ASSERT (operand_is_empty (second_arg));
+
+    if (operand_is_number (first_arg))
+    {
+      ecma_number_t num = operand_get_number (first_arg);
+
+      bool value = !(ecma_number_is_nan (num)
+                     || ecma_number_is_zero (num));
+
+      *out_operand_p = bool_operand (!value);
+
+      return true;
+    }
+    else if (operand_is_boolean (first_arg))
+    {
+      bool value = operand_get_boolean (first_arg);
+
+      *out_operand_p = bool_operand (!value);
+
+      return true;
+    }
+  }
 
   return false;
 }
@@ -717,7 +848,7 @@ static operand
 dump_triple_address_res (vm_op_t opcode, operand lhs, operand rhs)
 {
   operand res;
-  if (dumper_calculate_if_const_number (opcode, lhs, rhs, &res))
+  if (dumper_try_calculate_if_const (opcode, lhs, rhs, &res))
   {
     return res;
   }
