@@ -464,6 +464,19 @@ dump_instruction (vm_op_t opcode,
 
   vm_instr_t instr;
 
+  /*
+   * FIXME:
+   *       Some instructions can contain an argument, describing type of another argument.
+   *       For the instructions, the two arguments should be updated correspondingly.
+   *
+   *       Currently, there is no general mechanism for correct handling of the cases.
+   *       Information about the cases should be somehow encoded in vm-opcodes.inc.h,
+   *       maybe using something like 'type of next argument' argument type.
+   *
+   *       List of the instructions:
+   *         - assignment (see also dump_variable_assignment).
+   */
+
   vm_idx_t instruction_args[3] = { VM_IDX_EMPTY, VM_IDX_EMPTY, VM_IDX_EMPTY };
   lit_cpointer_t lit_ids[3] = { NOT_A_LITERAL, NOT_A_LITERAL, NOT_A_LITERAL };
 
