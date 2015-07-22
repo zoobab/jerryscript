@@ -132,6 +132,28 @@ opfunc_assignment (vm_instr_t opdata, /**< operation data */
                                     dst_var_idx,
                                     ecma_make_number_value (num_p));
   }
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT)
+  {
+    ecma_number_t *num_p = int_data->tmp_num_p;
+
+    *num_p = src_val_descr;
+
+    ret_value = set_variable_value (int_data,
+                                    int_data->pos,
+                                    dst_var_idx,
+                                    ecma_make_number_value (num_p));
+  }
+  else if (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE)
+  {
+    ecma_number_t *num_p = int_data->tmp_num_p;
+
+    *num_p = ecma_number_negate (src_val_descr);
+
+    ret_value = set_variable_value (int_data,
+                                    int_data->pos,
+                                    dst_var_idx,
+                                    ecma_make_number_value (num_p));
+  }
   else
   {
     JERRY_ASSERT (val_type == VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP);

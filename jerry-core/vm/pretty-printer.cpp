@@ -253,6 +253,8 @@ pp_op_meta (const vm_instr_t *instrs_p,
         case VM_OP_ASSIGNMENT_VAL_TYPE_STRING: printf ("'%s': STRING;", VAR (3)); break;
         case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER: printf ("%s: NUMBER;", VAR (3)); break;
         case VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE: printf ("-%s: NUMBER;", VAR (3)); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT: printf ("%d: SMALLINT;", opm.op.data.assignment.value_right); break;
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE: printf ("-%d: SMALLINT;", opm.op.data.assignment.value_right); break;
         case VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE: printf ("%s : TYPEOF(%s);", VAR (3), VAR (3)); break;
         case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
         {

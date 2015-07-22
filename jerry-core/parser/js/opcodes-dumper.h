@@ -37,6 +37,7 @@ typedef struct
 
   vm_idx_t uid;
   lit_cpointer_t lit_id;
+  ecma_number_t num;
 } operand;
 
 typedef enum __attr_packed___
@@ -53,7 +54,7 @@ operand empty_operand (void);
 operand null_operand (void);
 operand bool_operand (bool);
 operand string_operand (lit_cpointer_t);
-operand number_operand (lit_cpointer_t);
+operand number_operand (ecma_number_t);
 operand identifier_operand (lit_cpointer_t);
 operand eval_ret_operand (void);
 operand jsp_create_operand_for_in_special_reg (void);
@@ -77,7 +78,7 @@ extern bool dumper_is_eval_literal (operand);
 
 operand dump_boolean_assignment_res (bool);
 operand dump_string_assignment_res (lit_cpointer_t);
-operand dump_number_assignment_res (lit_cpointer_t);
+operand dump_number_assignment_res (operand op);
 operand dump_regexp_assignment_res (lit_cpointer_t);
 operand dump_smallint_assignment_res (vm_idx_t);
 void dump_undefined_assignment (operand);

@@ -299,7 +299,7 @@ parse_property_name (void)
     }
     case TOK_NUMBER:
     {
-      return number_operand (token_data_as_lit_cp ());
+      return number_operand (tok.num);
     }
     case TOK_KEYWORD:
     {
@@ -777,7 +777,7 @@ parse_literal (void)
 {
   switch (tok.type)
   {
-    case TOK_NUMBER: return number_operand (token_data_as_lit_cp ());
+    case TOK_NUMBER: return number_operand (tok.num);
     case TOK_STRING: return string_operand (token_data_as_lit_cp ());
     case TOK_REGEXP: return dump_regexp_assignment_res (token_data_as_lit_cp ());
     case TOK_NULL: return null_operand ();

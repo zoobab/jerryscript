@@ -161,7 +161,11 @@ typedef struct
 {
   locus loc;
   token_type type;
-  uint16_t uid;
+  union
+  {
+    ecma_number_t num;
+    uint16_t uid;
+  };
 } token;
 
 /**

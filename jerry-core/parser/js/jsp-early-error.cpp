@@ -118,6 +118,15 @@ jsp_early_error_add_prop_name (operand op, prop_type pt)
 {
   JERRY_ASSERT (op.type == OPERAND_STRING
                 || op.type == OPERAND_NUMBER);
+
+  if (op.type == OPERAND_NUMBER)
+  {
+    literal_t lit = lit_find_or_create_literal_from_num (op.num);
+
+    op.uid = VM_IDX_REWRITE_LITERAL_UID;
+    op.lit_id = lit_cpointer_t::compress (lit);
+  }
+
   STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.lit_id), pt));
 }
 

@@ -282,6 +282,8 @@ generate_opcode (scopes_tree tree, vm_instr_counter_t instr_pos, lit_id_hash_tab
       switch (om->op.data.assignment.type_value_right)
       {
         case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE:
         {
           change_uid (om, lit_ids, 0x100);
           break;
@@ -419,6 +421,8 @@ count_new_literals_in_opcode (scopes_tree tree, vm_instr_counter_t instr_pos)
       switch (om->op.data.assignment.type_value_right)
       {
         case VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT:
+        case VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE:
         {
           insert_uids_to_lit_id_map (om, 0x100);
           break;

@@ -101,6 +101,9 @@ typedef enum
   VM_OP_ASSIGNMENT_VAL_TYPE_SIMPLE, /**< ecma_simple_value_t */
   VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER, /**< index of number literal */
   VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER_NEGATE, /**< index of number literal with negation */
+  VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT, /**< small integer: from VM_IDX_GENERAL_VALUE_FIRST to VM_IDX_GENERAL_VALUE_LAST */
+  VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE, /**< small integer: from -VM_IDX_GENERAL_VALUE_LAST
+                                              *   to -VM_IDX_GENERAL_VALUE_FIRST */
   VM_OP_ASSIGNMENT_VAL_TYPE_STRING, /**< index of string literal */
   VM_OP_ASSIGNMENT_VAL_TYPE_VARIABLE, /**< index of string literal with variable name */
   VM_OP_ASSIGNMENT_VAL_TYPE_REGEXP /**< index of string literal with regular expression */

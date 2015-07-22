@@ -158,6 +158,7 @@ create_op_meta (vm_instr_t op, lit_cpointer_t lit_id1, lit_cpointer_t lit_id2, l
   op_meta ret;
 
   ret.op = op;
+
   ret.lit_id[0] = lit_id1;
   ret.lit_id[1] = lit_id2;
   ret.lit_id[2] = lit_id3;
@@ -249,10 +250,7 @@ operand_get_number (operand op)
 {
   JERRY_ASSERT (operand_is_number (op));
 
-  literal_t lit = lit_get_literal_by_cp (op.lit_id);
-  JERRY_ASSERT (lit_literal_is_num (lit));
-
-  return lit_charset_literal_get_number (lit);
+  return op.num;
 }
 
 operand
@@ -324,13 +322,14 @@ bool_operand (bool value)
 }
 
 operand
-number_operand (lit_cpointer_t lit_cp)
+number_operand (ecma_number_t num)
 {
   operand ret;
 
   ret.type = OPERAND_NUMBER;
-  ret.uid = VM_IDX_REWRITE_LITERAL_UID;
-  ret.lit_id = lit_cp;
+  ret.uid = VM_IDX_EMPTY;
+  ret.lit_id = NOT_A_LITERAL;
+  ret.num = num;
 
   return ret;
 }
@@ -525,7 +524,43 @@ dump_instruction (vm_op_t opcode,
           {
             JERRY_ASSERT (type_mask & VM_OP_ARG_TYPE_REGISTER);
 
-            op = dump_number_assignment_res (op.lit_id);
+            op = dump_number_assignment_res (op);
+          }
+          else
+          {
+            JERRY_ASSERT (opcode == VM_OP_ASSIGNMENT);
+            JERRY_ASSERT (i == 2);
+            JERRY_ASSERT (instruction_args[1] == VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER);
+
+            if (!ecma_number_is_nan (op.num)
+                && !ecma_number_is_negative (op.num)
+                && op.num >= VM_IDX_GENERAL_VALUE_FIRST
+                && op.num <= VM_IDX_GENERAL_VALUE_LAST
+                && (vm_idx_t) op.num == op.num /* check fraction part */)
+            {
+              instruction_args [1] = VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT;
+
+              op.uid = (vm_idx_t) op.num;
+              op.lit_id = NOT_A_LITERAL;
+            }
+            else if (!ecma_number_is_nan (op.num)
+                     && ecma_number_is_negative (op.num)
+                     && ecma_number_negate (op.num) >= VM_IDX_GENERAL_VALUE_FIRST
+                     && ecma_number_negate (op.num) <= VM_IDX_GENERAL_VALUE_LAST
+                     && (vm_idx_t) ecma_number_negate (op.num) == ecma_number_negate (op.num) /* check fraction part */)
+            {
+              instruction_args [1] = VM_OP_ASSIGNMENT_VAL_TYPE_SMALLINT_NEGATE;
+
+              op.uid = (vm_idx_t) ecma_number_negate (op.num);
+              op.lit_id = NOT_A_LITERAL;
+            }
+            else
+            {
+              literal_t lit = lit_find_or_create_literal_from_num (op.num);
+
+              op.uid = VM_IDX_REWRITE_LITERAL_UID;
+              op.lit_id = lit_cpointer_t::compress (lit);
+            }
           }
 
           instruction_args[i] = op.uid;
@@ -714,9 +749,7 @@ dumper_try_calculate_if_const (vm_op_t opcode,
         ret_num = ecma_op_number_remainder (num_left, num_right);
       }
 
-      literal_t ret_num_lit = lit_find_or_create_literal_from_num (ret_num);
-
-      *out_operand_p = number_operand (lit_cpointer_t::compress (ret_num_lit));
+      *out_operand_p = number_operand (ret_num);
 
       return true;
     }
@@ -808,9 +841,7 @@ dumper_try_calculate_if_const (vm_op_t opcode,
         ret_num = ecma_number_negate (num);
       }
 
-      literal_t ret_num_lit = lit_find_or_create_literal_from_num (ret_num);
-
-      *out_operand_p = number_operand (lit_cpointer_t::compress (ret_num_lit));
+      *out_operand_p = number_operand (ret_num);
 
       return true;
     }
@@ -1129,11 +1160,11 @@ dump_string_assignment_res (lit_cpointer_t lit_id)
 }
 
 operand
-dump_number_assignment_res (lit_cpointer_t lit_id)
+dump_number_assignment_res (operand op)
 {
   return dump_triple_address_res (VM_OP_ASSIGNMENT,
                                   int_const_operand (VM_OP_ASSIGNMENT_VAL_TYPE_NUMBER),
-                                  number_operand (lit_id));
+                                  op);
 }
 
 operand
@@ -1319,18 +1350,17 @@ dump_prop_name_and_value (operand name, operand value)
 {
   operand tmp;
 
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
-
-  if (lit_literal_is_utf8_string (lit))
+  if (name.type == OPERAND_STRING)
   {
-    JERRY_ASSERT (name.type == OPERAND_STRING);
+    literal_t lit = lit_get_literal_by_cp (name.lit_id);
+    JERRY_ASSERT (lit_literal_is_utf8_string (lit));
+
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
     JERRY_ASSERT (name.type == OPERAND_NUMBER);
-    JERRY_ASSERT (lit_literal_is_num (lit));
-    tmp = dump_number_assignment_res (name.lit_id);
+    tmp = dump_number_assignment_res (name);
   }
 
   if (operand_is_constant (value))
@@ -1350,16 +1380,16 @@ dump_prop_getter_decl (operand name, operand func)
 
   operand tmp;
 
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
-
-  if (lit_literal_is_utf8_string (lit))
+  if (name.type == OPERAND_STRING)
   {
+    literal_t lit = lit_get_literal_by_cp (name.lit_id);
+    JERRY_ASSERT (lit_literal_is_utf8_string (lit));
+
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit_literal_is_num (lit));
-    tmp = dump_number_assignment_res (name.lit_id);
+    tmp = dump_number_assignment_res (name);
   }
 
   dump_triple_address (VM_OP_META, int_const_operand (OPCODE_META_TYPE_VARG_PROP_GETTER), tmp, func);
@@ -1374,16 +1404,16 @@ dump_prop_setter_decl (operand name, operand func)
 
   operand tmp;
 
-  literal_t lit = lit_get_literal_by_cp (name.lit_id);
-
-  if (lit_literal_is_utf8_string (lit))
+  if (name.type == OPERAND_STRING)
   {
+    literal_t lit = lit_get_literal_by_cp (name.lit_id);
+    JERRY_ASSERT (lit_literal_is_utf8_string (lit));
+
     tmp = dump_string_assignment_res (name.lit_id);
   }
   else
   {
-    JERRY_ASSERT (lit_literal_is_num (lit));
-    tmp = dump_number_assignment_res (name.lit_id);
+    tmp = dump_number_assignment_res (name);
   }
 
   dump_triple_address (VM_OP_META, int_const_operand (OPCODE_META_TYPE_VARG_PROP_SETTER), tmp, func);

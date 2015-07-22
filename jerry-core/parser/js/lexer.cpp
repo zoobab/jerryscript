@@ -619,13 +619,11 @@ lexer_parse_reserved_word (const lit_utf8_byte_t *str_p, /**< characters buffer 
 static token
 convert_seen_num_to_token (ecma_number_t num)
 {
-  literal_t lit = lit_find_literal_by_num (num);
-  if (lit != NULL)
-  {
-    return create_token_from_lit (TOK_NUMBER, lit);
-  }
+  token num_tok = create_token (TOK_NUMBER, 0);
 
-  return create_token_from_lit (TOK_NUMBER, lit_create_literal_from_num (num));
+  num_tok.num = num;
+
+  return num_tok;
 }
 
 static void
@@ -812,7 +810,7 @@ lexer_parse_identifier_or_keyword (void)
 /**
  * Parse numeric literal (ECMA-262, v5, 7.8.3)
  *
- * @return token of TOK_NUMBER
+ * @return token of TOK_NUMBER type
  */
 static token
 lexer_parse_number (void)
