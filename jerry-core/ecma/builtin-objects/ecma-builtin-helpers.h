@@ -30,6 +30,9 @@ extern ecma_completion_value_t ecma_builtin_helper_object_to_string (const ecma_
 extern ecma_completion_value_t ecma_builtin_helper_get_to_locale_string_at_index (ecma_object_t *obj_p, uint32_t index);
 extern ecma_completion_value_t ecma_builtin_helper_object_get_properties (ecma_object_t *obj,
                                                                           bool only_enumerable_properties);
+extern ecma_completion_value_t ecma_builtin_helper_array_concat_value (ecma_object_t *obj,
+                                                                       uint32_t *length,
+                                                                       ecma_value_t);
 extern uint32_t ecma_builtin_helper_array_index_normalize (ecma_number_t index, uint32_t length);
 extern uint32_t ecma_builtin_helper_string_index_normalize (ecma_number_t index, uint32_t length);
 
@@ -103,6 +106,14 @@ extern ecma_completion_value_t ecma_date_set_internal_property (ecma_value_t thi
                                                                 ecma_number_t day,
                                                                 ecma_number_t time,
                                                                 ecma_date_timezone_t is_utc);
+extern void ecma_date_insert_leading_zeros (ecma_string_t **str_p,
+                                            ecma_number_t num,
+                                            uint32_t length);
+extern void ecma_date_insert_num_with_sep (ecma_string_t **str_p,
+                                           ecma_number_t num,
+                                           lit_magic_string_id_t magic_str_id,
+                                           uint32_t length);
+extern ecma_completion_value_t ecma_date_to_string (ecma_value_t this_arg, ecma_date_timezone_t timezone);
 #endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN */
 
 typedef struct

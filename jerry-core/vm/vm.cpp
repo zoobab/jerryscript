@@ -19,16 +19,15 @@
 #include "ecma-globals.h"
 #include "ecma-helpers.h"
 #include "ecma-lex-env.h"
-#include "ecma-stack.h"
 #include "jrt.h"
-#include "vm.h"
 #include "jrt-libc-includes.h"
 #include "mem-allocator.h"
+#include "vm.h"
 
 /**
  * Top (current) interpreter context
  */
-int_data_t *vm_top_context_p = NULL;
+vm_frame_ctx_t *vm_top_context_p = NULL;
 
 static const opfunc __opfuncs[VM_OP__COUNT] =
 {
@@ -120,7 +119,7 @@ interp_mem_get_stats (mem_heap_stats_t *out_heap_stats_p,
 }
 
 static void
-interp_mem_stats_context_enter (int_data_t *int_data_p,
+interp_mem_stats_context_enter (vm_frame_ctx_t *frame_ctx_p,
                                 vm_instr_counter_t block_position)
 {
   if (likely (!interp_mem_stats_enabled))
@@ -136,13 +135,13 @@ interp_mem_stats_context_enter (int_data_t *int_data_p,
   indent_prefix[indentation] = '|';
   indent_prefix[indentation + 1] = '\0';
 
-  int_data_p->context_peak_allocated_heap_bytes = 0;
-  int_data_p->context_peak_waste_heap_bytes = 0;
-  int_data_p->context_peak_pools_count = 0;
-  int_data_p->context_peak_allocated_pool_chunks = 0;
+  frame_ctx_p->context_peak_allocated_heap_bytes = 0;
+  frame_ctx_p->context_peak_waste_heap_bytes = 0;
+  frame_ctx_p->context_peak_pools_count = 0;
+  frame_ctx_p->context_peak_allocated_pool_chunks = 0;
 
-  interp_mem_get_stats (&int_data_p->heap_stats_context_enter,
-                        &int_data_p->pools_stats_context_enter,
+  interp_mem_get_stats (&frame_ctx_p->heap_stats_context_enter,
+                        &frame_ctx_p->pools_stats_context_enter,
                         false, false);
 
   printf ("\n%s--- Beginning interpretation of a block at position %u ---\n"
@@ -151,14 +150,14 @@ interp_mem_stats_context_enter (int_data_t *int_data_p,
           "%s Pools:                 %5u\n"
           "%s Allocated pool chunks: %5u\n\n",
           indent_prefix, (uint32_t) block_position,
-          indent_prefix, (uint32_t) int_data_p->heap_stats_context_enter.allocated_bytes,
-          indent_prefix, (uint32_t) int_data_p->heap_stats_context_enter.waste_bytes,
-          indent_prefix, (uint32_t) int_data_p->pools_stats_context_enter.pools_count,
-          indent_prefix, (uint32_t) int_data_p->pools_stats_context_enter.allocated_chunks);
+          indent_prefix, (uint32_t) frame_ctx_p->heap_stats_context_enter.allocated_bytes,
+          indent_prefix, (uint32_t) frame_ctx_p->heap_stats_context_enter.waste_bytes,
+          indent_prefix, (uint32_t) frame_ctx_p->pools_stats_context_enter.pools_count,
+          indent_prefix, (uint32_t) frame_ctx_p->pools_stats_context_enter.allocated_chunks);
 }
 
 static void
-interp_mem_stats_context_exit (int_data_t *int_data_p,
+interp_mem_stats_context_exit (vm_frame_ctx_t *frame_ctx_p,
                                vm_instr_counter_t block_position)
 {
   if (likely (!interp_mem_stats_enabled))
@@ -181,46 +180,46 @@ interp_mem_stats_context_exit (int_data_t *int_data_p,
                         &pools_stats_context_exit,
                         false, true);
 
-  int_data_p->context_peak_allocated_heap_bytes -= JERRY_MAX (int_data_p->heap_stats_context_enter.allocated_bytes,
+  frame_ctx_p->context_peak_allocated_heap_bytes -= JERRY_MAX (frame_ctx_p->heap_stats_context_enter.allocated_bytes,
                                                               heap_stats_context_exit.allocated_bytes);
-  int_data_p->context_peak_waste_heap_bytes -= JERRY_MAX (int_data_p->heap_stats_context_enter.waste_bytes,
+  frame_ctx_p->context_peak_waste_heap_bytes -= JERRY_MAX (frame_ctx_p->heap_stats_context_enter.waste_bytes,
                                                           heap_stats_context_exit.waste_bytes);
-  int_data_p->context_peak_pools_count -= JERRY_MAX (int_data_p->pools_stats_context_enter.pools_count,
+  frame_ctx_p->context_peak_pools_count -= JERRY_MAX (frame_ctx_p->pools_stats_context_enter.pools_count,
                                                      pools_stats_context_exit.pools_count);
-  int_data_p->context_peak_allocated_pool_chunks -= JERRY_MAX (int_data_p->pools_stats_context_enter.allocated_chunks,
+  frame_ctx_p->context_peak_allocated_pool_chunks -= JERRY_MAX (frame_ctx_p->pools_stats_context_enter.allocated_chunks,
                                                                pools_stats_context_exit.allocated_chunks);
 
   printf ("%sAllocated heap bytes in the context:  %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
-          (uint32_t) int_data_p->heap_stats_context_enter.allocated_bytes,
+          (uint32_t) frame_ctx_p->heap_stats_context_enter.allocated_bytes,
           (uint32_t) heap_stats_context_exit.allocated_bytes,
-          (uint32_t) (heap_stats_context_exit.allocated_bytes - int_data_p->heap_stats_context_enter.allocated_bytes),
-          (uint32_t) int_data_p->context_peak_allocated_heap_bytes,
+          (uint32_t) (heap_stats_context_exit.allocated_bytes - frame_ctx_p->heap_stats_context_enter.allocated_bytes),
+          (uint32_t) frame_ctx_p->context_peak_allocated_heap_bytes,
           (uint32_t) heap_stats_context_exit.global_peak_allocated_bytes);
 
   printf ("%sWaste heap bytes in the context:      %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
-          (uint32_t) int_data_p->heap_stats_context_enter.waste_bytes,
+          (uint32_t) frame_ctx_p->heap_stats_context_enter.waste_bytes,
           (uint32_t) heap_stats_context_exit.waste_bytes,
-          (uint32_t) (heap_stats_context_exit.waste_bytes - int_data_p->heap_stats_context_enter.waste_bytes),
-          (uint32_t) int_data_p->context_peak_waste_heap_bytes,
+          (uint32_t) (heap_stats_context_exit.waste_bytes - frame_ctx_p->heap_stats_context_enter.waste_bytes),
+          (uint32_t) frame_ctx_p->context_peak_waste_heap_bytes,
           (uint32_t) heap_stats_context_exit.global_peak_waste_bytes);
 
   printf ("%sPools count in the context:           %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
-          (uint32_t) int_data_p->pools_stats_context_enter.pools_count,
+          (uint32_t) frame_ctx_p->pools_stats_context_enter.pools_count,
           (uint32_t) pools_stats_context_exit.pools_count,
-          (uint32_t) (pools_stats_context_exit.pools_count - int_data_p->pools_stats_context_enter.pools_count),
-          (uint32_t) int_data_p->context_peak_pools_count,
+          (uint32_t) (pools_stats_context_exit.pools_count - frame_ctx_p->pools_stats_context_enter.pools_count),
+          (uint32_t) frame_ctx_p->context_peak_pools_count,
           (uint32_t) pools_stats_context_exit.global_peak_pools_count);
 
   printf ("%sAllocated pool chunks in the context: %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
-          (uint32_t) int_data_p->pools_stats_context_enter.allocated_chunks,
+          (uint32_t) frame_ctx_p->pools_stats_context_enter.allocated_chunks,
           (uint32_t) pools_stats_context_exit.allocated_chunks,
           (uint32_t) (pools_stats_context_exit.allocated_chunks -
-                      int_data_p->pools_stats_context_enter.allocated_chunks),
-          (uint32_t) int_data_p->context_peak_allocated_pool_chunks,
+                      frame_ctx_p->pools_stats_context_enter.allocated_chunks),
+          (uint32_t) frame_ctx_p->context_peak_allocated_pool_chunks,
           (uint32_t) pools_stats_context_exit.global_peak_allocated_chunks);
 
   printf ("\n%s--- End of interpretation of a block at position %u ---\n\n",
@@ -259,7 +258,7 @@ interp_mem_stats_opcode_enter (const vm_instr_t *instrs_p,
 }
 
 static void
-interp_mem_stats_opcode_exit (int_data_t *int_data_p,
+interp_mem_stats_opcode_exit (vm_frame_ctx_t *frame_ctx_p,
                               vm_instr_counter_t instr_position,
                               mem_heap_stats_t *heap_stats_before_p,
                               mem_pools_stats_t *pools_stats_before_p)
@@ -286,16 +285,16 @@ interp_mem_stats_opcode_exit (int_data_t *int_data_p,
                         &pools_stats_after,
                         false, true);
 
-  int_data_p->context_peak_allocated_heap_bytes = JERRY_MAX (int_data_p->context_peak_allocated_heap_bytes,
+  frame_ctx_p->context_peak_allocated_heap_bytes = JERRY_MAX (frame_ctx_p->context_peak_allocated_heap_bytes,
                                                              heap_stats_after.allocated_bytes);
-  int_data_p->context_peak_waste_heap_bytes = JERRY_MAX (int_data_p->context_peak_waste_heap_bytes,
+  frame_ctx_p->context_peak_waste_heap_bytes = JERRY_MAX (frame_ctx_p->context_peak_waste_heap_bytes,
                                                          heap_stats_after.waste_bytes);
-  int_data_p->context_peak_pools_count = JERRY_MAX (int_data_p->context_peak_pools_count,
+  frame_ctx_p->context_peak_pools_count = JERRY_MAX (frame_ctx_p->context_peak_pools_count,
                                                     pools_stats_after.pools_count);
-  int_data_p->context_peak_allocated_pool_chunks = JERRY_MAX (int_data_p->context_peak_allocated_pool_chunks,
+  frame_ctx_p->context_peak_allocated_pool_chunks = JERRY_MAX (frame_ctx_p->context_peak_allocated_pool_chunks,
                                                               pools_stats_after.allocated_chunks);
 
-  vm_instr_t instr = vm_get_instr (int_data_p->instrs_p, instr_position);
+  vm_instr_t instr = vm_get_instr (frame_ctx_p->instrs_p, instr_position);
 
   printf ("%s Allocated heap bytes:  %5u -> %5u (%+5d, local %5u, peak %5u)\n",
           indent_prefix,
@@ -444,7 +443,7 @@ vm_run_global (void)
  *         Otherwise - the completion value is discarded and normal empty completion value is returned.
  */
 ecma_completion_value_t
-vm_loop (int_data_t *int_data_p, /**< interpreter context */
+vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
          vm_run_scope_t *run_scope_p) /**< current run scope,
                                        *   or NULL - if there is no active run scope */
 {
@@ -463,28 +462,28 @@ vm_loop (int_data_t *int_data_p, /**< interpreter context */
     do
     {
       JERRY_ASSERT (run_scope_p == NULL
-                    || (run_scope_p->start_oc <= int_data_p->pos
-                        && int_data_p->pos <= run_scope_p->end_oc));
+                    || (run_scope_p->start_oc <= frame_ctx_p->pos
+                        && frame_ctx_p->pos <= run_scope_p->end_oc));
 
-      const vm_instr_t *curr = &int_data_p->instrs_p[int_data_p->pos];
+      const vm_instr_t *curr = &frame_ctx_p->instrs_p[frame_ctx_p->pos];
 
 #ifdef MEM_STATS
-      const vm_instr_counter_t opcode_pos = int_data_p->pos;
+      const vm_instr_counter_t opcode_pos = frame_ctx_p->pos;
 
-      interp_mem_stats_opcode_enter (int_data_p->instrs_p,
+      interp_mem_stats_opcode_enter (frame_ctx_p->instrs_p,
                                      opcode_pos,
                                      &heap_stats_before,
                                      &pools_stats_before);
 #endif /* MEM_STATS */
 
-      completion = __opfuncs[curr->op_idx] (*curr, int_data_p);
+      completion = __opfuncs[curr->op_idx] (*curr, frame_ctx_p);
 
 #ifdef CONFIG_VM_RUN_GC_AFTER_EACH_OPCODE
       ecma_gc_run ();
 #endif /* CONFIG_VM_RUN_GC_AFTER_EACH_OPCODE */
 
 #ifdef MEM_STATS
-      interp_mem_stats_opcode_exit (int_data_p,
+      interp_mem_stats_opcode_exit (frame_ctx_p,
                                     opcode_pos,
                                     &heap_stats_before,
                                     &pools_stats_before);
@@ -508,7 +507,7 @@ vm_loop (int_data_t *int_data_p, /**< interpreter context */
           || (target >= run_scope_p->start_oc /* or target is within the current run scope */
               && target <= run_scope_p->end_oc))
       {
-        int_data_p->pos = target;
+        frame_ctx_p->pos = target;
 
         continue;
       }
@@ -547,39 +546,39 @@ vm_run_from_pos (const vm_instr_t *instrs_p, /**< byte-code array */
 
   MEM_DEFINE_LOCAL_ARRAY (regs, regs_num, ecma_value_t);
 
-  int_data_t int_data;
-  int_data.instrs_p = instrs_p;
-  int_data.pos = (vm_instr_counter_t) (start_pos + 1);
-  int_data.this_binding = this_binding_value;
-  int_data.lex_env_p = lex_env_p;
-  int_data.is_strict = is_strict;
-  int_data.is_eval_code = is_eval_code;
-  int_data.is_call_in_direct_eval_form = false;
-  int_data.min_reg_num = min_reg_num;
-  int_data.max_reg_num = max_reg_num;
-  int_data.tmp_num_p = ecma_alloc_number ();
-  ecma_stack_add_frame (&int_data.stack_frame, regs, regs_num);
+  vm_frame_ctx_t frame_ctx;
+  frame_ctx.instrs_p = instrs_p;
+  frame_ctx.pos = (vm_instr_counter_t) (start_pos + 1);
+  frame_ctx.this_binding = this_binding_value;
+  frame_ctx.lex_env_p = lex_env_p;
+  frame_ctx.is_strict = is_strict;
+  frame_ctx.is_eval_code = is_eval_code;
+  frame_ctx.is_call_in_direct_eval_form = false;
+  frame_ctx.min_reg_num = min_reg_num;
+  frame_ctx.max_reg_num = max_reg_num;
+  frame_ctx.tmp_num_p = ecma_alloc_number ();
+  vm_stack_add_frame (&frame_ctx.stack_frame, regs, regs_num);
 
-  int_data_t *prev_context_p = vm_top_context_p;
-  vm_top_context_p = &int_data;
+  vm_frame_ctx_t *prev_context_p = vm_top_context_p;
+  vm_top_context_p = &frame_ctx;
 
 #ifdef MEM_STATS
-  interp_mem_stats_context_enter (&int_data, start_pos);
+  interp_mem_stats_context_enter (&frame_ctx, start_pos);
 #endif /* MEM_STATS */
 
-  completion = vm_loop (&int_data, NULL);
+  completion = vm_loop (&frame_ctx, NULL);
 
   JERRY_ASSERT (ecma_is_completion_value_throw (completion)
                 || ecma_is_completion_value_return (completion));
 
   vm_top_context_p = prev_context_p;
 
-  ecma_stack_free_frame (&int_data.stack_frame);
+  vm_stack_free_frame (&frame_ctx.stack_frame);
 
-  ecma_dealloc_number (int_data.tmp_num_p);
+  ecma_dealloc_number (frame_ctx.tmp_num_p);
 
 #ifdef MEM_STATS
-  interp_mem_stats_context_exit (&int_data, start_pos);
+  interp_mem_stats_context_exit (&frame_ctx, start_pos);
 #endif /* MEM_STATS */
 
   MEM_FINALIZE_LOCAL_ARRAY (regs);

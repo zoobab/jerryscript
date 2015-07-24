@@ -44,6 +44,7 @@ catch (e)
 }
 
 assert (new Date (NaN).toTimeString () == "Invalid Date");
+assert (Date (Number.POSITIVE_INFINITY).toString () === "Invalid Date");
 assert (new Date ("2015-02-13").toTimeString () == "00:00:00.000");
 assert (new Date ("2015-07-08T11:29:05.023").toTimeString () == "11:29:05.023");
 
@@ -57,3 +58,50 @@ catch (e)
   assert (e instanceof TypeError);
   assert (e.message === "Incompatible type");
 }
+
+assert (new Date (NaN).toISOString () == "Invalid Date");
+assert (new Date ("2015-07-16").toISOString () == "2015-07-16T00:00:00.000Z");
+assert (new Date ("2015-07-16T11:29:05.023").toISOString () == "2015-07-16T11:29:05.023Z");
+
+try
+{
+  Date.prototype.toISOString.call(-1);
+  assert (false);
+}
+catch (e)
+{
+  assert (e instanceof TypeError);
+  assert (e.message === "Incompatible type");
+}
+
+assert (new Date (NaN).toUTCString () == "Invalid Date");
+assert (new Date ("2015-07-16").toUTCString () == "2015-07-16T00:00:00.000Z");
+assert (new Date ("2015-07-16T11:29:05.023").toUTCString () == "2015-07-16T11:29:05.023Z");
+
+try
+{
+  Date.prototype.toUTCString.call(-1);
+  assert (false);
+}
+catch (e)
+{
+  assert (e instanceof TypeError);
+  assert (e.message === "Incompatible type");
+}
+
+assert (new Date (NaN).toJSON () == null);
+assert (new Date ("2015-07-16").toJSON () == "2015-07-16T00:00:00.000Z");
+assert (new Date ("2015-07-16T11:29:05.023").toJSON () == "2015-07-16T11:29:05.023Z");
+
+try
+{
+  Date.prototype.toJSON.call(-1);
+  assert (false);
+}
+catch (e)
+{
+  assert (e instanceof TypeError);
+}
+
+date_time = new Date ("2015-07-08T11:29:05.023").toJSON ();
+assert (new Date (date_time) == "2015-07-08T11:29:05.023");

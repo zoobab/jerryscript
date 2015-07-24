@@ -17,8 +17,8 @@
 #define OPCODES_H
 
 #include "ecma-globals.h"
-#include "ecma-stack.h"
 #include "jrt.h"
+#include "vm-stack.h"
 
 /* Maximum opcodes number in bytecode.  */
 #define MAX_OPCODES (256*256 - 1)
@@ -200,7 +200,7 @@ typedef struct
   vm_idx_t min_reg_num; /**< minimum idx used for register identification */
   vm_idx_t max_reg_num; /**< maximum idx used for register identification */
   ecma_number_t* tmp_num_p; /**< an allocated number (to reduce temporary allocations) */
-  ecma_stack_frame_t stack_frame; /**< ecma-stack frame associated with the context */
+  vm_stack_frame_t stack_frame; /**< ecma-stack frame associated with the context */
 
 #ifdef MEM_STATS
   size_t context_peak_allocated_heap_bytes;
@@ -211,7 +211,7 @@ typedef struct
   mem_heap_stats_t heap_stats_context_enter;
   mem_pools_stats_t pools_stats_context_enter;
 #endif /* MEM_STATS */
-} int_data_t;
+} vm_frame_ctx_t;
 
 /**
  * Description of a run scope
@@ -230,7 +230,7 @@ typedef struct
 } vm_run_scope_t;
 
 vm_instr_counter_t vm_calc_instr_counter_from_idx_idx (const vm_idx_t oc_idx_1, const vm_idx_t oc_idx_2);
-vm_instr_counter_t vm_read_meta_instr_counter (opcode_meta_type expected_type, int_data_t *int_data);
+vm_instr_counter_t vm_read_meta_instr_counter (opcode_meta_type expected_type, vm_frame_ctx_t *frame_ctx_p);
 
 /**
  * Byte-code instruction
@@ -293,17 +293,17 @@ typedef enum
 } vm_op_t;
 
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
-  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, int_data_t*);
+  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, vm_frame_ctx_t*);
 #define VM_OP_1(opcode_name, opcode_name_uppercase, arg1, arg1_type) \
-  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, int_data_t*);
+  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, vm_frame_ctx_t*);
 #define VM_OP_2(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type) \
-  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, int_data_t*);
+  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, vm_frame_ctx_t*);
 #define VM_OP_3(opcode_name, opcode_name_uppercase, arg1, arg1_type, arg2, arg2_type, arg3, arg3_type) \
-  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, int_data_t*);
+  ecma_completion_value_t opfunc_##opcode_name (vm_instr_t, vm_frame_ctx_t*);
 
 #include "vm-opcodes.inc.h"
 
-typedef ecma_completion_value_t (*opfunc) (vm_instr_t, int_data_t *);
+typedef ecma_completion_value_t (*opfunc) (vm_instr_t, vm_frame_ctx_t *);
 
 #define VM_OP_0(opcode_name, opcode_name_uppercase) \
         vm_instr_t getop_##opcode_name (void);

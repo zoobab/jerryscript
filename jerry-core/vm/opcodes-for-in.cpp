@@ -183,27 +183,27 @@ vm_helper_for_in_enumerate_properties_names (ecma_object_t *obj_p) /**< starting
  */
 ecma_completion_value_t
 opfunc_for_in (vm_instr_t opdata, /**< operation data */
-               int_data_t *int_data_p) /**< interpreter context */
+               vm_frame_ctx_t *frame_ctx_p) /**< interpreter context */
 {
   const vm_idx_t expr_idx = opdata.data.for_in.expr;
   const vm_idx_t block_end_oc_idx_1 = opdata.data.for_in.oc_idx_1;
   const vm_idx_t block_end_oc_idx_2 = opdata.data.for_in.oc_idx_2;
   const vm_instr_counter_t for_in_end_oc = (vm_instr_counter_t) (
     vm_calc_instr_counter_from_idx_idx (block_end_oc_idx_1,
-                                        block_end_oc_idx_2) + int_data_p->pos);
+                                        block_end_oc_idx_2) + frame_ctx_p->pos);
 
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
   /* 1., 2. */
   ECMA_TRY_CATCH (expr_value,
-                  get_variable_value (int_data_p,
+                  get_variable_value (frame_ctx_p,
                                       expr_idx,
                                       false),
                   ret_value);
 
-  int_data_p->pos++;
+  frame_ctx_p->pos++;
 
-  vm_instr_t meta_instr = vm_get_instr (int_data_p->instrs_p, for_in_end_oc);
+  vm_instr_t meta_instr = vm_get_instr (frame_ctx_p->instrs_p, for_in_end_oc);
   JERRY_ASSERT (meta_instr.op_idx == VM_OP_META);
   JERRY_ASSERT (meta_instr.data.meta.type == OPCODE_META_TYPE_END_FOR_IN);
 
@@ -225,7 +225,7 @@ opfunc_for_in (vm_instr_t opdata, /**< operation data */
     {
       ecma_collection_iterator_init (&names_iterator, names_p);
 
-      const vm_instr_counter_t for_in_body_begin_oc = int_data_p->pos;
+      const vm_instr_counter_t for_in_body_begin_oc = frame_ctx_p->pos;
       const vm_instr_counter_t for_in_body_end_oc = for_in_end_oc;
 
       while (ecma_collection_iterator_next (&names_iterator))
@@ -236,27 +236,27 @@ opfunc_for_in (vm_instr_t opdata, /**< operation data */
 
         if (ecma_op_object_get_property (obj_p, name_p) != NULL)
         {
-          ecma_completion_value_t completion = set_variable_value (int_data_p,
-                                                                   int_data_p->pos,
+          ecma_completion_value_t completion = set_variable_value (frame_ctx_p,
+                                                                   frame_ctx_p->pos,
                                                                    VM_REG_SPECIAL_FOR_IN_PROPERTY_NAME,
                                                                    name_value);
           JERRY_ASSERT (ecma_is_completion_value_empty (completion));
 
           vm_run_scope_t run_scope_for_in = { for_in_body_begin_oc, for_in_body_end_oc };
 
-          ecma_completion_value_t for_in_body_completion = vm_loop (int_data_p, &run_scope_for_in);
+          ecma_completion_value_t for_in_body_completion = vm_loop (frame_ctx_p, &run_scope_for_in);
           if (ecma_is_completion_value_empty (for_in_body_completion))
           {
-            JERRY_ASSERT (int_data_p->pos == for_in_body_end_oc);
+            JERRY_ASSERT (frame_ctx_p->pos == for_in_body_end_oc);
 
-            int_data_p->pos = for_in_body_begin_oc;
+            frame_ctx_p->pos = for_in_body_begin_oc;
           }
           else
           {
             JERRY_ASSERT (ecma_is_completion_value_throw (for_in_body_completion)
                           || ecma_is_completion_value_return (for_in_body_completion)
                           || ecma_is_completion_value_jump (for_in_body_completion));
-            JERRY_ASSERT (int_data_p->pos <= for_in_body_end_oc);
+            JERRY_ASSERT (frame_ctx_p->pos <= for_in_body_end_oc);
 
             ret_value = for_in_body_completion;
             break;
@@ -270,7 +270,7 @@ opfunc_for_in (vm_instr_t opdata, /**< operation data */
     ECMA_FINALIZE (obj_expr_value);
   }
 
-  int_data_p->pos = (vm_instr_counter_t) (for_in_end_oc + 1u);
+  frame_ctx_p->pos = (vm_instr_counter_t) (for_in_end_oc + 1u);
 
   ECMA_FINALIZE (expr_value);
 
