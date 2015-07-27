@@ -1588,31 +1588,65 @@ parse_logical_or_expression (bool in_allowed)
 {
   operand expr = parse_logical_and_expression (in_allowed), tmp;
   skip_newlines ();
+
+  bool skip_rest = (operand_is_boolean (expr) && operand_get_boolean (expr));
+
   if (token_is (TOK_DOUBLE_OR))
   {
     tmp = dump_variable_assignment_res (expr);
-    start_dumping_logical_or_checks ();
-    dump_logical_or_check_for_rewrite (tmp);
+
+    bool skip_rewrite = skip_rest;
+
+    if (!skip_rest)
+    {
+      start_dumping_logical_or_checks ();
+    }
+
+    while (token_is (TOK_DOUBLE_OR))
+    {
+      skip_newlines ();
+
+      if (!skip_rest)
+      {
+        dump_logical_or_check_for_rewrite (tmp);
+      }
+
+      vm_instr_counter_t oc = serializer_get_current_instruction_counter ();
+
+      expr = parse_logical_and_expression (in_allowed);
+      skip_newlines ();
+
+      if (skip_rest
+          && oc < serializer_get_current_instruction_counter ())
+      {
+        serializer_set_writing_position (oc);
+      }
+      else if (!skip_rest)
+      {
+        dump_variable_assignment (tmp, expr);
+
+        if (operand_is_boolean (expr) && operand_get_boolean (expr))
+        {
+          skip_rest = true;
+        }
+      }
+    }
+
+    lexer_save_token (tok);
+
+    if (!skip_rewrite)
+    {
+      rewrite_logical_or_checks ();
+    }
+
+    return tmp;
   }
   else
   {
     lexer_save_token (tok);
+
     return expr;
   }
-  while (token_is (TOK_DOUBLE_OR))
-  {
-    skip_newlines ();
-    expr = parse_logical_and_expression (in_allowed);
-    dump_variable_assignment (tmp, expr);
-    skip_newlines ();
-    if (token_is (TOK_DOUBLE_OR))
-    {
-      dump_logical_or_check_for_rewrite (tmp);
-    }
-  }
-  lexer_save_token (tok);
-  rewrite_logical_or_checks ();
-  return tmp;
 }
 
 /* conditional_expression
