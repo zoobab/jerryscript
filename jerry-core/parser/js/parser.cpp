@@ -2223,26 +2223,72 @@ parse_if_statement (void)
   assert_keyword (KW_IF);
 
   const operand cond = parse_expression_inside_parens ();
-  dump_conditional_check_for_rewrite (cond);
-
   skip_newlines ();
+
+  bool remove_if_part = false;
+  bool remove_else_part = false;
+
+  if (operand_is_boolean (cond))
+  {
+    if (operand_get_boolean (cond))
+    {
+      remove_else_part = true;
+    }
+    else
+    {
+      remove_if_part = true;
+    }
+  }
+
+  if (!remove_if_part && !remove_else_part)
+  {
+    dump_conditional_check_for_rewrite (cond);
+  }
+
+  const vm_instr_counter_t statement_for_true_oc = serializer_get_current_instruction_counter ();
+
   parse_statement (NULL);
-
   skip_newlines ();
+
+  if (remove_if_part
+      && statement_for_true_oc < serializer_get_current_instruction_counter ())
+  {
+    serializer_set_writing_position (statement_for_true_oc);
+  }
+
   if (is_keyword (KW_ELSE))
   {
-    dump_jump_to_end_for_rewrite ();
-    rewrite_conditional_check ();
-
     skip_newlines ();
+
+    const vm_instr_counter_t statement_for_false_oc = serializer_get_current_instruction_counter ();
+
+    if (!remove_if_part && !remove_else_part)
+    {
+      dump_jump_to_end_for_rewrite ();
+      rewrite_conditional_check ();
+    }
+
     parse_statement (NULL);
 
-    rewrite_jump_to_end ();
+    if (!remove_if_part && !remove_else_part)
+    {
+      rewrite_jump_to_end ();
+    }
+
+    if (remove_else_part
+        && statement_for_false_oc < serializer_get_current_instruction_counter ())
+    {
+      serializer_set_writing_position (statement_for_false_oc);
+    }
   }
   else
   {
     lexer_save_token (tok);
-    rewrite_conditional_check ();
+
+    if (!remove_if_part && !remove_else_part)
+    {
+      rewrite_conditional_check ();
+    }
   }
 }
 

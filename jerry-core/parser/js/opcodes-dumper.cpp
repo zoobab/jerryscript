@@ -208,7 +208,7 @@ operand_is_reference (operand op)
   return (op.type == OPERAND_IDENTIFIER);
 }
 
-static bool
+bool
 operand_is_boolean (operand op)
 {
   JERRY_ASSERT (!operand_is_empty (op));
@@ -237,7 +237,7 @@ operand_is_constant (operand op)
           || op.type == OPERAND_NUMBER);
 }
 
-static bool
+bool
 operand_get_boolean (operand op)
 {
   JERRY_ASSERT (operand_is_boolean (op));

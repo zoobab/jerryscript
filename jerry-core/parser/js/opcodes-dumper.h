@@ -64,6 +64,8 @@ bool operand_is_reference (operand);
 bool operand_is_constant (operand);
 bool operand_is_number (operand);
 ecma_number_t operand_get_number (operand);
+bool operand_is_boolean (operand);
+bool operand_get_boolean (operand);
 
 void dumper_init (void);
 void dumper_free (void);
