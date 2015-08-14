@@ -132,7 +132,7 @@ ecma_op_eval_chars_buffer (const jerry_api_char_t *code_p, /**< code characters 
     }
     else
     {
-      this_binding = ecma_make_object_value (ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL));
+      this_binding = ecma_make_object_value (ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL, true));
       lex_env_p = ecma_get_global_environment ();
     }
 

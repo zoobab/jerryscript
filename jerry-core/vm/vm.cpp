@@ -402,7 +402,7 @@ vm_run_global (void)
     is_strict = true;
   }
 
-  ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
+  ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL, true);
   ecma_object_t *lex_env_p = ecma_get_global_environment ();
 
   ecma_completion_value_t completion = vm_run_from_pos (__program,

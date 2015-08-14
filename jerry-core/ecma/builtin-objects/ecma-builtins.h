@@ -51,5 +51,5 @@ extern bool
 ecma_builtin_is (ecma_object_t *obj_p,
                  ecma_builtin_id_t builtin_id);
 extern ecma_object_t*
-ecma_builtin_get (ecma_builtin_id_t builtin_id);
+ecma_builtin_get (ecma_builtin_id_t builtin_id, bool do_ref_object);
 #endif /* !ECMA_BUILTINS_H */

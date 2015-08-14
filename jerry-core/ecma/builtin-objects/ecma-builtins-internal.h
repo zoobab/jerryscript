@@ -89,7 +89,7 @@ ecma_builtin_ ## lowercase_name ## _sort_property_names (void);
   { \
     jerry_ref_unused_variables (0, __VA_ARGS__); \
   } \
-  ecma_object_t *cp_error_p = ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR); \
+  ecma_object_t *cp_error_p = ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR, true); \
   return ecma_make_throw_obj_completion_value (cp_error_p); \
 }
 #endif /* CONFIG_ECMA_COMPACT_PROFILE */

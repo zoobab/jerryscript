@@ -230,7 +230,7 @@ TRY_TO_INSTANTIATE_PROPERTY_ROUTINE_NAME (BUILTIN_UNDERSCORED_ID) (ecma_object_t
 #define CP_UNIMPLEMENTED_VALUE(name, value, prop_writable, prop_enumerable, prop_configurable) case name: \
     { \
       /* The object throws CompactProfileError upon invocation */ \
-      ecma_object_t *get_set_p = ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR); \
+      ecma_object_t *get_set_p = ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR, true); \
       ecma_property_t *compact_profile_thrower_property_p = ecma_create_named_accessor_property (obj_p, \
                                                                                                  prop_name_p, \
                                                                                                  get_set_p, \

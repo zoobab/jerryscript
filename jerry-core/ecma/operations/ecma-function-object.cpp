@@ -327,7 +327,7 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
   // 19.
   if (is_strict)
   {
-    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER);
+    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER, true);
 
     prop_desc = ecma_make_empty_property_descriptor ();
     {
@@ -732,7 +732,7 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                || ecma_is_value_null (this_arg_value))
       {
         // 2.
-        this_binding = ecma_make_object_value (ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL));
+        this_binding = ecma_make_object_value (ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL, true));
       }
       else
       {
@@ -1043,7 +1043,7 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
   else if (ecma_is_lexical_environment_global (lex_env_p))
   {
     // e.
-    ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
+    ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL, true);
 
     ecma_property_t *existing_prop_p = ecma_op_object_get_property (glob_obj_p, function_name_p);
 

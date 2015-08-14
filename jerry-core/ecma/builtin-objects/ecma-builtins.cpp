@@ -72,7 +72,8 @@ ecma_builtin_is (ecma_object_t *obj_p, /**< pointer to an object */
  * @return pointer to the object's instance
  */
 ecma_object_t*
-ecma_builtin_get (ecma_builtin_id_t builtin_id) /**< id of built-in to check on */
+ecma_builtin_get (ecma_builtin_id_t builtin_id, /**< id of built-in to check on */
+                  bool do_ref_object) /**< increase reference counter of the object or not */
 {
   JERRY_ASSERT (builtin_id < ECMA_BUILTIN_ID__COUNT);
 
@@ -81,7 +82,10 @@ ecma_builtin_get (ecma_builtin_id_t builtin_id) /**< id of built-in to check on 
     ecma_instantiate_builtin (builtin_id);
   }
 
-  ecma_ref_object (ecma_builtin_objects[builtin_id]);
+  if (do_ref_object)
+  {
+    ecma_ref_object (ecma_builtin_objects[builtin_id]);
+  }
 
   return ecma_builtin_objects[builtin_id];
 } /* ecma_builtin_get */

@@ -86,13 +86,10 @@ ecma_new_standard_error (ecma_standard_error_t error_type) /**< native error typ
     }
   }
 
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (prototype_id);
-
   ecma_object_t *new_error_obj_p = ecma_create_object (true,
                                                        ECMA_OBJECT_TYPE_GENERAL);
-  ecma_set_object_prototype (new_error_obj_p, prototype_obj_p);
-
-  ecma_deref_object (prototype_obj_p);
+  ecma_set_object_prototype (new_error_obj_p,
+                             ecma_builtin_get (prototype_id, false));
 
   ecma_property_t *class_prop_p = ecma_create_internal_property (new_error_obj_p,
                                                                  ECMA_INTERNAL_PROPERTY_CLASS);
@@ -102,7 +99,7 @@ ecma_new_standard_error (ecma_standard_error_t error_type) /**< native error typ
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
   (void) error_type;
 
-  return ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR);
+  return ecma_builtin_get (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR, true);
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
 } /* ecma_new_standard_error */
 

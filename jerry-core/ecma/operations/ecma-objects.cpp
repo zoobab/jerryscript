@@ -543,16 +543,16 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
       {
         JERRY_ASSERT (ecma_builtin_is (obj_p, ECMA_BUILTIN_ID_ARRAY_PROTOTYPE));
 
-        return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+        return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
       }
       else
       {
-        return ecma_builtin_get (ECMA_BUILTIN_ID_ARRAY_PROTOTYPE);
+        return ecma_builtin_get (ECMA_BUILTIN_ID_ARRAY_PROTOTYPE, true);
       }
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN */
       JERRY_ASSERT (!ecma_get_object_is_builtin (obj_p));
 
-      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN */
     }
     case ECMA_OBJECT_TYPE_STRING:
@@ -560,16 +560,16 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
       JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
 
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN
-      return ecma_builtin_get (ECMA_BUILTIN_ID_STRING_PROTOTYPE);
+      return ecma_builtin_get (ECMA_BUILTIN_ID_STRING_PROTOTYPE, true);
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
-      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
     }
     case ECMA_OBJECT_TYPE_ARGUMENTS:
     {
       JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
 
-      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
     }
     case ECMA_OBJECT_TYPE_FUNCTION:
     {
@@ -577,7 +577,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
 
       if (!ecma_get_object_is_builtin (obj_p))
       {
-        return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+        return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE, true);
       }
       else
       {
@@ -587,7 +587,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
 
         if (builtin_id == ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE)
         {
-          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
         }
         else
         {
@@ -624,7 +624,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
 
           JERRY_ASSERT (is_correct_id);
 
-          return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+          return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE, true);
         }
       }
     }
@@ -634,7 +634,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
     {
       JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
 
-      return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+      return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE, true);
     }
     default:
     {
@@ -653,7 +653,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
           }
           else
           {
-            return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+            return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
           }
         }
         else
@@ -669,35 +669,35 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
 
             if (class_name == LIT_MAGIC_STRING_ARGUMENTS_UL)
             {
-              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
             }
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN
             else if (class_name == LIT_MAGIC_STRING_DATE_UL)
             {
-              return ecma_builtin_get (ECMA_BUILTIN_ID_DATE_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_DATE_PROTOTYPE, true);
             }
 #endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN*/
             else if (class_name == LIT_MAGIC_STRING_BOOLEAN_UL)
             {
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN
-              return ecma_builtin_get (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE, true);
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
-              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
             }
             else if (class_name == LIT_MAGIC_STRING_NUMBER_UL)
             {
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN
-              return ecma_builtin_get (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE, true);
 #else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
-              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
             }
             else
             {
               JERRY_ASSERT (class_name == LIT_MAGIC_STRING_REGEXP_UL);
 
-              return ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE);
+              return ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE, true);
             }
           }
         }
@@ -722,7 +722,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
                  || builtin_id == ECMA_BUILTIN_ID_TYPE_ERROR_PROTOTYPE
                  || builtin_id == ECMA_BUILTIN_ID_URI_ERROR_PROTOTYPE)
         {
-          return ecma_builtin_get (ECMA_BUILTIN_ID_ERROR_PROTOTYPE);
+          return ecma_builtin_get (ECMA_BUILTIN_ID_ERROR_PROTOTYPE, true);
         }
 #endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
         else
@@ -751,7 +751,7 @@ ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
 
           JERRY_ASSERT (is_correct_id);
 
-          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, true);
         }
       }
     }

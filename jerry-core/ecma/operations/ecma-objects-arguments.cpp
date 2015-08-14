@@ -266,7 +266,7 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
   }
   else
   {
-    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER);
+    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER, true);
 
     // 14.
     prop_desc = ecma_make_empty_property_descriptor ();

@@ -325,7 +325,7 @@ ecma_builtin_function_prototype_object_bind (ecma_value_t this_arg, /**< this ar
     ecma_dealloc_number (length_p);
 
     /* 19-21. */
-    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER);
+    ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER, true);
 
     ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
     {

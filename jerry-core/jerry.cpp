@@ -1239,7 +1239,7 @@ jerry_api_get_global (void)
 {
   jerry_assert_api_available ();
 
-  return ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
+  return ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL, true);
 } /* jerry_api_get_global */
 
 /**
