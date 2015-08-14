@@ -603,47 +603,49 @@ opfunc_func_expr_n (vm_instr_t instr, /**< instruction */
     do_instantiate_arguments_object = false;
   }
 
-  ecma_object_t *scope_p;
-  ecma_string_t *function_name_string_p = NULL;
+  ecma_object_t *func_obj_p;
+
   if (is_named_func_expr)
   {
-    scope_p = ecma_create_decl_lex_env (frame_ctx_p->lex_env_p);
+    ecma_object_t *scope_p = ecma_create_decl_lex_env (frame_ctx_p->lex_env_p);
 
     lit_cpointer_t lit_cp = serializer_get_literal_cp_by_uid (function_name_lit_idx,
                                                               frame_ctx_p->instrs_p,
                                                               lit_oc);
     JERRY_ASSERT (lit_cp.packed_value != MEM_CP_NULL);
 
-    function_name_string_p = ecma_new_ecma_string_from_lit_cp (lit_cp);
+    ecma_string_t *function_name_string_p = ecma_new_ecma_string_from_lit_cp (lit_cp);
     ecma_op_create_immutable_binding (scope_p, function_name_string_p);
+
+    func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
+                                                 scope_p,
+                                                 is_strict,
+                                                 do_instantiate_arguments_object,
+                                                 frame_ctx_p->instrs_p,
+                                                 frame_ctx_p->pos);
+
+    ecma_op_initialize_immutable_binding (scope_p,
+                                          function_name_string_p,
+                                          ecma_make_object_value (func_obj_p));
+    ecma_deref_ecma_string (function_name_string_p);
+
+    ecma_deref_object (scope_p);
   }
   else
   {
-    scope_p = frame_ctx_p->lex_env_p;
-    ecma_ref_object (scope_p);
+    func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
+                                                 frame_ctx_p->lex_env_p,
+                                                 is_strict,
+                                                 do_instantiate_arguments_object,
+                                                 frame_ctx_p->instrs_p,
+                                                 frame_ctx_p->pos);
   }
-
-  ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
-                                                              scope_p,
-                                                              is_strict,
-                                                              do_instantiate_arguments_object,
-                                                              frame_ctx_p->instrs_p,
-                                                              frame_ctx_p->pos);
 
   ret_value = set_variable_value (frame_ctx_p, lit_oc,
                                   dst_var_idx,
                                   ecma_make_object_value (func_obj_p));
 
-  if (is_named_func_expr)
-  {
-    ecma_op_initialize_immutable_binding (scope_p,
-                                          function_name_string_p,
-                                          ecma_make_object_value (func_obj_p));
-    ecma_deref_ecma_string (function_name_string_p);
-  }
-
   ecma_deref_object (func_obj_p);
-  ecma_deref_object (scope_p);
 
   frame_ctx_p->pos = function_code_end_oc;
 
