@@ -242,15 +242,6 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
   JERRY_ASSERT (object_p != NULL);
   JERRY_ASSERT (ecma_gc_is_object_visited (object_p));
 
-  if (ecma_is_lexical_environment (object_p))
-  {
-    ecma_object_t *lex_env_p = ecma_get_lex_env_outer_reference (object_p);
-    if (lex_env_p != NULL)
-    {
-      ecma_gc_set_object_visited (lex_env_p, true);
-    }
-  }
-
   for (ecma_property_t *property_p = ecma_get_property_list (object_p), *next_property_p;
        property_p != NULL;
        property_p = next_property_p)
@@ -337,9 +328,8 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
           }
 
           case ECMA_INTERNAL_PROPERTY_PROTOTYPE: /* an object */
+          case ECMA_INTERNAL_PROPERTY_OUTER_SCOPE: /* a lexical environment */
           {
-            JERRY_ASSERT (ecma_get_object_is_prototype_explicitly_set (object_p));
-
             ecma_object_t *obj_p = ECMA_GET_POINTER (ecma_object_t, property_value);
 
             if (obj_p != NULL)

@@ -217,6 +217,7 @@ typedef enum
   ECMA_INTERNAL_PROPERTY_PROTOTYPE, /**< [[Prototype]] */
   ECMA_INTERNAL_PROPERTY_EXTENSIBLE, /**< [[Extensible]] */
   ECMA_INTERNAL_PROPERTY_SCOPE, /**< [[Scope]] */
+  ECMA_INTERNAL_PROPERTY_OUTER_SCOPE, /* reference to a lexical environment's outer scope */
   ECMA_INTERNAL_PROPERTY_BOUND_OBJECT, /**< an object-bound lexical environment's bound object */
   ECMA_INTERNAL_PROPERTY_PARAMETERS_MAP, /**< [[ParametersMap]] */
   ECMA_INTERNAL_PROPERTY_CODE_BYTECODE, /**< first part of [[Code]] - compressed pointer to bytecode array */
@@ -506,17 +507,10 @@ typedef struct ecma_object_t
 #define ECMA_OBJECT_LEX_ENV_TYPE_WIDTH (2)
 
 /**
- * Compressed pointer to outer lexical environment
- */
-#define ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_POS (ECMA_OBJECT_LEX_ENV_TYPE_POS + \
-                                                    ECMA_OBJECT_LEX_ENV_TYPE_WIDTH)
-#define ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH (ECMA_POINTER_FIELD_WIDTH)
-
-/**
  * 'provideThis' property of object-bound lexical environments
  */
-#define ECMA_OBJECT_LEX_ENV_PROVIDE_THIS_POS (ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_POS + \
-                                              ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH)
+#define ECMA_OBJECT_LEX_ENV_PROVIDE_THIS_POS (ECMA_OBJECT_LEX_ENV_TYPE_POS + \
+                                              ECMA_OBJECT_LEX_ENV_TYPE_WIDTH)
 #define ECMA_OBJECT_LEX_ENV_PROVIDE_THIS_WIDTH (1)
 
 /**

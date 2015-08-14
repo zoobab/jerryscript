@@ -102,12 +102,9 @@ ecma_create_decl_lex_env (ecma_object_t *outer_lexical_environment_p) /**< outer
                                                                   ECMA_OBJECT_LEX_ENV_TYPE_POS,
                                                                   ECMA_OBJECT_LEX_ENV_TYPE_WIDTH);
 
-  uint64_t outer_reference_cp;
-  ECMA_SET_POINTER (outer_reference_cp, outer_lexical_environment_p);
-  new_lexical_environment_p->container = jrt_set_bit_field_value (new_lexical_environment_p->container,
-                                                                  outer_reference_cp,
-                                                                  ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_POS,
-                                                                  ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH);
+  ecma_property_t *outer_scope_prop_p = ecma_create_internal_property (new_lexical_environment_p,
+                                                                       ECMA_INTERNAL_PROPERTY_OUTER_SCOPE);
+  ECMA_SET_POINTER (outer_scope_prop_p->u.internal_property.value, outer_lexical_environment_p);
 
   /*
    * Declarative lexical environments do not really have the flag,
@@ -162,12 +159,9 @@ ecma_create_object_lex_env (ecma_object_t *outer_lexical_environment_p, /**< out
                                                                   ECMA_OBJECT_LEX_ENV_TYPE_POS,
                                                                   ECMA_OBJECT_LEX_ENV_TYPE_WIDTH);
 
-  uint64_t outer_reference_cp;
-  ECMA_SET_POINTER (outer_reference_cp, outer_lexical_environment_p);
-  new_lexical_environment_p->container = jrt_set_bit_field_value (new_lexical_environment_p->container,
-                                                                  outer_reference_cp,
-                                                                  ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_POS,
-                                                                  ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH);
+  ecma_property_t *outer_scope_prop_p = ecma_create_internal_property (new_lexical_environment_p,
+                                                                       ECMA_INTERNAL_PROPERTY_OUTER_SCOPE);
+  ECMA_SET_POINTER (outer_scope_prop_p->u.internal_property.value, outer_lexical_environment_p);
 
   new_lexical_environment_p->container = jrt_set_bit_field_value (new_lexical_environment_p->container,
                                                                   provide_this,
@@ -383,17 +377,14 @@ ecma_get_lex_env_type (const ecma_object_t *object_p) /**< lexical environment *
  * Get outer reference of lexical environment.
  */
 ecma_object_t* __attr_pure___
-ecma_get_lex_env_outer_reference (const ecma_object_t *object_p) /**< lexical environment */
+ecma_get_lex_env_outer_reference (ecma_object_t *lex_env_p) /**< lexical environment */
 {
-  JERRY_ASSERT (object_p != NULL);
-  JERRY_ASSERT (ecma_is_lexical_environment (object_p));
+  JERRY_ASSERT (lex_env_p != NULL);
+  JERRY_ASSERT (ecma_is_lexical_environment (lex_env_p));
 
-  JERRY_ASSERT (sizeof (uintptr_t) * JERRY_BITSINBYTE >= ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH);
-  uintptr_t outer_reference_cp = (uintptr_t) jrt_extract_bit_field (object_p->container,
-                                                                    ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_POS,
-                                                                    ECMA_OBJECT_LEX_ENV_OUTER_REFERENCE_CP_WIDTH);
+  ecma_property_t *outer_scope_prop_p = ecma_get_internal_property (lex_env_p, ECMA_INTERNAL_PROPERTY_OUTER_SCOPE);
   return ECMA_GET_POINTER (ecma_object_t,
-                           outer_reference_cp);
+                           outer_scope_prop_p->u.internal_property.value);
 } /* ecma_get_lex_env_outer_reference */
 
 /**
@@ -830,6 +821,7 @@ ecma_free_internal_property (ecma_property_t *property_p) /**< the property */
 
     case ECMA_INTERNAL_PROPERTY_PRIMITIVE_BOOLEAN_VALUE: /* a simple boolean value */
     case ECMA_INTERNAL_PROPERTY_SCOPE: /* a lexical environment */
+    case ECMA_INTERNAL_PROPERTY_OUTER_SCOPE: /* a lexical environment */
     case ECMA_INTERNAL_PROPERTY_BOUND_OBJECT: /* an object */
     case ECMA_INTERNAL_PROPERTY_PARAMETERS_MAP: /* an object */
     case ECMA_INTERNAL_PROPERTY_PROTOTYPE: /* the property's value is located in ecma_object_t */
