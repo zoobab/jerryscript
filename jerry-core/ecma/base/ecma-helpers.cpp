@@ -37,8 +37,7 @@
  * @return pointer to the object's descriptor
  */
 ecma_object_t*
-ecma_create_object (ecma_object_t *prototype_object_p, /**< pointer to prototybe of the object (or NULL) */
-                    bool is_extensible, /**< value of extensible attribute */
+ecma_create_object (bool is_extensible, /**< value of extensible attribute */
                     ecma_object_type_t type) /**< object type */
 {
   ecma_object_t *object_p = ecma_alloc_object ();
@@ -61,14 +60,10 @@ ecma_create_object (ecma_object_t *prototype_object_p, /**< pointer to prototybe
                                                  type,
                                                  ECMA_OBJECT_OBJ_TYPE_POS,
                                                  ECMA_OBJECT_OBJ_TYPE_WIDTH);
-
-  uint64_t prototype_object_cp;
-  ECMA_SET_POINTER (prototype_object_cp, prototype_object_p);
-
   object_p->container = jrt_set_bit_field_value (object_p->container,
-                                                 prototype_object_cp,
-                                                 ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_POS,
-                                                 ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_WIDTH);
+                                                 false,
+                                                 ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_POS,
+                                                 ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_WIDTH);
 
   ecma_set_object_is_builtin (object_p, false);
 
@@ -253,21 +248,61 @@ ecma_set_object_type (ecma_object_t *object_p, /**< object */
 } /* ecma_set_object_type */
 
 /**
- * Get object's prototype.
+ * Check whether the object has prototype object explicitly set
+ * through ECMA_INTERNAL_PROPERTY_PROTOTYPE internal property.
+ *
+ * @return true / false
  */
-ecma_object_t* __attr_pure___
-ecma_get_object_prototype (const ecma_object_t *object_p) /**< object */
+bool __attr_pure___
+ecma_get_object_is_prototype_explicitly_set (ecma_object_t *object_p) /**< object */
 {
   JERRY_ASSERT (object_p != NULL);
   JERRY_ASSERT (!ecma_is_lexical_environment (object_p));
 
-  JERRY_ASSERT (sizeof (uintptr_t) * JERRY_BITSINBYTE >= ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_WIDTH);
-  uintptr_t prototype_object_cp = (uintptr_t) jrt_extract_bit_field (object_p->container,
-                                                                     ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_POS,
-                                                                     ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_WIDTH);
-  return ECMA_GET_POINTER (ecma_object_t,
-                           prototype_object_cp);
-} /* ecma_get_object_prototype */
+  uint64_t flag_value = jrt_extract_bit_field (object_p->container,
+                                               ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_POS,
+                                               ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_WIDTH);
+
+  bool is_prototype_explicitly_set = (bool) (flag_value != 0);
+
+#ifndef JERRY_NDEBUG
+  ecma_property_t *prop_p = ecma_find_internal_property (object_p, ECMA_INTERNAL_PROPERTY_PROTOTYPE);
+
+  JERRY_ASSERT ((is_prototype_explicitly_set && (prop_p != NULL))
+                || (!is_prototype_explicitly_set && (prop_p == NULL)));
+#endif /* !JERRY_NDEBUG */
+
+  return is_prototype_explicitly_set;
+} /* ecma_get_object_is_prototype_explicitly_set */
+
+/**
+ * Set prototype for the object
+ *
+ * Note:
+ *      The object's type should be ECMA_OBJECT_TYPE_GENERAL,
+ *      and its class should be either "Object" or "Error".
+ */
+void
+ecma_set_object_prototype (ecma_object_t *object_p, /**< object */
+                           const ecma_object_t *prototype_obj_p) /**< prototype object */
+{
+  JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (object_p));
+  JERRY_ASSERT (ecma_get_object_type (object_p) == ECMA_OBJECT_TYPE_GENERAL);
+
+  ecma_property_t *prototype_prop_p = ecma_create_internal_property (object_p,
+                                                                     ECMA_INTERNAL_PROPERTY_PROTOTYPE);
+  ECMA_SET_POINTER (prototype_prop_p->u.internal_property.value, prototype_obj_p);
+
+  const uint32_t offset = ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_POS;
+  const uint32_t width = ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_WIDTH;
+
+  object_p->container = jrt_set_bit_field_value (object_p->container,
+                                                 true,
+                                                 offset,
+                                                 width);
+
+  JERRY_ASSERT (ecma_get_object_is_prototype_explicitly_set (object_p));
+} /* ecma_set_object_prototype */
 
 /**
  * Check if the object is a built-in object
@@ -456,8 +491,7 @@ ecma_find_internal_property (ecma_object_t *object_p, /**< object descriptor */
 {
   JERRY_ASSERT (object_p != NULL);
 
-  JERRY_ASSERT (property_id != ECMA_INTERNAL_PROPERTY_PROTOTYPE
-                && property_id != ECMA_INTERNAL_PROPERTY_EXTENSIBLE);
+  JERRY_ASSERT (property_id != ECMA_INTERNAL_PROPERTY_EXTENSIBLE);
 
   for (ecma_property_t *property_p = ecma_get_property_list (object_p);
        property_p != NULL;

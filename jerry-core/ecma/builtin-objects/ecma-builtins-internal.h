@@ -57,7 +57,6 @@ ecma_builtin_bin_search_for_magic_string_id_in_array (const lit_magic_string_id_
 
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \

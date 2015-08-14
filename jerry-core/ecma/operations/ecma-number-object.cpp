@@ -50,16 +50,16 @@ ecma_op_create_number_object (ecma_value_t arg) /**< argument passed to the Numb
 
   ecma_number_t *prim_value_p = ecma_get_number_from_completion_value (conv_to_num_completion);
 
-#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE);
-#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
-#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
-
-  ecma_object_t *obj_p = ecma_create_object (prototype_obj_p,
-                                             true,
+  ecma_object_t *obj_p = ecma_create_object (true,
                                              ECMA_OBJECT_TYPE_GENERAL);
-  ecma_deref_object (prototype_obj_p);
+
+  /*
+   * [[Prototype]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_GENERAL type
+   * with LIT_MAGIC_STRING_NUMBER_UL [[Class]] property value.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   */
 
   ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CLASS);
   class_prop_p->u.internal_property.value = LIT_MAGIC_STRING_NUMBER_UL;

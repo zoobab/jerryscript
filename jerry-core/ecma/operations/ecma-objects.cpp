@@ -16,6 +16,7 @@
 #include "ecma-array-object.h"
 #include "ecma-builtins.h"
 #include "ecma-exceptions.h"
+#include "ecma-gc.h"
 #include "ecma-globals.h"
 #include "ecma-function-object.h"
 #include "ecma-lcache.h"
@@ -501,17 +502,275 @@ ecma_op_object_is_prototype_of (ecma_object_t *base_p, /** < base object */
 {
   do
   {
-    target_p = ecma_get_object_prototype (target_p);
+    target_p = ecma_object_get_prototype (target_p);
+
     if (target_p == NULL)
     {
       return false;
     }
-    else if (target_p == base_p)
+    else
     {
-      return true;
+      bool is_equal = (target_p == base_p);
+
+      ecma_deref_object (target_p);
+
+      if (is_equal)
+      {
+        return true;
+      }
     }
   } while (true);
 } /* ecma_op_object_is_prototype_of */
+
+/**
+ * Get [[Prototype]] of specified object
+ *
+ * @return prototype object
+ */
+ecma_object_t *
+ecma_object_get_prototype (ecma_object_t *obj_p) /**< object */
+{
+  ecma_object_type_t type = ecma_get_object_type (obj_p);
+
+  switch (type)
+  {
+    case ECMA_OBJECT_TYPE_ARRAY:
+    {
+      JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN
+      if (ecma_get_object_is_builtin (obj_p))
+      {
+        JERRY_ASSERT (ecma_builtin_is (obj_p, ECMA_BUILTIN_ID_ARRAY_PROTOTYPE));
+
+        return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+      }
+      else
+      {
+        return ecma_builtin_get (ECMA_BUILTIN_ID_ARRAY_PROTOTYPE);
+      }
+#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN */
+      JERRY_ASSERT (!ecma_get_object_is_builtin (obj_p));
+
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN */
+    }
+    case ECMA_OBJECT_TYPE_STRING:
+    {
+      JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN
+      return ecma_builtin_get (ECMA_BUILTIN_ID_STRING_PROTOTYPE);
+#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
+    }
+    case ECMA_OBJECT_TYPE_ARGUMENTS:
+    {
+      JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+      return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+    }
+    case ECMA_OBJECT_TYPE_FUNCTION:
+    {
+      JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+      if (!ecma_get_object_is_builtin (obj_p))
+      {
+        return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+      }
+      else
+      {
+        ecma_property_t *built_in_id_prop_p = ecma_get_internal_property (obj_p,
+                                                                          ECMA_INTERNAL_PROPERTY_BUILT_IN_ID);
+        ecma_builtin_id_t builtin_id = (ecma_builtin_id_t) built_in_id_prop_p->u.internal_property.value;
+
+        if (builtin_id == ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE)
+        {
+          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+        }
+        else
+        {
+          bool is_correct_id = (builtin_id == ECMA_BUILTIN_ID_OBJECT
+                                || builtin_id == ECMA_BUILTIN_ID_FUNCTION
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_ARRAY
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ARRAY_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_STRING
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_BOOLEAN
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_NUMBER
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS
+                                || builtin_id == ECMA_BUILTIN_ID_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_EVAL_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_RANGE_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_REFERENCE_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_SYNTAX_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_TYPE_ERROR
+                                || builtin_id == ECMA_BUILTIN_ID_URI_ERROR
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_DATE
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
+                                || builtin_id == ECMA_BUILTIN_ID_REGEXP
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+                                || builtin_id == ECMA_BUILTIN_ID_TYPE_ERROR_THROWER);
+
+          JERRY_ASSERT (is_correct_id);
+
+          return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+        }
+      }
+    }
+    case ECMA_OBJECT_TYPE_BOUND_FUNCTION:
+    case ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION:
+    case ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION:
+    {
+      JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+      return ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+    }
+    default:
+    {
+      JERRY_ASSERT (type == ECMA_OBJECT_TYPE_GENERAL);
+
+      if (!ecma_get_object_is_builtin (obj_p))
+      {
+        lit_magic_string_id_t class_name = ecma_object_get_class_name (obj_p);
+
+        if (class_name == LIT_MAGIC_STRING_OBJECT_UL)
+        {
+          if (ecma_get_object_is_prototype_explicitly_set (obj_p))
+          {
+            /* the case is handled at end of the function */
+            break;
+          }
+          else
+          {
+            return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+          }
+        }
+        else
+        {
+          if (class_name == LIT_MAGIC_STRING_ERROR_UL)
+          {
+            /* the case is handled at end of the function */
+            break;
+          }
+          else
+          {
+            JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+            if (class_name == LIT_MAGIC_STRING_ARGUMENTS_UL)
+            {
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+            }
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN
+            else if (class_name == LIT_MAGIC_STRING_DATE_UL)
+            {
+              return ecma_builtin_get (ECMA_BUILTIN_ID_DATE_PROTOTYPE);
+            }
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN*/
+            else if (class_name == LIT_MAGIC_STRING_BOOLEAN_UL)
+            {
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN
+              return ecma_builtin_get (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE);
+#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
+            }
+            else if (class_name == LIT_MAGIC_STRING_NUMBER_UL)
+            {
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN
+              return ecma_builtin_get (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE);
+#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
+              return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
+            }
+            else
+            {
+              JERRY_ASSERT (class_name == LIT_MAGIC_STRING_REGEXP_UL);
+
+              return ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE);
+            }
+          }
+        }
+      }
+      else
+      {
+        JERRY_ASSERT (!ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+        ecma_property_t *built_in_id_prop_p = ecma_get_internal_property (obj_p,
+                                                                          ECMA_INTERNAL_PROPERTY_BUILT_IN_ID);
+        ecma_builtin_id_t builtin_id = (ecma_builtin_id_t) built_in_id_prop_p->u.internal_property.value;
+
+        if (builtin_id == ECMA_BUILTIN_ID_OBJECT_PROTOTYPE)
+        {
+          return NULL;
+        }
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS
+        else if (builtin_id == ECMA_BUILTIN_ID_EVAL_ERROR_PROTOTYPE
+                 || builtin_id == ECMA_BUILTIN_ID_RANGE_ERROR_PROTOTYPE
+                 || builtin_id == ECMA_BUILTIN_ID_REFERENCE_ERROR_PROTOTYPE
+                 || builtin_id == ECMA_BUILTIN_ID_SYNTAX_ERROR_PROTOTYPE
+                 || builtin_id == ECMA_BUILTIN_ID_TYPE_ERROR_PROTOTYPE
+                 || builtin_id == ECMA_BUILTIN_ID_URI_ERROR_PROTOTYPE)
+        {
+          return ecma_builtin_get (ECMA_BUILTIN_ID_ERROR_PROTOTYPE);
+        }
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
+        else
+        {
+          bool is_correct_id =  (builtin_id == ECMA_BUILTIN_ID_GLOBAL
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN
+                                 || builtin_id == ECMA_BUILTIN_ID_STRING_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN
+                                 || builtin_id == ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN
+                                 || builtin_id == ECMA_BUILTIN_ID_NUMBER_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_NUMBER_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN
+                                 || builtin_id == ECMA_BUILTIN_ID_DATE_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_DATE_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
+                                 || builtin_id == ECMA_BUILTIN_ID_REGEXP_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS
+                                 || builtin_id == ECMA_BUILTIN_ID_ERROR_PROTOTYPE
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_ERROR_BUILTINS */
+                                 || builtin_id == ECMA_BUILTIN_ID_MATH
+                                 || builtin_id == ECMA_BUILTIN_ID_JSON);
+
+          JERRY_ASSERT (is_correct_id);
+
+          return ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+        }
+      }
+    }
+  }
+
+  JERRY_ASSERT (ecma_get_object_is_prototype_explicitly_set (obj_p));
+
+  ecma_property_t *prototype_prop_p = ecma_get_internal_property (obj_p,
+                                                                  ECMA_INTERNAL_PROPERTY_PROTOTYPE);
+  ecma_object_t *prototype_obj_p = ECMA_GET_POINTER (ecma_object_t,
+                                                     prototype_prop_p->u.internal_property.value);
+
+  if (prototype_obj_p != NULL)
+  {
+    ecma_ref_object (prototype_obj_p);
+  }
+
+  return prototype_obj_p;
+} /* ecma_object_get_prototype */
 
 /**
  * Get [[Class]] string of specified object

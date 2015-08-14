@@ -88,9 +88,9 @@ ecma_new_standard_error (ecma_standard_error_t error_type) /**< native error typ
 
   ecma_object_t *prototype_obj_p = ecma_builtin_get (prototype_id);
 
-  ecma_object_t *new_error_obj_p = ecma_create_object (prototype_obj_p,
-                                                       true,
+  ecma_object_t *new_error_obj_p = ecma_create_object (true,
                                                        ECMA_OBJECT_TYPE_GENERAL);
+  ecma_set_object_prototype (new_error_obj_p, prototype_obj_p);
 
   ecma_deref_object (prototype_obj_p);
 

@@ -19,7 +19,6 @@
 /* The Object.prototype object (15.2.4) */
 BUILTIN (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID__COUNT /* no prototype */,
          true,
          true,
          object_prototype)
@@ -27,7 +26,6 @@ BUILTIN (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
 /* The Object object (15.2.1) */
 BUILTIN (ECMA_BUILTIN_ID_OBJECT,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          object)
@@ -36,7 +34,6 @@ BUILTIN (ECMA_BUILTIN_ID_OBJECT,
 /* The Array.prototype object (15.4.4) */
 BUILTIN (ECMA_BUILTIN_ID_ARRAY_PROTOTYPE,
          ECMA_OBJECT_TYPE_ARRAY,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          array_prototype)
@@ -44,7 +41,6 @@ BUILTIN (ECMA_BUILTIN_ID_ARRAY_PROTOTYPE,
 /* The Array object (15.4.1) */
 BUILTIN (ECMA_BUILTIN_ID_ARRAY,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          array)
@@ -54,7 +50,6 @@ BUILTIN (ECMA_BUILTIN_ID_ARRAY,
 /* The String.prototype object (15.5.4) */
 BUILTIN (ECMA_BUILTIN_ID_STRING_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          string_prototype)
@@ -62,7 +57,6 @@ BUILTIN (ECMA_BUILTIN_ID_STRING_PROTOTYPE,
 /* The String object (15.5.1) */
 BUILTIN (ECMA_BUILTIN_ID_STRING,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          string)
@@ -72,7 +66,6 @@ BUILTIN (ECMA_BUILTIN_ID_STRING,
 /* The Boolean.prototype object (15.6.4) */
 BUILTIN (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          boolean_prototype)
@@ -80,7 +73,6 @@ BUILTIN (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE,
 /* The Boolean object (15.6.1) */
 BUILTIN (ECMA_BUILTIN_ID_BOOLEAN,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          boolean)
@@ -90,7 +82,6 @@ BUILTIN (ECMA_BUILTIN_ID_BOOLEAN,
 /* The Number.prototype object (15.7.4) */
 BUILTIN (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          number_prototype)
@@ -98,7 +89,6 @@ BUILTIN (ECMA_BUILTIN_ID_NUMBER_PROTOTYPE,
 /* The Number object (15.7.1) */
 BUILTIN (ECMA_BUILTIN_ID_NUMBER,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          number)
@@ -107,7 +97,6 @@ BUILTIN (ECMA_BUILTIN_ID_NUMBER,
 /* The Function.prototype object (15.3.4) */
 BUILTIN (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          function_prototype)
@@ -115,7 +104,6 @@ BUILTIN (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
 /* The Function object (15.3.1) */
 BUILTIN (ECMA_BUILTIN_ID_FUNCTION,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          function)
@@ -124,7 +112,6 @@ BUILTIN (ECMA_BUILTIN_ID_FUNCTION,
 /* The Math object (15.8) */
 BUILTIN (ECMA_BUILTIN_ID_MATH,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          math)
@@ -134,7 +121,6 @@ BUILTIN (ECMA_BUILTIN_ID_MATH,
 /* The JSON object (15.12) */
 BUILTIN (ECMA_BUILTIN_ID_JSON,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          json)
@@ -144,7 +130,6 @@ BUILTIN (ECMA_BUILTIN_ID_JSON,
 /* The Date.prototype object (15.9.4) */
 BUILTIN (ECMA_BUILTIN_ID_DATE_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          date_prototype)
@@ -152,7 +137,6 @@ BUILTIN (ECMA_BUILTIN_ID_DATE_PROTOTYPE,
 /* The Date object (15.9.3) */
 BUILTIN (ECMA_BUILTIN_ID_DATE,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          date)
@@ -162,7 +146,6 @@ BUILTIN (ECMA_BUILTIN_ID_DATE,
 /* The RegExp.prototype object (15.10.6) */
 BUILTIN (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          regexp_prototype)
@@ -170,7 +153,6 @@ BUILTIN (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE,
 /* The RegExp object (15.10) */
 BUILTIN (ECMA_BUILTIN_ID_REGEXP,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          regexp)
@@ -180,7 +162,6 @@ BUILTIN (ECMA_BUILTIN_ID_REGEXP,
 /* The Error.prototype object (15.11.4) */
 BUILTIN (ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          true,
          true,
          error_prototype)
@@ -188,7 +169,6 @@ BUILTIN (ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
 /* The Error object (15.11.1) */
 BUILTIN (ECMA_BUILTIN_ID_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          error)
@@ -196,7 +176,6 @@ BUILTIN (ECMA_BUILTIN_ID_ERROR,
 /* The EvalError.prototype object (15.11.6.1) */
 BUILTIN (ECMA_BUILTIN_ID_EVAL_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          eval_error_prototype)
@@ -204,7 +183,6 @@ BUILTIN (ECMA_BUILTIN_ID_EVAL_ERROR_PROTOTYPE,
 /* The EvalError object (15.11.6.1) */
 BUILTIN (ECMA_BUILTIN_ID_EVAL_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          eval_error)
@@ -212,7 +190,6 @@ BUILTIN (ECMA_BUILTIN_ID_EVAL_ERROR,
 /* The RangeError.prototype object (15.11.6.2) */
 BUILTIN (ECMA_BUILTIN_ID_RANGE_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          range_error_prototype)
@@ -220,7 +197,6 @@ BUILTIN (ECMA_BUILTIN_ID_RANGE_ERROR_PROTOTYPE,
 /* The RangeError object (15.11.6.2) */
 BUILTIN (ECMA_BUILTIN_ID_RANGE_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          range_error)
@@ -228,7 +204,6 @@ BUILTIN (ECMA_BUILTIN_ID_RANGE_ERROR,
 /* The ReferenceError.prototype object (15.11.6.3) */
 BUILTIN (ECMA_BUILTIN_ID_REFERENCE_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          reference_error_prototype)
@@ -236,7 +211,6 @@ BUILTIN (ECMA_BUILTIN_ID_REFERENCE_ERROR_PROTOTYPE,
 /* The ReferenceError object (15.11.6.3) */
 BUILTIN (ECMA_BUILTIN_ID_REFERENCE_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          reference_error)
@@ -244,7 +218,6 @@ BUILTIN (ECMA_BUILTIN_ID_REFERENCE_ERROR,
 /* The SyntaxError.prototype object (15.11.6.4) */
 BUILTIN (ECMA_BUILTIN_ID_SYNTAX_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          syntax_error_prototype)
@@ -252,7 +225,6 @@ BUILTIN (ECMA_BUILTIN_ID_SYNTAX_ERROR_PROTOTYPE,
 /* The SyntaxError object (15.11.6.4) */
 BUILTIN (ECMA_BUILTIN_ID_SYNTAX_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          syntax_error)
@@ -260,7 +232,6 @@ BUILTIN (ECMA_BUILTIN_ID_SYNTAX_ERROR,
 /* The TypeError.prototype object (15.11.6.5) */
 BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          type_error_prototype)
@@ -268,7 +239,6 @@ BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR_PROTOTYPE,
 /* The TypeError object (15.11.6.5) */
 BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          type_error)
@@ -276,7 +246,6 @@ BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR,
 /* The URIError.prototype object (15.11.6.6) */
 BUILTIN (ECMA_BUILTIN_ID_URI_ERROR_PROTOTYPE,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_ERROR_PROTOTYPE,
          true,
          true,
          uri_error_prototype)
@@ -284,7 +253,6 @@ BUILTIN (ECMA_BUILTIN_ID_URI_ERROR_PROTOTYPE,
 /* The URIError object (15.11.6.6) */
 BUILTIN (ECMA_BUILTIN_ID_URI_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          true,
          true,
          uri_error)
@@ -293,7 +261,6 @@ BUILTIN (ECMA_BUILTIN_ID_URI_ERROR,
 /**< The [[ThrowTypeError]] object (13.2.3) */
 BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE,
          false,
          true,
          type_error_thrower)
@@ -302,7 +269,6 @@ BUILTIN (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER,
 /* The CompactProfileError object defined in the Compact Profile */
 BUILTIN (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR,
          ECMA_OBJECT_TYPE_FUNCTION,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE,
          false,
          true,
          compact_profile_error)
@@ -311,7 +277,6 @@ BUILTIN (ECMA_BUILTIN_ID_COMPACT_PROFILE_ERROR,
 /* The Global object (15.1) */
 BUILTIN (ECMA_BUILTIN_ID_GLOBAL,
          ECMA_OBJECT_TYPE_GENERAL,
-         ECMA_BUILTIN_ID_OBJECT_PROTOTYPE, /* Implementation-dependent */
          true,
          true,
          global)

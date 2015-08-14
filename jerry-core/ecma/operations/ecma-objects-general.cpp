@@ -52,22 +52,65 @@ ecma_reject (bool is_throw) /**< Throw flag */
 /**
  * 'Object' object creation operation with no arguments.
  *
- * See also: ECMA-262 v5, 15.2.2.1
+ * See also:
+ *          ECMA-262 v5, 15.2.2.1
+ *
+ *          ecma_op_create_object_object_noarg_and_set_prototype
  *
  * @return pointer to newly created 'Object' object
  */
 ecma_object_t*
 ecma_op_create_object_object_noarg (void)
 {
-  ecma_object_t *object_prototype_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
-
   // 3., 4., 6., 7.
-  ecma_object_t *obj_p = ecma_op_create_object_object_noarg_and_set_prototype (object_prototype_p);
+  ecma_object_t *obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_GENERAL);
 
-  ecma_deref_object (object_prototype_p);
+  /*
+   * [[Class]] property of ECMA_OBJECT_TYPE_GENERAL type objects without
+   * ECMA_INTERNAL_PROPERTY_CLASS internal property is "Object".
+   *
+   * [[Prototype]] property of ECMA_OBJECT_TYPE_GENERAL type objects
+   * with "Object" [[Class] is Object.prototype.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
+   */
 
   return obj_p;
 } /* ecma_op_create_object_object_noarg */
+
+/**
+ * Object creation operation with no arguments.
+ * It sets the given prototype to the newly created object.
+ *
+ * See also:
+ *          ECMA-262 v5, 15.2.2.1, 15.2.3.5
+ *
+ *          ecma_op_create_object_object_noarg
+ *
+ * @return pointer to newly created object
+ */
+ecma_object_t*
+ecma_op_create_object_object_noarg_and_set_prototype (ecma_object_t *object_prototype_p) /**< pointer to prototype of
+                                                                                          *   the object
+                                                                                          *   (can be NULL) */
+{
+  // 3., 4., 6., 7.
+  ecma_object_t *obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_GENERAL);
+
+  /*
+   * [[Class]] property of ECMA_OBJECT_TYPE_GENERAL type objects without
+   * ECMA_INTERNAL_PROPERTY_CLASS internal property is "Object".
+   *
+   * See also:
+   *          ecma_object_get_class_name
+   */
+
+  ecma_set_object_prototype (obj_p, object_prototype_p);
+
+  return obj_p;
+} /* ecma_op_create_object_object_noarg_and_set_prototype */
 
 /**
  * 'Object' object creation operation with one argument.
@@ -100,32 +143,6 @@ ecma_op_create_object_object_arg (ecma_value_t value) /**< argument of construct
     return ecma_make_normal_completion_value (ecma_make_object_value (obj_p));
   }
 } /* ecma_op_create_object_object_arg */
-
-/**
- * Object creation operation with no arguments.
- * It sets the given prototype to the newly created object.
- *
- * See also: ECMA-262 v5, 15.2.2.1, 15.2.3.5
- *
- * @return pointer to newly created object
- */
-ecma_object_t*
-ecma_op_create_object_object_noarg_and_set_prototype (ecma_object_t *object_prototype_p) /**< pointer to prototype of
-                                                                                              the object
-                                                                                              (can be NULL) */
-{
-  ecma_object_t *obj_p = ecma_create_object (object_prototype_p, true, ECMA_OBJECT_TYPE_GENERAL);
-
-  /*
-   * [[Class]] property of ECMA_OBJECT_TYPE_GENERAL type objects
-   * without ECMA_INTERNAL_PROPERTY_CLASS internal property
-   * is "Object".
-   *
-   * See also: ecma_object_get_class_name
-   */
-
-  return obj_p;
-} /* ecma_op_create_object_object_noarg_and_set_prototype */
 
 /**
  * [[Get]] ecma general object's operation
@@ -228,18 +245,24 @@ ecma_op_general_object_get_property (ecma_object_t *obj_p, /**< the object */
   {
     return prop_p;
   }
-
-  // 3.
-  ecma_object_t *prototype_p = ecma_get_object_prototype (obj_p);
-
-  // 4., 5.
-  if (prototype_p != NULL)
-  {
-    return ecma_op_object_get_property (prototype_p, property_name_p);
-  }
   else
   {
-    return NULL;
+    // 3.
+    ecma_object_t *prototype_p = ecma_object_get_prototype (obj_p);
+
+    // 4., 5.
+    if (prototype_p != NULL)
+    {
+      prop_p = ecma_op_object_get_property (prototype_p, property_name_p);
+
+      ecma_deref_object (prototype_p);
+
+      return prop_p;
+    }
+    else
+    {
+      return NULL;
+    }
   }
 } /* ecma_op_general_object_get_property */
 
@@ -404,12 +427,16 @@ ecma_op_general_object_can_put (ecma_object_t *obj_p, /**< the object */
   }
 
   // 3.
-  ecma_object_t *proto_p = ecma_get_object_prototype (obj_p);
+  ecma_object_t *proto_p = ecma_object_get_prototype (obj_p);
 
   // 4.
   if (proto_p == NULL)
   {
     return ecma_get_object_extensible (obj_p);
+  }
+  else
+  {
+    ecma_deref_object (proto_p);
   }
 
   // 5.

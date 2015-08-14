@@ -75,21 +75,15 @@ ecma_op_create_string_object (const ecma_value_t *arguments_list_p, /**< list of
     }
   }
 
-#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_STRING_PROTOTYPE);
-#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
-#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_STRING_BUILTIN */
-
-  ecma_object_t *obj_p = ecma_create_object (prototype_obj_p,
-                                             true,
+  ecma_object_t *obj_p = ecma_create_object (true,
                                              ECMA_OBJECT_TYPE_STRING);
-  ecma_deref_object (prototype_obj_p);
 
   /*
-   * [[Class]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_STRING type.
+   * [[Prototype]] and [[Class]] properties are not stored explicitly for objects of ECMA_OBJECT_TYPE_STRING type.
    *
-   * See also: ecma_object_get_class_name
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
    */
 
   ecma_property_t *prim_value_prop_p = ecma_create_internal_property (obj_p,

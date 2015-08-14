@@ -39,9 +39,8 @@ vm_helper_for_in_enumerate_properties_names (ecma_object_t *obj_p) /**< starting
   ecma_length_t all_properties_count = 0;
 
   /* First pass: counting properties */
-  for (ecma_object_t *prototype_chain_iter_p = obj_p;
-       prototype_chain_iter_p != NULL;
-       prototype_chain_iter_p = ecma_get_object_prototype (prototype_chain_iter_p))
+  ecma_object_t *prototype_chain_iter_p = obj_p;
+  while (prototype_chain_iter_p != NULL)
   {
     for (ecma_property_t *prop_iter_p = ecma_get_property_list (prototype_chain_iter_p);
          prop_iter_p != NULL;
@@ -57,6 +56,15 @@ vm_helper_for_in_enumerate_properties_names (ecma_object_t *obj_p) /**< starting
         JERRY_ASSERT (prop_iter_p->type == ECMA_PROPERTY_INTERNAL);
       }
     }
+
+    ecma_object_t *next_p = ecma_object_get_prototype (prototype_chain_iter_p);
+
+    if (prototype_chain_iter_p != obj_p)
+    {
+      ecma_deref_object (prototype_chain_iter_p);
+    }
+
+    prototype_chain_iter_p = next_p;
   }
 
   if (all_properties_count == 0)
@@ -72,9 +80,8 @@ vm_helper_for_in_enumerate_properties_names (ecma_object_t *obj_p) /**< starting
   ecma_length_t enumerated_properties_count = 0;
   ecma_length_t non_enumerated_properties_count = 0;
 
-  for (ecma_object_t *prototype_chain_iter_p = obj_p;
-       prototype_chain_iter_p != NULL;
-       prototype_chain_iter_p = ecma_get_object_prototype (prototype_chain_iter_p))
+  ecma_object_t *prototype_chain_iter_p = obj_p;
+  while (prototype_chain_iter_p != NULL)
   {
     for (ecma_property_t *prop_iter_p = ecma_get_property_list (prototype_chain_iter_p);
          prop_iter_p != NULL;
@@ -160,6 +167,15 @@ vm_helper_for_in_enumerate_properties_names (ecma_object_t *obj_p) /**< starting
         JERRY_ASSERT (prop_iter_p->type == ECMA_PROPERTY_INTERNAL);
       }
     }
+
+    ecma_object_t *next_p = ecma_object_get_prototype (prototype_chain_iter_p);
+
+    if (prototype_chain_iter_p != obj_p)
+    {
+      ecma_deref_object (prototype_chain_iter_p);
+    }
+
+    prototype_chain_iter_p = next_p;
   }
 
   if (enumerated_properties_count != 0)

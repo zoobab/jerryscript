@@ -221,11 +221,14 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
                                                                      *   of function's body */
 {
   // 1., 4., 13.
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+  ecma_object_t *f = ecma_create_object (true, ECMA_OBJECT_TYPE_FUNCTION);
 
-  ecma_object_t *f = ecma_create_object (prototype_obj_p, true, ECMA_OBJECT_TYPE_FUNCTION);
-
-  ecma_deref_object (prototype_obj_p);
+  /*
+   * [[Prototype]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_FUNCTION type.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   */
 
   // 2., 6., 7., 8.
   /*
@@ -236,9 +239,11 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
 
   // 3.
   /*
-   * [[Class]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_FUNCTION type.
+   * [[Prototype]] and [[Class]] properties are not stored explicitly for objects of ECMA_OBJECT_TYPE_FUNCTION type.
    *
-   * See also: ecma_object_get_class_name
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
    */
 
   // 9.
@@ -371,16 +376,15 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
 ecma_object_t*
 ecma_op_create_external_function_object (ecma_external_pointer_t code_p) /**< pointer to external native handler */
 {
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
-
-  ecma_object_t *function_obj_p = ecma_create_object (prototype_obj_p, true, ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION);
-
-  ecma_deref_object (prototype_obj_p);
+  ecma_object_t *function_obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION);
 
   /*
-   * [[Class]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION type.
+   * [[Prototype]] and [[Class]] properties are not stored explicitly
+   * for objects of ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION type.
    *
-   * See also: ecma_object_get_class_name
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
    */
 
   bool is_created = ecma_create_external_pointer_property (function_obj_p,
@@ -602,23 +606,9 @@ ecma_op_function_has_instance (ecma_object_t *func_obj_p, /**< Function object *
       ecma_object_t *prototype_obj_p = ecma_get_object_from_value (prototype_obj_value);
       JERRY_ASSERT (prototype_obj_p != NULL);
 
-      do
-      {
-        v_obj_p = ecma_get_object_prototype (v_obj_p);
+      bool is_prototype = ecma_op_object_is_prototype_of (prototype_obj_p, v_obj_p);
 
-        if (v_obj_p == NULL)
-        {
-          ret_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE);
-
-          break;
-        }
-        else if (v_obj_p == prototype_obj_p)
-        {
-          ret_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
-
-          break;
-        }
-      } while (true);
+      ret_value = ecma_make_simple_completion_value (is_prototype ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
     }
 
     ECMA_FINALIZE (prototype_obj_value);
@@ -870,19 +860,23 @@ ecma_op_function_construct_simple_or_external (ecma_object_t *func_obj_p, /**< F
   ecma_object_t *obj_p;
   if (ecma_is_value_object (func_obj_prototype_prop_value))
   {
-    //  6.
-    obj_p = ecma_create_object (ecma_get_object_from_value (func_obj_prototype_prop_value),
-                                true,
+    // 6.
+    obj_p = ecma_create_object (true,
                                 ECMA_OBJECT_TYPE_GENERAL);
+    ecma_set_object_prototype (obj_p, ecma_get_object_from_value (func_obj_prototype_prop_value));
   }
   else
   {
     // 7.
-    ecma_object_t *prototype_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
+    obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_GENERAL);
 
-    obj_p = ecma_create_object (prototype_p, true, ECMA_OBJECT_TYPE_GENERAL);
-
-    ecma_deref_object (prototype_p);
+    /*
+     * [[Prototype]] property of ECMA_OBJECT_TYPE_GENERAL type objects
+     * with LIT_MAGIC_STRING_OBJECT_UL class ([[Class]] property).
+     *
+     * See also:
+     *          ecma_object_get_prototype.
+     */
   }
 
   // 3.

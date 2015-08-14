@@ -500,11 +500,8 @@ ecma_builtin_date_dispatch_construct (const ecma_value_t *arguments_list_p, /**<
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
   ecma_number_t *prim_value_num_p = NULL;
 
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_DATE_PROTOTYPE);
-  ecma_object_t *obj_p = ecma_create_object (prototype_obj_p,
-                                             true,
+  ecma_object_t *obj_p = ecma_create_object (true,
                                              ECMA_OBJECT_TYPE_GENERAL);
-  ecma_deref_object (prototype_obj_p);
 
   if (arguments_list_len == 0)
   {
@@ -570,6 +567,14 @@ ecma_builtin_date_dispatch_construct (const ecma_value_t *arguments_list_p, /**<
     {
       *prim_value_num_p = ecma_number_make_nan ();
     }
+
+    /*
+     * [[Prototype]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_GENERAL type
+     * with LIT_MAGIC_STRING_DATE_UL [[Class]] property value.
+     *
+     * See also:
+     *          ecma_object_get_prototype
+     */
 
     ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p,
                                                                    ECMA_INTERNAL_PROPERTY_CLASS);

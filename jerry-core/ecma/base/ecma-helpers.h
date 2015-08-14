@@ -224,19 +224,19 @@ extern bool
 ecma_collection_iterator_next (ecma_collection_iterator_t *iterator_p);
 
 /* ecma-helpers.cpp */
-extern ecma_object_t* ecma_create_object (ecma_object_t *prototype_object_p,
-                                          bool is_extensible,
+extern ecma_object_t* ecma_create_object (bool is_extensible,
                                           ecma_object_type_t type);
 extern ecma_object_t* ecma_create_decl_lex_env (ecma_object_t *outer_lexical_environment_p);
 extern ecma_object_t* ecma_create_object_lex_env (ecma_object_t *outer_lexical_environment_p,
                                                   ecma_object_t *binding_obj_p,
                                                   bool provide_this);
+extern bool __attr_pure___ ecma_get_object_is_prototype_explicitly_set (ecma_object_t *object_p);
+extern void ecma_set_object_prototype (ecma_object_t *object_p, const ecma_object_t *prototype_obj_p);
 extern bool __attr_pure___ ecma_is_lexical_environment (const ecma_object_t *object_p);
 extern bool __attr_pure___ ecma_get_object_extensible (const ecma_object_t *object_p);
 extern void ecma_set_object_extensible (ecma_object_t *object_p, bool is_extensible);
 extern ecma_object_type_t __attr_pure___ ecma_get_object_type (const ecma_object_t *object_p);
 extern void ecma_set_object_type (ecma_object_t *object_p, ecma_object_type_t type);
-extern ecma_object_t* __attr_pure___ ecma_get_object_prototype (const ecma_object_t *object_p);
 extern bool __attr_pure___ ecma_get_object_is_builtin (const ecma_object_t *object_p);
 extern void ecma_set_object_is_builtin (ecma_object_t *object_p,
                                         bool is_builtin);

@@ -96,16 +96,17 @@ ecma_builtin_get (ecma_builtin_id_t builtin_id) /**< id of built-in to check on 
  */
 static ecma_object_t*
 ecma_builtin_init_object (ecma_builtin_id_t obj_builtin_id, /**< built-in ID */
-                          ecma_object_t* prototype_obj_p, /**< prototype object */
                           ecma_object_type_t obj_type, /**< object's type */
                           bool is_extensible) /**< value of object's [[Extensible]] property */
 {
-  ecma_object_t *object_obj_p = ecma_create_object (prototype_obj_p, is_extensible, obj_type);
+  ecma_object_t *object_obj_p = ecma_create_object (is_extensible, obj_type);
 
   /*
-   * [[Class]] property of built-in object is not stored explicitly.
+   * [[Prototype]] and [[Class]] properties of a built-in object are not stored explicitly.
    *
-   * See also: ecma_object_get_class_name
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
    */
 
   ecma_property_t *built_in_id_prop_p = ecma_create_internal_property (object_obj_p,
@@ -212,7 +213,6 @@ ecma_instantiate_builtin (ecma_builtin_id_t id) /**< built-in id */
   {
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \
@@ -224,23 +224,7 @@ ecma_instantiate_builtin (ecma_builtin_id_t id) /**< built-in id */
         ecma_builtin_ ## lowercase_name ## _sort_property_names (); \
       } \
       \
-      ecma_object_t *prototype_obj_p; \
-      if (object_prototype_builtin_id == ECMA_BUILTIN_ID__COUNT) \
-      { \
-        prototype_obj_p = NULL; \
-      } \
-      else \
-      { \
-        if (ecma_builtin_objects[object_prototype_builtin_id] == NULL) \
-        { \
-          ecma_instantiate_builtin (object_prototype_builtin_id); \
-        } \
-        prototype_obj_p = ecma_builtin_objects[object_prototype_builtin_id]; \
-        JERRY_ASSERT (prototype_obj_p != NULL); \
-      } \
-      \
       ecma_object_t *builtin_obj_p = ecma_builtin_init_object (builtin_id, \
-                                                               prototype_obj_p, \
                                                                object_type, \
                                                                is_extensible); \
       ecma_builtin_objects[builtin_id] = builtin_obj_p; \
@@ -301,7 +285,6 @@ ecma_builtin_try_to_instantiate_property (ecma_object_t *object_p, /**< object *
   {
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \
@@ -347,11 +330,15 @@ ecma_builtin_make_function_object_for_routine (ecma_builtin_id_t builtin_id, /**
                                                                                          of 'length' property
                                                                                          of function object to create */
 {
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
+  ecma_object_t *func_obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION);
 
-  ecma_object_t *func_obj_p = ecma_create_object (prototype_obj_p, true, ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION);
-
-  ecma_deref_object (prototype_obj_p);
+  /*
+   * [[Prototype]] and [[Class]] properties are not stored explicitly for objects of ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION type.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   *          ecma_object_get_class_name
+   */
 
   ecma_set_object_is_builtin (func_obj_p, true);
 
@@ -451,7 +438,6 @@ ecma_builtin_dispatch_call (ecma_object_t *obj_p, /**< built-in object */
     {
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \
@@ -528,7 +514,6 @@ ecma_builtin_dispatch_construct (ecma_object_t *obj_p, /**< built-in object */
   {
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \
@@ -584,7 +569,6 @@ ecma_builtin_dispatch_routine (ecma_builtin_id_t builtin_object_id, /**< built-i
   {
 #define BUILTIN(builtin_id, \
                 object_type, \
-                object_prototype_builtin_id, \
                 is_extensible, \
                 is_static, \
                 lowercase_name) \

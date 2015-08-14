@@ -473,17 +473,18 @@ typedef struct ecma_object_t
 #define ECMA_OBJECT_OBJ_TYPE_WIDTH (4)
 
 /**
- * Compressed pointer to prototype object (ecma_object_t)
+ * Flag indicating whether the object has prototype object explicitly set
+ * through ECMA_INTERNAL_PROPERTY_PROTOTYPE internal property
  */
-#define ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_POS (ECMA_OBJECT_OBJ_TYPE_POS + \
-                                                 ECMA_OBJECT_OBJ_TYPE_WIDTH)
-#define ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_WIDTH (ECMA_POINTER_FIELD_WIDTH)
+#define ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_POS (ECMA_OBJECT_OBJ_TYPE_POS + \
+                                                         ECMA_OBJECT_OBJ_TYPE_WIDTH)
+#define ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_WIDTH (1)
 
 /**
  * Flag indicating whether the object is a built-in object
  */
-#define ECMA_OBJECT_OBJ_IS_BUILTIN_POS (ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_POS + \
-                                        ECMA_OBJECT_OBJ_PROTOTYPE_OBJECT_CP_WIDTH)
+#define ECMA_OBJECT_OBJ_IS_BUILTIN_POS (ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_POS + \
+                                        ECMA_OBJECT_OBJ_IS_PROTOTYPE_EXPLICITLY_SET_WIDTH)
 #define ECMA_OBJECT_OBJ_IS_BUILTIN_WIDTH (1)
 
 /**

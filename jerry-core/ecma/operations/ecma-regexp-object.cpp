@@ -243,10 +243,15 @@ ecma_op_create_regexp_object (ecma_string_t *pattern_p, /**< input pattern */
     }
   }
 
-  ecma_object_t *re_prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE);
+  ecma_object_t *obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_GENERAL);
 
-  ecma_object_t *obj_p = ecma_create_object (re_prototype_obj_p, true, ECMA_OBJECT_TYPE_GENERAL);
-  ecma_deref_object (re_prototype_obj_p);
+  /*
+   * [[Prototype]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_GENERAL type
+   * with LIT_MAGIC_STRING_REGEXP_UL [[Class]] property value.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   */
 
   /* Set the internal [[Class]] property */
   ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CLASS);

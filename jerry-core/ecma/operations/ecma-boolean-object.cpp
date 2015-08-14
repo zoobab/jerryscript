@@ -51,16 +51,16 @@ ecma_op_create_boolean_object (ecma_value_t arg) /**< argument passed to the Boo
   ecma_simple_value_t bool_value = (ecma_is_value_true (ecma_get_completion_value_value (conv_to_boolean_completion)) ?
                                     ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE);
 
-#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_BOOLEAN_PROTOTYPE);
-#else /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
-  ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
-#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_BOOLEAN_BUILTIN */
-
-  ecma_object_t *obj_p = ecma_create_object (prototype_obj_p,
-                                             true,
+  ecma_object_t *obj_p = ecma_create_object (true,
                                              ECMA_OBJECT_TYPE_GENERAL);
-  ecma_deref_object (prototype_obj_p);
+
+  /*
+   * [[Prototype]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_GENERAL type
+   * with LIT_MAGIC_STRING_BOOLEAN_UL [[Class]] property value.
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   */
 
   ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CLASS);
   class_prop_p->u.internal_property.value = LIT_MAGIC_STRING_BOOLEAN_UL;

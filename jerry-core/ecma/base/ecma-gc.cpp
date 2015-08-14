@@ -260,14 +260,6 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
       traverse_properties = false;
     }
   }
-  else
-  {
-    ecma_object_t *proto_p = ecma_get_object_prototype (object_p);
-    if (proto_p != NULL)
-    {
-      ecma_gc_set_object_visited (proto_p, true);
-    }
-  }
 
   if (traverse_properties)
   {
@@ -325,8 +317,6 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
               JERRY_UNIMPLEMENTED ("Indexed array storage is not implemented yet.");
             }
 
-            case ECMA_INTERNAL_PROPERTY_PROTOTYPE: /* the property's value is located in ecma_object_t
-                                                        (see above in the routine) */
             case ECMA_INTERNAL_PROPERTY_EXTENSIBLE: /* the property's value is located in ecma_object_t
                                                          (see above in the routine) */
             case ECMA_INTERNAL_PROPERTY__COUNT: /* not a real internal property type,
@@ -355,6 +345,20 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
             case ECMA_INTERNAL_PROPERTY_BOUND_FUNCTION_BOUND_THIS:
             case ECMA_INTERNAL_PROPERTY_BOUND_FUNCTION_BOUND_ARGS:
             {
+              break;
+            }
+
+            case ECMA_INTERNAL_PROPERTY_PROTOTYPE: /* an object */
+            {
+              JERRY_ASSERT (ecma_get_object_is_prototype_explicitly_set (object_p));
+
+              ecma_object_t *obj_p = ECMA_GET_POINTER (ecma_object_t, property_value);
+
+              if (obj_p != NULL)
+              {
+                ecma_gc_set_object_visited (obj_p, true);
+              }
+
               break;
             }
 

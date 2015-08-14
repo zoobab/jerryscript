@@ -55,11 +55,16 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
   *len_p = ecma_uint32_to_number (arguments_number);
 
   // 2., 3., 6.
-  ecma_object_t *prototype_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
 
-  ecma_object_t *obj_p = ecma_create_object (prototype_p, true, ECMA_OBJECT_TYPE_GENERAL);
+  ecma_object_t *obj_p = ecma_create_object (true, ECMA_OBJECT_TYPE_GENERAL);
 
-  ecma_deref_object (prototype_p);
+  /*
+   * [[Prototype]] is not stored explicitly for objects of ECMA_OBJECT_TYPE_GENERAL type
+   * of LIT_MAGIC_STRING_ARGUMENTS_UL class ([[Class]] property).
+   *
+   * See also:
+   *          ecma_object_get_prototype
+   */    
 
   // 4.
   ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CLASS);
@@ -211,10 +216,12 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
       ecma_set_object_type (obj_p, ECMA_OBJECT_TYPE_ARGUMENTS);
 
       /*
-       * [[Class]] property is not stored explicitly for objects of ECMA_OBJECT_TYPE_ARGUMENTS type.
+       * [[Prototype]] and [[Class]] properties are not stored explicitly for objects of ECMA_OBJECT_TYPE_ARGUMENTS type.
        *
-       * See also: ecma_object_get_class_name
-       */
+       * See also:
+       *          ecma_object_get_prototype
+       *          ecma_object_get_class_name
+       */           
       ecma_delete_property (obj_p, class_prop_p);
 
       ecma_property_t *parameters_map_prop_p = ecma_create_internal_property (obj_p,
