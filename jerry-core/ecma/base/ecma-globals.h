@@ -217,6 +217,7 @@ typedef enum
   ECMA_INTERNAL_PROPERTY_PROTOTYPE, /**< [[Prototype]] */
   ECMA_INTERNAL_PROPERTY_EXTENSIBLE, /**< [[Extensible]] */
   ECMA_INTERNAL_PROPERTY_SCOPE, /**< [[Scope]] */
+  ECMA_INTERNAL_PROPERTY_BOUND_OBJECT, /**< an object-bound lexical environment's bound object */
   ECMA_INTERNAL_PROPERTY_PARAMETERS_MAP, /**< [[ParametersMap]] */
   ECMA_INTERNAL_PROPERTY_CODE_BYTECODE, /**< first part of [[Code]] - compressed pointer to bytecode array */
   ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET, /**< second part of [[Code]] - offset in bytecode array and code flags
@@ -386,7 +387,8 @@ typedef struct __attr_packed___ ecma_property_t
 typedef enum
 {
   ECMA_LEXICAL_ENVIRONMENT_DECLARATIVE, /**< declarative lexical environment */
-  ECMA_LEXICAL_ENVIRONMENT_OBJECTBOUND /**< object-bound lexical environment */
+  ECMA_LEXICAL_ENVIRONMENT_GLOBAL_OBJECT_BOUND, /**< the Global object-bound lexical environment */
+  ECMA_LEXICAL_ENVIRONMENT_NON_GLOBAL_OBJECT_BOUND /**< other (not the Global) object-bound lexical environment */
 } ecma_lexical_environment_type_t;
 
 /**
@@ -422,15 +424,15 @@ typedef struct ecma_object_t
 /**
  * Compressed pointer to property list
  */
-#define ECMA_OBJECT_PROPERTIES_OR_BOUND_OBJECT_CP_POS   (0)
-#define ECMA_OBJECT_PROPERTIES_OR_BOUND_OBJECT_CP_WIDTH (ECMA_POINTER_FIELD_WIDTH)
+#define ECMA_OBJECT_PROPERTIES_CP_POS   (0)
+#define ECMA_OBJECT_PROPERTIES_CP_WIDTH (ECMA_POINTER_FIELD_WIDTH)
 
 /**
  * Flag indicating whether it is a general object (false)
  * or a lexical environment (true)
  */
-#define ECMA_OBJECT_IS_LEXICAL_ENVIRONMENT_POS (ECMA_OBJECT_PROPERTIES_OR_BOUND_OBJECT_CP_POS + \
-                                                ECMA_OBJECT_PROPERTIES_OR_BOUND_OBJECT_CP_WIDTH)
+#define ECMA_OBJECT_IS_LEXICAL_ENVIRONMENT_POS (ECMA_OBJECT_PROPERTIES_CP_POS + \
+                                                ECMA_OBJECT_PROPERTIES_CP_WIDTH)
 #define ECMA_OBJECT_IS_LEXICAL_ENVIRONMENT_WIDTH (1)
 
 /**
@@ -500,8 +502,8 @@ typedef struct ecma_object_t
  * Type of lexical environment (ecma_lexical_environment_type_t).
  */
 #define ECMA_OBJECT_LEX_ENV_TYPE_POS (ECMA_OBJECT_GC_VISITED_POS + \
-                                        ECMA_OBJECT_GC_VISITED_WIDTH)
-#define ECMA_OBJECT_LEX_ENV_TYPE_WIDTH (1)
+                                      ECMA_OBJECT_GC_VISITED_WIDTH)
+#define ECMA_OBJECT_LEX_ENV_TYPE_WIDTH (2)
 
 /**
  * Compressed pointer to outer lexical environment

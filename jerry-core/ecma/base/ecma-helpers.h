@@ -243,7 +243,6 @@ extern void ecma_set_object_is_builtin (ecma_object_t *object_p,
 extern ecma_lexical_environment_type_t __attr_pure___ ecma_get_lex_env_type (const ecma_object_t *object_p);
 extern ecma_object_t* __attr_pure___ ecma_get_lex_env_outer_reference (const ecma_object_t *object_p);
 extern ecma_property_t* __attr_pure___ ecma_get_property_list (const ecma_object_t *object_p);
-extern ecma_object_t* __attr_pure___ ecma_get_lex_env_binding_object (const ecma_object_t *object_p);
 extern bool __attr_pure___ ecma_get_lex_env_provide_this (const ecma_object_t *object_p);
 
 extern ecma_property_t* ecma_create_internal_property (ecma_object_t *object_p,
