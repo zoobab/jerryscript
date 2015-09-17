@@ -114,7 +114,7 @@ jsp_early_error_start_checking_of_prop_names (void)
 }
 
 void
-jsp_early_error_add_prop_name (jsp_operand_t op, prop_type pt)
+jsp_early_error_add_prop_name (const jsp_operand_t &op, prop_type pt)
 {
   JERRY_ASSERT (op.is_literal_operand ());
   STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.get_literal ()), pt));
@@ -200,11 +200,14 @@ jsp_early_error_start_checking_of_vargs (void)
   STACK_PUSH (size_t_stack, STACK_SIZE (props));
 }
 
-void jsp_early_error_add_varg (jsp_operand_t op)
+/**
+ * Add argument of a function declaration or function expression to the list
+ */
+void jsp_early_error_add_varg (const jsp_operand_t &op) /* operand, containing an argument */
 {
   JERRY_ASSERT (op.is_literal_operand ());
   STACK_PUSH (props, create_prop_literal (lit_get_literal_by_cp (op.get_literal ()), VARG));
-}
+} /* jsp_early_error_add_varg */
 
 static void
 emit_error_on_eval_and_arguments (literal_t lit, locus loc __attr_unused___)
@@ -221,7 +224,7 @@ emit_error_on_eval_and_arguments (literal_t lit, locus loc __attr_unused___)
 }
 
 void
-jsp_early_error_check_for_eval_and_arguments_in_strict_mode (jsp_operand_t op, bool is_strict, locus loc)
+jsp_early_error_check_for_eval_and_arguments_in_strict_mode (const jsp_operand_t &op, bool is_strict, locus loc)
 {
   if (is_strict
       && op.is_literal_operand ())
