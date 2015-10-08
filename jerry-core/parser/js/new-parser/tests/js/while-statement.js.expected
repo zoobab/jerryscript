@@ -1,0 +1,80 @@
+ [  1] CBC_PUSH_IDENT ident-'next_statement'-id:0
+ [  0] CBC_POP
+ [  0] CBC_JUMP_FORWARD
+ [  1] CBC_PUSH_IDENT ident-'a'-id:1
+ [  0] CBC_BRANCH_IF_TRUE_BACKWARD
+ [  1] CBC_PUSH_IDENT ident-'next_statement'-id:0
+ [  0] CBC_POP
+ [  0] CBC_JUMP_FORWARD
+ [  0] CBC_JUMP_FORWARD
+ [  1] CBC_PUSH_LITERAL string-'text'-id:3
+ [  0] CBC_CALL_IDENT ident-'print'-id:2 byte_arg:1
+ [  0] CBC_JUMP_BACKWARD
+ [  1] CBC_LOGICAL_AND_TWO_LITERALS ident-'a'-id:1 ident-'b'-id:4
+ [  0] CBC_BRANCH_IF_FALSE_BACKWARD
+ [  1] CBC_PUSH_IDENT ident-'next_statement'-id:0
+ [  0] CBC_POP
+ [  0] CBC_JUMP_FORWARD
+ [  0] CBC_JUMP_FORWARD
+ [  0] CBC_JUMP_FORWARD
+ [  1] CBC_PUSH_IDENT ident-'x'-id:5
+ [  0] CBC_POP
+ [  1] CBC_PUSH_IDENT ident-'b'-id:4
+ [  0] CBC_BRANCH_IF_FALSE_FORWARD
+ [  1] CBC_PUSH_TRUE
+ [  1] CBC_JUMP_FORWARD
+ [  1] CBC_PUSH_TRUE
+ [  0] CBC_BRANCH_IF_TRUE_BACKWARD
+ [  1] CBC_PUSH_IDENT ident-'a'-id:1
+ [  0] CBC_BRANCH_IF_TRUE_BACKWARD
+ [  1] CBC_PUSH_FALSE
+ [  0] CBC_BRANCH_IF_TRUE_BACKWARD
+ [  1] CBC_PUSH_IDENT ident-'y'-id:6
+ [  0] CBC_POP
+ [  1] CBC_PUSH_IDENT ident-'next_statement'-id:0
+ [  0] CBC_POP
+
+Final byte code:
+  Maximum stack depth: 1
+  Literal encoding: byte
+  Number of var literals: 0
+  Number of identifiers: 6
+  Number of other literals: 1
+
+   0 : CBC_PUSH_IDENT ident-'next_statement'-id:0
+   2 : CBC_POP
+   3 : CBC_PUSH_IDENT ident-'a'-id:1
+   5 : CBC_BRANCH_IF_TRUE_BACKWARD offset:2(->3)
+   7 : CBC_PUSH_IDENT ident-'next_statement'-id:0
+   9 : CBC_POP
+  10 : CBC_JUMP_FORWARD offset:11(->21)
+  12 : CBC_JUMP_FORWARD offset:7(->19)
+  14 : CBC_PUSH_LITERAL string-'text'-id:6
+  16 : CBC_CALL_IDENT byte_arg:1 ident-'print'-id:2
+  19 : CBC_JUMP_BACKWARD offset:5(->14)
+  21 : CBC_LOGICAL_AND_TWO_LITERALS ident-'a'-id:1 ident-'b'-id:3
+  24 : CBC_BRANCH_IF_FALSE_BACKWARD offset:12(->12)
+  26 : CBC_PUSH_IDENT ident-'next_statement'-id:0
+  28 : CBC_POP
+  29 : CBC_JUMP_FORWARD offset:23(->52)
+  31 : CBC_JUMP_FORWARD offset:17(->48)
+  33 : CBC_JUMP_FORWARD offset:5(->38)
+  35 : CBC_PUSH_IDENT ident-'x'-id:4
+  37 : CBC_POP
+  38 : CBC_PUSH_IDENT ident-'b'-id:3
+  40 : CBC_BRANCH_IF_FALSE_FORWARD offset:5(->45)
+  42 : CBC_PUSH_TRUE
+  43 : CBC_JUMP_FORWARD offset:3(->46)
+  45 : CBC_PUSH_TRUE
+  46 : CBC_BRANCH_IF_TRUE_BACKWARD offset:11(->35)
+  48 : CBC_PUSH_IDENT ident-'a'-id:1
+  50 : CBC_BRANCH_IF_TRUE_BACKWARD offset:17(->33)
+  52 : CBC_PUSH_FALSE
+  53 : CBC_BRANCH_IF_TRUE_BACKWARD offset:22(->31)
+  55 : CBC_PUSH_IDENT ident-'y'-id:5
+  57 : CBC_POP
+  58 : CBC_PUSH_IDENT ident-'next_statement'-id:0
+  60 : CBC_POP
+  61 : CBC_RETURN_WITH_UNDEFINED
+
+Parse successfully completed. Total byte code size: 62 bytes

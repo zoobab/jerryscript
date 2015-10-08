@@ -1,0 +1,15 @@
+ [  1] CBC_PUSH_IDENT ident-'a'-id:0
+ [  0] CBC_POP
+
+Final byte code:
+  Maximum stack depth: 1
+  Literal encoding: byte
+  Number of var literals: 0
+  Number of identifiers: 1
+  Number of other literals: 0
+
+   0 : CBC_PUSH_IDENT ident-'a'-id:0
+   2 : CBC_POP
+   3 : CBC_RETURN_WITH_UNDEFINED
+
+Parse successfully completed. Total byte code size: 4 bytes
