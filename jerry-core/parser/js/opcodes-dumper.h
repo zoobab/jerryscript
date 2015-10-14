@@ -357,7 +357,7 @@ void dumper_finish_scope (void);
 void dumper_start_varg_code_sequence (void);
 void dumper_finish_varg_code_sequence (void);
 
-extern bool dumper_is_eval_literal (jsp_operand_t);
+extern bool dumper_is_eval_literal (const jsp_operand_t &);
 
 jsp_operand_t dump_array_hole_assignment_res (void);
 void dump_boolean_assignment (jsp_operand_t, bool);

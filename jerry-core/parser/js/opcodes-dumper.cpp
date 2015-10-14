@@ -64,6 +64,19 @@
  *  - Logical and/or
  *     One register is assigned to hold the result of the whole expression. It is updated and
  *     checked after evaluation of every subexpression.
+ *  - Compound assignment operators
+ *     When applied to an object's property, registers, containing pointers to object and property descriptor,
+ *     are used twice: for reading and for writing
+ *  - Post increment/decrement
+ *     Both operands of these instructions are outputs.
+ *  - Pre increment/decrement
+ *     When applied to an object's property, registers, containing pointers to object and property descriptor,
+ *     are used twice: for reading and for writing
+ *  - void operator
+ *     Output register is used twice as output: as expression evaluation result, and to store undefined
+ *     as void operator requires.
+ *  - Conditional expression
+ *     Output register used to store the result of both branches of conditional.
  */
 
 /**
@@ -99,7 +112,7 @@ typedef enum
  * Sets status of a general register in free_regs_mask bit field
  */
 static void
-set_reg_status (vm_idx_t reg, /**< register number, register out of the range VM_REG_GENERAL_FIRST -
+set_reg_status (vm_idx_t reg, /**< register number, register from the range VM_REG_GENERAL_FIRST -
                                * VM_REG_GENERAL_LAST are ignored */
                 reg_status_t reg_status) /**< status of the register */
 {
@@ -126,6 +139,27 @@ set_reg_status (vm_idx_t reg, /**< register number, register out of the range VM
     (*free_regs_mask_p) &= ~shifted_value;
   }
 } /* set_reg_status */
+
+#ifndef NDEBUG
+/**
+ * Get status of a general register in free_regs_mask bit field
+ */
+static reg_status_t
+get_reg_status (vm_idx_t reg) /**< register number, register from the range VM_REG_GENERAL_FIRST -
+                                 * VM_REG_GENERAL_LAST are ignored */
+{
+  JERRY_ASSERT (reg >= VM_REG_GENERAL_FIRST && reg <= VM_REG_GENERAL_LAST);
+
+  uint32_t *free_regs_mask_p;
+
+  int index = (reg - VM_REG_GENERAL_FIRST) / REGS_IN_DWORD;
+  reg = (vm_idx_t) (reg - VM_REG_GENERAL_FIRST - REGS_IN_DWORD * index);
+  free_regs_mask_p = &free_regs_mask[index];
+
+  uint32_t shifted_value = (uint32_t) 1 << reg;
+  return (reg_status_t) !!((*free_regs_mask_p) & shifted_value);
+} /* get_reg_status */
+#endif
 
 /**
  * Find a free register in free_regs_mask bit field.
@@ -175,6 +209,11 @@ void jsp_operand_t::free_reg () const
  */
 jsp_operand_t& jsp_operand_t::operator= (const jsp_operand_t &op) /**< operand, assigned to this operand */
 {
+  if (this == &op)
+  {
+    return *this;
+  }
+
   if (_is_to_be_freed && _type == TMP)
   {
     set_reg_status (_data.uid, REG_FREE);
@@ -538,6 +577,13 @@ jsp_dmp_gen_instr (vm_op_t opcode, /**< operation code */
     else if (ops[i].is_register_operand ())
     {
       instr.data.raw_args[i] = ops[i].get_idx ();
+#ifndef NDEBUG
+      if (instr.data.raw_args[i] >= VM_REG_GENERAL_FIRST && instr.data.raw_args[i] <= VM_REG_GENERAL_LAST)
+      {
+        JERRY_ASSERT (get_reg_status (instr.data.raw_args[i]) == REG_OCCUPIED);
+      }
+#endif
+
     }
     else
     {
@@ -741,9 +787,12 @@ dump_triple_address_and_prop_setter_res (vm_op_t opcode, /**< opcode of triple a
   const jsp_operand_t obj = create_operand_from_tmp_and_lit (last.op.data.prop_getter.obj, last.lit_id[1]);
   const jsp_operand_t prop = create_operand_from_tmp_and_lit (last.op.data.prop_getter.prop, last.lit_id[2]);
 
-  const jsp_operand_t tmp = dump_prop_getter_res (obj, prop);
+  const jsp_operand_t tmp = dump_prop_getter_res (jsp_operand_t::dup_operand (obj), jsp_operand_t::dup_operand (prop));
 
-  dump_triple_address (opcode, jsp_operand_t::dup_operand (tmp), tmp, op);
+  dump_triple_address (opcode,
+                       jsp_operand_t::dup_operand (tmp),
+                       jsp_operand_t::dup_operand (tmp),
+                       op);
 
   dump_prop_setter (obj, prop, jsp_operand_t::dup_operand (tmp));
 
@@ -771,7 +820,10 @@ dump_prop_setter_or_triple_address_res (vm_op_t opcode,
       PARSE_ERROR (JSP_EARLY_ERROR_REFERENCE, "Invalid left-hand-side expression", LIT_ITERATOR_POS_ZERO);
     }
 
-    dump_triple_address (opcode, res, res, op);
+    dump_triple_address (opcode,
+                         jsp_operand_t::dup_operand (res),
+                         jsp_operand_t::dup_operand (res),
+                         op);
   }
   STACK_DROP (prop_getters, 1);
   return res;
@@ -871,7 +923,7 @@ dumper_finish_scope (void)
  *         false - otherwise.
  */
 bool
-dumper_is_eval_literal (jsp_operand_t obj) /**< byte-code operand */
+dumper_is_eval_literal (const jsp_operand_t &obj) /**< byte-code operand */
 {
   /*
    * FIXME: Switch to corresponding magic string
@@ -1387,7 +1439,7 @@ dump_post_decrement_res (jsp_operand_t op)
  * Check if operand of prefix operation is correct
  */
 static void
-check_operand_in_prefix_operation (jsp_operand_t obj) /**< operand, which type should be Reference */
+check_operand_in_prefix_operation (const jsp_operand_t &obj) /**< operand, which type should be Reference */
 {
   const op_meta last = last_dumped_op_meta ();
   if (last.op.op_idx != VM_OP_PROP_GETTER)
@@ -2020,7 +2072,7 @@ dump_prop_setter_or_variable_assignment_res (jsp_operand_t res, jsp_operand_t op
   const op_meta last = STACK_TOP (prop_getters);
   if (last.op.op_idx == VM_OP_PROP_GETTER)
   {
-    dump_prop_setter_op_meta (last, op);
+    dump_prop_setter_op_meta (last, jsp_operand_t::dup_operand (op));
   }
   else
   {
@@ -2032,7 +2084,7 @@ dump_prop_setter_or_variable_assignment_res (jsp_operand_t res, jsp_operand_t op
        */
       PARSE_ERROR (JSP_EARLY_ERROR_REFERENCE, "Invalid left-hand-side expression", LIT_ITERATOR_POS_ZERO);
     }
-    dump_variable_assignment (res, op);
+    dump_variable_assignment (res, jsp_operand_t::dup_operand (op));
   }
   STACK_DROP (prop_getters, 1);
   return op;
@@ -2225,7 +2277,7 @@ void
 dump_case_clause_check_for_rewrite (jsp_operand_t switch_expr, jsp_operand_t case_expr)
 {
   const jsp_operand_t res = tmp_operand ();
-  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, res, switch_expr, case_expr);
+  dump_triple_address (VM_OP_EQUAL_VALUE_TYPE, jsp_operand_t::dup_operand (res), switch_expr, case_expr);
   STACK_PUSH (case_clauses, serializer_get_current_instr_counter ());
   dump_triple_address (VM_OP_IS_TRUE_JMP_DOWN,
                        res,

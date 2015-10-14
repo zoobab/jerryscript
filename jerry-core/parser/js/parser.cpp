@@ -1082,7 +1082,7 @@ parse_postfix_expression (jsp_operand_t *out_this_arg_gl_p, /**< out: if express
   {
     jsp_early_error_check_for_eval_and_arguments_in_strict_mode (expr, is_strict_mode (), tok.loc);
 
-    const jsp_operand_t res = dump_post_increment_res (expr);
+    const jsp_operand_t res = dump_post_increment_res (jsp_operand_t::dup_operand (expr));
     if (!operand_is_empty (this_arg) && !operand_is_empty (prop))
     {
       dump_prop_setter (this_arg, prop, expr);
@@ -1093,7 +1093,7 @@ parse_postfix_expression (jsp_operand_t *out_this_arg_gl_p, /**< out: if express
   {
     jsp_early_error_check_for_eval_and_arguments_in_strict_mode (expr, is_strict_mode (), tok.loc);
 
-    const jsp_operand_t res = dump_post_decrement_res (expr);
+    const jsp_operand_t res = dump_post_decrement_res (jsp_operand_t::dup_operand (expr));
     if (!operand_is_empty (this_arg) && !operand_is_empty (prop))
     {
       dump_prop_setter (this_arg, prop, expr);
@@ -1136,7 +1136,7 @@ parse_unary_expression (jsp_operand_t *this_arg_gl, jsp_operand_t *prop_gl)
       expr = dump_pre_increment_res (expr);
       if (!operand_is_empty (this_arg) && !operand_is_empty (prop))
       {
-        dump_prop_setter (this_arg, prop, expr);
+        dump_prop_setter (this_arg, prop, jsp_operand_t::dup_operand (expr));
       }
       break;
     }
@@ -1148,7 +1148,7 @@ parse_unary_expression (jsp_operand_t *this_arg_gl, jsp_operand_t *prop_gl)
       expr = dump_pre_decrement_res (expr);
       if (!operand_is_empty (this_arg) && !operand_is_empty (prop))
       {
-        dump_prop_setter (this_arg, prop, expr);
+        dump_prop_setter (this_arg, prop, jsp_operand_t::dup_operand (expr));
       }
       break;
     }
@@ -1196,7 +1196,7 @@ parse_unary_expression (jsp_operand_t *this_arg_gl, jsp_operand_t *prop_gl)
         skip_newlines ();
         expr = parse_unary_expression (NULL, NULL);
         expr = dump_variable_assignment_res (expr);
-        dump_undefined_assignment (expr);
+        dump_undefined_assignment (jsp_operand_t::dup_operand (expr));
         break;
       }
       else if (is_keyword (KW_TYPEOF))
@@ -1664,7 +1664,7 @@ parse_conditional_expression (bool in_allowed, bool *is_conditional)
     rewrite_conditional_check ();
     skip_newlines ();
     expr = parse_assignment_expression (in_allowed);
-    dump_variable_assignment (tmp, expr);
+    dump_variable_assignment (jsp_operand_t::dup_operand (tmp), expr);
     rewrite_jump_to_end ();
     if (is_conditional != NULL)
     {
