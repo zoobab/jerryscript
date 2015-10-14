@@ -117,10 +117,12 @@ set_reg_status (vm_idx_t reg, /**< register number, register out of the range VM
   uint32_t shifted_value = (uint32_t) 1 << reg;
   if (reg_status)
   {
+    JERRY_ASSERT (!((*free_regs_mask_p) & shifted_value));
     (*free_regs_mask_p) |= shifted_value;
   }
   else
   {
+    JERRY_ASSERT ((*free_regs_mask_p) & shifted_value);
     (*free_regs_mask_p) &= ~shifted_value;
   }
 } /* set_reg_status */
@@ -153,6 +155,18 @@ get_free_reg (void)
 } /* get_free_reg */
 
 /**
+ * Free the register which is assigned to this operand
+ */
+void jsp_operand_t::free_reg () const
+{
+  if (_is_to_be_freed && _type == TMP)
+  {
+    set_reg_status (_data.uid, REG_FREE);
+    _is_to_be_freed = false;
+  }
+} /* jsp_operand_t::free_reg */
+
+/**
  * Assignment operator
  *
  * NOTE:
@@ -183,10 +197,7 @@ jsp_operand_t& jsp_operand_t::operator= (const jsp_operand_t &op) /**< operand, 
  */
 jsp_operand_t::~jsp_operand_t ()
 {
-  if (_is_to_be_freed && _type == TMP)
-  {
-    set_reg_status (_data.uid, REG_FREE);
-  }
+  free_reg ();
 } /* jsp_operand_t::~jsp_operand_t */
 
 static void
@@ -816,7 +827,7 @@ operand_is_empty (jsp_operand_t &op)
 void
 dumper_new_statement (void)
 {
-  clear_regs ();
+  JERRY_ASSERT (!free_regs_mask[0] && !free_regs_mask[1] && !free_regs_mask[2] && !free_regs_mask[3]);
 }
 
 void
@@ -838,6 +849,7 @@ void
 dumper_finish_scope (void)
 {
   JERRY_ASSERT (jsp_reg_max_for_local_var == VM_IDX_EMPTY);
+  JERRY_ASSERT (!free_regs_mask[0] && !free_regs_mask[1] && !free_regs_mask[2] && !free_regs_mask[3]);
 
   jsp_reg_max_for_temps = STACK_TOP (jsp_reg_id_stack);
   STACK_DROP (jsp_reg_id_stack, 1);
@@ -1497,6 +1509,8 @@ dump_delete_res (jsp_operand_t op, bool is_strict, locus loc)
          *
          * In this case we rewrite property getter instruction with VM_OP_DELETE_PROP instruction.
          */
+        set_reg_status (last_op_meta.op.data.prop_getter.obj, REG_OCCUPIED);
+        set_reg_status (last_op_meta.op.data.prop_getter.prop, REG_OCCUPIED);
         res = op;
 
         const vm_instr_counter_t oc = (vm_instr_counter_t) (serializer_get_current_instr_counter () - 1);
@@ -1978,7 +1992,7 @@ rewrite_jump_to_end (void)
 }
 
 void
-start_dumping_assignment_expression (void)
+start_dumping_assignment_expression (const jsp_operand_t &op)
 {
   const op_meta last = last_dumped_op_meta ();
   if (last.op.op_idx == VM_OP_PROP_GETTER)
@@ -1993,7 +2007,7 @@ start_dumping_assignment_expression (void)
      * instruction.
      */
     serializer_set_writing_position ((vm_instr_counter_t) (serializer_get_current_instr_counter () - 1));
-    set_reg_status (last.op.data.prop_getter.lhs, REG_FREE);
+    op.free_reg ();
     set_reg_status (last.op.data.prop_getter.obj, REG_OCCUPIED);
     set_reg_status (last.op.data.prop_getter.prop, REG_OCCUPIED);
   }

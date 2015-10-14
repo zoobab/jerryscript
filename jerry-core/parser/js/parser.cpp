@@ -1712,7 +1712,7 @@ parse_assignment_expression (bool in_allowed)
   {
     jsp_early_error_check_for_eval_and_arguments_in_strict_mode (expr, is_strict_mode (), tok.loc);
     skip_newlines ();
-    start_dumping_assignment_expression ();
+    start_dumping_assignment_expression (expr);
     const jsp_operand_t assign_expr = parse_assignment_expression (in_allowed);
 
     if (tt == TOK_EQ)
@@ -2448,6 +2448,8 @@ parse_switch_statement (void)
                   JSP_LABEL_TYPE_UNNAMED_BREAKS,
                   TOKEN_EMPTY_INITIALIZER);
 
+  dumper_new_scope ();
+
   // Second, parse case clauses' bodies and rewrite jumps
   skip_newlines ();
   while (is_keyword (KW_CASE) || is_keyword (KW_DEFAULT))
@@ -2487,6 +2489,8 @@ parse_switch_statement (void)
                                    serializer_get_current_instr_counter ());
 
   finish_dumping_case_clauses ();
+
+  dumper_finish_scope ();
 }
 
 /* catch_clause
