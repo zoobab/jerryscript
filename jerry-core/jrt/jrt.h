@@ -32,6 +32,11 @@
 #define __attr_noinline___ __attribute__((noinline))
 #define __attr_used___ __attribute__((used))
 #define __attr_return_value_should_be_checked___ __attribute__((warn_unused_result))
+
+#if defined (__TARGET_ESP8266)
+#define __attr_always_inline___
+#endif
+
 #ifndef __attr_always_inline___
 # define __attr_always_inline___ __attribute__((always_inline))
 #endif /* !__attr_always_inline___ */
@@ -120,7 +125,11 @@ extern void __noreturn jerry_unimplemented (const char *, const char *, const ch
 #define JERRY_DDDLOG(...) JERRY_DLOG (__VA_ARGS__)
 #endif /* !JERRY_ENABLE_LOG */
 
+#if defined (__TARGET_ESP8266)
+#define JERRY_ERROR_MSG(...) printf (__VA_ARGS__)
+#else
 #define JERRY_ERROR_MSG(...) fprintf (stderr, __VA_ARGS__)
+#endif
 #define JERRY_WARNING_MSG(...) JERRY_ERROR_MSG (__VA_ARGS__)
 
 /**
