@@ -376,7 +376,7 @@ lit_literal_storage_t::dump ()
 
   for (rcs_record_t *rec_p = lit_storage.get_first (); rec_p != NULL; rec_p = lit_storage.get_next (rec_p))
   {
-    printf ("%p ", rec_p);
+    printf ("%p ", (void*)rec_p);
     printf ("[%3zu] ", get_record_size (rec_p));
 
     switch (rec_p->get_type ())
