@@ -122,7 +122,7 @@
 /**
  * Disable ECMA lookup cache
  */
-// #define CONFIG_ECMA_LCACHE_DISABLE
+#define CONFIG_ECMA_LCACHE_DISABLE
 
 /**
  * Share of newly allocated since last GC objects among all currently allocated objects,
