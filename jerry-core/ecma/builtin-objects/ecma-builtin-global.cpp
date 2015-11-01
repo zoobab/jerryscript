@@ -857,7 +857,12 @@ ecma_builtin_global_object_decode_uri_helper (ecma_value_t uri __attr_unused___,
 
       lit_code_point_t decoded_byte;
 
-      lit_read_code_point_from_hex (input_char_p + 1, 2, &decoded_byte);
+      if (!lit_read_code_point_from_hex (input_char_p + 1, 2, &decoded_byte))
+      {
+        ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_URI));
+        break;
+      }
+
       input_char_p += URI_ENCODED_BYTE_SIZE;
 
       if (decoded_byte <= LIT_UTF8_1_BYTE_CODE_POINT_MAX)
@@ -910,9 +915,9 @@ ecma_builtin_global_object_decode_uri_helper (ecma_value_t uri __attr_unused___,
           else
           {
             lit_code_point_t cp;
-            lit_read_code_point_from_hex (input_char_p + 1, 2, &cp);
 
-            if ((cp & LIT_UTF8_EXTRA_BYTE_MASK) != LIT_UTF8_EXTRA_BYTE_MARKER)
+            if (!lit_read_code_point_from_hex (input_char_p + 1, 2, &cp)
+                || ((cp & LIT_UTF8_EXTRA_BYTE_MASK) != LIT_UTF8_EXTRA_BYTE_MARKER))
             {
               is_valid = false;
               break;
@@ -935,8 +940,8 @@ ecma_builtin_global_object_decode_uri_helper (ecma_value_t uri __attr_unused___,
         if ((bytes_count == 2 && cp <= LIT_UTF8_1_BYTE_CODE_POINT_MAX)
             || (bytes_count == 3 && cp <= LIT_UTF8_2_BYTE_CODE_POINT_MAX)
             || (bytes_count == 4 && cp <= LIT_UTF8_3_BYTE_CODE_POINT_MAX)
-            || lit_is_code_unit_high_surrogate ((ecma_char_t) cp)
-            || lit_is_code_unit_low_surrogate ((ecma_char_t) cp)
+            || (cp <= LIT_UTF16_CODE_UNIT_MAX && lit_is_code_unit_high_surrogate ((ecma_char_t) cp))
+            || (cp <= LIT_UTF16_CODE_UNIT_MAX && lit_is_code_unit_low_surrogate ((ecma_char_t) cp))
             || cp > LIT_UNICODE_CODE_POINT_MAX)
         {
           ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_URI));
