@@ -116,7 +116,7 @@ ecma_builtin_global_object_print (ecma_value_t this_arg __attr_unused___, /**< t
                                                               0,
                                                               JERRY_BITSINBYTE);
 
-        printf ("\\u%02x%02x", byte_high, byte_low);
+        printf ("\\u%02x%02x", (unsigned int)byte_high, (unsigned int)byte_low);
       }
     }
 

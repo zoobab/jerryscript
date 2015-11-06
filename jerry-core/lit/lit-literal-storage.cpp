@@ -411,7 +411,7 @@ lit_literal_storage_t::dump ()
       {
         lit_magic_string_ex_id_t id = lit_magic_record_ex_get_magic_str_id (rec_p);
         printf ("%s : EXT MAGIC STRING", lit_get_magic_string_ex_utf8 (id));
-        printf (" [id=%d] ", id);
+        printf (" [id=%d] ", (int)id);
 
         break;
       }
