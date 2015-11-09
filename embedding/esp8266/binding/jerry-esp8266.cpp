@@ -13,20 +13,21 @@
  * limitations under the License.
  */
 
-#include "jerry.h"
-
 /**
  * Standalone Jerry exit codes
  */
 #define JERRY_STANDALONE_EXIT_CODE_OK   (0)
 #define JERRY_STANDALONE_EXIT_CODE_FAIL (1)
 
-#include "jerry-core/jerry-api.h"
-#include "jerry-core/jrt/jrt.h"
-
-#include <stdlib.h>
 
 #include "user_config.h"
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "jerry-core/jerry.h"
+#include "jerry-core/jrt/jrt.h"  // for JERRY_ERROR_MSG
+
+#include "jerry_esp8266.h"
 
 
 static const char* fn_sys_loop_name = "sysloop";
@@ -309,3 +310,11 @@ void js_exit (void)
 {
   jerry_cleanup ();
 }
+
+//-----------------------------------------------------------------------------
+
+void exit(int status) {
+  printf("!!!! EXIT: %d\n", status);
+  while (true) {
+  }
+} /* exit */

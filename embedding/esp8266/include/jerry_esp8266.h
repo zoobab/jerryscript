@@ -13,11 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef __USER_CONFIG_H__
-#define __USER_CONFIG_H__
+#ifndef __JERRY_ESP8266_H__
+#define __JERRY_ESP8266_H__
 
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC extern
+#endif
 
-#define jerry_STACK_SIZE 2000  // number of stack items, x4 for bytes
+EXTERNC void gpio_dir_native (int, int);
+EXTERNC void gpio_set_native (int, int);
+EXTERNC int gpio_get_native (int);
 
+EXTERNC int js_entry (const char *source_p, const size_t source_size);
+EXTERNC int js_eval (const char *source_p, const size_t source_size);
+EXTERNC int js_loop (uint32_t ticknow);
+EXTERNC void js_exit (void);
 
 #endif

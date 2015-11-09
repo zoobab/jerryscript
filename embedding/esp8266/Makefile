@@ -82,8 +82,10 @@ LINKFLAGS_eagle.app.v6 = 		\
 	-lmain				\
 	-lfreertos			\
 	-llwip				\
-	-L./libs -ljerrycore 		\
-	-ljerryentry -lfdlibm		\
+	-L./libs 			\
+	-ljerrycore 			\
+	-ljerryentry 			\
+	-lfdlibm			\
 	$(DEP_LIBS_eagle.app.v6) 	\
 	./libs/lib_a-setjmp.o		\
 	-Wl,--end-group

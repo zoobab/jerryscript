@@ -29,61 +29,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "gpio.h"
 #include "user_config.h"
-
-
-//-----------------------------------------------------------------------------
-#define jerry_STACK_SIZE 2000  // number of stack items, x4 for bytes
-
-
-//-----------------------------------------------------------------------------
-typedef enum {
-  UART0 = 0x0,
-  UART1 = 0x1,
-} UART_Port;
-
-typedef enum {
-  BIT_RATE_300     = 300,
-  BIT_RATE_600     = 600,
-  BIT_RATE_1200    = 1200,
-  BIT_RATE_2400    = 2400,
-  BIT_RATE_4800    = 4800,
-  BIT_RATE_9600    = 9600,
-  BIT_RATE_19200   = 19200,
-  BIT_RATE_38400   = 38400,
-  BIT_RATE_57600   = 57600,
-  BIT_RATE_74880   = 74880,
-  BIT_RATE_115200  = 115200,
-  BIT_RATE_230400  = 230400,
-  BIT_RATE_460800  = 460800,
-  BIT_RATE_921600  = 921600,
-  BIT_RATE_1843200 = 1843200,
-  BIT_RATE_3686400 = 3686400,
-} UART_BautRate;
-
-
-void exit(int status) {
-  printf("!!!! EXIT: %d\n", status);
-  while (true) {
-  }
-} /* exit */
-
-
-void gpio_output_conf(uint32 set_mask,
-                      uint32 clear_mask,
-                      uint32 enable_mask,
-                      uint32 disable_mask) {
-  GPIO_REG_WRITE(GPIO_OUT_W1TS_ADDRESS, set_mask);
-  GPIO_REG_WRITE(GPIO_OUT_W1TC_ADDRESS, clear_mask);
-  GPIO_REG_WRITE(GPIO_ENABLE_W1TS_ADDRESS, enable_mask);
-  GPIO_REG_WRITE(GPIO_ENABLE_W1TC_ADDRESS, disable_mask);
-}
-
-
-uint32 gpio_input_get(void) {
-  return GPIO_REG_READ(GPIO_IN_ADDRESS);
-}
+#include "esp8266_gpio.h"
+#include "esp8266_uart.h"
 
 
 //-----------------------------------------------------------------------------
