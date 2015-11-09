@@ -31,7 +31,14 @@ ESP_CFLAGS = "-D__TARGET_ESP8266 -Wl,-EL -fno-inline-functions -ffunction-sectio
 ESP_LIBS_INC = "$(CURDIR)/embedding/esp8266/include;$(ESP_INC2);$(ESP_INC2)/espressif;$(ESP_INC2)/freertos;$(ESP_INC2)/json;$(ESP_INC2)/lwip;$(ESP_INC2)/ssl"
 
 
-all: check-env
+all: check-env jerry js2c
+	cd embedding/esp8266; \
+		make clean; \
+		BOOT=new APP=1 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make;
+
+#		BOOT=new APP=2 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make
+
+jerry:
 	mkdir -p $(INTERM)
 	mkdir -p $(OUTPUT)
 	mkdir -p $(COPYTARGET)
@@ -55,12 +62,10 @@ all: check-env
 	cp $(INTERM)/lib$(TYPE).external-entry.a $(OUTPUT)/.
 	cp $(OUTPUT)/lib$(TYPE).external-entry.a $(COPYTARGET)/libjerryentry.a
 
-	cd embedding/esp8266; \
-		make clean \
-		./js2c.py; \
-		BOOT=new APP=1 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make;
 
-#		BOOT=new APP=2 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make
+js2c:
+	cd embedding/esp8266; \
+		./js2c.py
 
 check-env:
 ifndef SDK_PATH

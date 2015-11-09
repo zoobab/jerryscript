@@ -1007,8 +1007,10 @@ lit_put_ecma_char (ecma_char_t ecma_char) /**< code unit */
   {
 #if defined (__TARGET_ESP8266)
     printf ("%c", ecma_char);
-#else
+#elif defined(__TARGET_MBED_K64F)
     putchar ((char)ecma_char);
+#else
+    putchar (ecma_char);
 #endif
   }
   else
