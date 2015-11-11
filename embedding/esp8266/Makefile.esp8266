@@ -34,9 +34,9 @@ ESP_LIBS_INC = "$(CURDIR)/embedding/esp8266/include;$(ESP_INC2);$(ESP_INC2)/espr
 all: check-env jerry js2c
 	cd embedding/esp8266; \
 		make clean; \
-		BOOT=new APP=1 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make;
+		BOOT=new APP=1 SPI_SPEED=40 SPI_MODE=QIO SPI_SIZE_MAP=3 make;
 
-#		BOOT=new APP=2 SPI_SPEED=80 SPI_MODE=QIO SPI_SIZE_MAP=5 make
+#		BOOT=new APP=2 SPI_SPEED=40 SPI_MODE=QIO SPI_SIZE_MAP=3 make
 
 jerry:
 	mkdir -p $(INTERM)
@@ -78,12 +78,12 @@ endif
 
 flash:
 	/opt/Espressif/esptool-py/esptool.py --port $(USBDEVICE) write_flash \
-		0x00000 $(SDK_PATH)/bin/boot_v1.4.bin \
-		0x01000 $(BIN_PATH)/upgrade/user1.2048.new.5.bin \
-		0x3FE000 $(SDK_PATH)/bin/blank.bin \
-		0x3FC000 $(SDK_PATH)/bin/esp_init_data_default.bin
+		0x00000 $(SDK_PATH)/bin/"boot_v1.4(b1).bin" \
+		0x01000 $(BIN_PATH)/upgrade/user1.2048.new.3.bin \
+		0x1FC000 $(SDK_PATH)/bin/esp_init_data_default.bin \
+		0x1FE000 $(SDK_PATH)/bin/blank.bin
 
-#		0x101000 $(BIN_PATH)/upgrade/user2.2048.new.5.bin \
+#		0x81000 $(BIN_PATH)/upgrade/user2.2048.new.3.bin \
 
 
 clean:
