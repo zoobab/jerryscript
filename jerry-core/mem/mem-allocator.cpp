@@ -49,6 +49,7 @@ void
 mem_finalize (bool is_show_mem_stats) /**< show heap memory stats
                                            before finalization? */
 {
+  return;
   mem_pools_finalize ();
 
   if (is_show_mem_stats)

@@ -24,7 +24,7 @@
 #include "jrt-libc-includes.h"
 #include "mem-allocator.h"
 #include "vm.h"
-#include "vm-stack.h"
+#include "vm-registers.h"
 #include "opcodes.h"
 
 /**
@@ -375,8 +375,6 @@ vm_init (const bytecode_data_header_t *program_p, /**< pointer to byte-code data
 void
 vm_finalize (void)
 {
-  vm_stack_finalize ();
-
   __program = NULL;
 } /* vm_finalize */
 
@@ -617,8 +615,6 @@ vm_run_from_pos (const bytecode_data_header_t *header_p, /**< byte-code data hea
 
   uint32_t regs_num = VM_SPECIAL_REGS_NUMBER + tmp_regs_num + local_var_regs_num + arg_regs_num;
 
-  MEM_DEFINE_LOCAL_ARRAY (regs, regs_num, ecma_value_t);
-
   vm_frame_ctx_t frame_ctx;
   frame_ctx.bytecode_header_p = header_p;
   frame_ctx.pos = (vm_instr_counter_t) (start_pos + 1);
@@ -628,10 +624,9 @@ vm_run_from_pos (const bytecode_data_header_t *header_p, /**< byte-code data hea
   frame_ctx.is_call_in_direct_eval_form = false;
   frame_ctx.tmp_num_p = ecma_alloc_number ();
 
-  vm_stack_add_frame (&frame_ctx.stack_frame, regs, regs_num, local_var_regs_num, arg_regs_num, arg_collection_p);
-  vm_stack_frame_set_reg_value (&frame_ctx.stack_frame,
-                                VM_REG_SPECIAL_THIS_BINDING,
-                                ecma_copy_value (this_binding_value, false));
+  vm_spill_regs (regs_num, local_var_regs_num, arg_regs_num, arg_collection_p);
+  vm_set_reg_value (VM_REG_SPECIAL_THIS_BINDING,
+                    ecma_copy_value (this_binding_value, false));
 
   vm_frame_ctx_t *prev_context_p = vm_top_context_p;
   vm_top_context_p = &frame_ctx;
@@ -647,15 +642,11 @@ vm_run_from_pos (const bytecode_data_header_t *header_p, /**< byte-code data hea
 
   vm_top_context_p = prev_context_p;
 
-  vm_stack_free_frame (&frame_ctx.stack_frame);
-
   ecma_dealloc_number (frame_ctx.tmp_num_p);
 
 #ifdef MEM_STATS
   interp_mem_stats_context_exit (&frame_ctx, start_pos);
 #endif /* MEM_STATS */
-
-  MEM_FINALIZE_LOCAL_ARRAY (regs);
 
   return completion;
 } /* vm_run_from_pos */
@@ -754,9 +745,7 @@ vm_get_this_binding (void)
 {
   JERRY_ASSERT (vm_top_context_p != NULL);
 
-  return ecma_copy_value (vm_stack_frame_get_reg_value (&vm_top_context_p->stack_frame,
-                                                        VM_REG_SPECIAL_THIS_BINDING),
-                                                        true);
+  return ecma_copy_value (vm_get_reg_value (VM_REG_SPECIAL_THIS_BINDING), true);
 } /* vm_get_this_binding */
 
 /**

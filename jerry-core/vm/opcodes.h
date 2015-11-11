@@ -18,7 +18,7 @@
 
 #include "ecma-globals.h"
 #include "jrt.h"
-#include "vm-stack.h"
+#include "vm-registers.h"
 
 /* Maximum opcodes number in bytecode.  */
 #define MAX_OPCODES (256*256 - 1)
@@ -216,7 +216,6 @@ typedef struct
   bool is_call_in_direct_eval_form; /** flag, indicating if there is call of 'Direct call to eval' form in
                                      *  process (see also: OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM) */
   ecma_number_t *tmp_num_p; /**< an allocated number (to reduce temporary allocations) */
-  vm_stack_frame_t stack_frame; /**< stack frame associated with the context */
 
 #ifdef MEM_STATS
   size_t context_peak_allocated_heap_bytes;

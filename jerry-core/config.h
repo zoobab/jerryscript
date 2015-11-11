@@ -27,6 +27,11 @@
 #define CONFIG_MEM_STACK_LIMIT (4096)
 
 /**
+ * Amount of VM registers
+ */
+#define CONFIG_VM_REG_COUNT (120)
+
+/**
  * Size of pool chunk
  *
  * Should not be less than size of any of ECMA Object Model's data types.

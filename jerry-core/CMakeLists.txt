@@ -86,7 +86,7 @@ project (JerryCore CXX C ASM)
 
  # Platform-specific
   # Linux
-
+    math(EXPR MEM_HEAP_AREA_SIZE_16K "120 * 1024")
   # MCU
    # stm32f3
     math(EXPR MEM_HEAP_AREA_SIZE_16K "16 * 1024")
