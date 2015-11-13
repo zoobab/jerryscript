@@ -27,7 +27,6 @@
 #include "ecma-globals.h"
 #include "lit-strings.h"
 #include "mem-allocator.h"
-#include "opcodes.h"
 
 /**
  * Get value of pointer from specified non-null compressed pointer.
@@ -84,12 +83,10 @@ extern ecma_completion_value_t ecma_make_throw_obj_completion_value (ecma_object
 extern ecma_completion_value_t ecma_make_empty_completion_value (void);
 extern ecma_completion_value_t ecma_make_return_completion_value (ecma_value_t);
 extern ecma_completion_value_t ecma_make_meta_completion_value (void);
-extern ecma_completion_value_t ecma_make_jump_completion_value (vm_instr_counter_t);
 extern ecma_value_t ecma_get_completion_value_value (ecma_completion_value_t);
 extern ecma_number_t *ecma_get_number_from_completion_value (ecma_completion_value_t) __attr_const___;
 extern ecma_string_t *ecma_get_string_from_completion_value (ecma_completion_value_t) __attr_const___;
 extern ecma_object_t *ecma_get_object_from_completion_value (ecma_completion_value_t) __attr_const___;
-extern vm_instr_counter_t ecma_get_jump_target_from_completion_value (ecma_completion_value_t);
 extern ecma_completion_value_t ecma_copy_completion_value (ecma_completion_value_t);
 extern void ecma_free_completion_value (ecma_completion_value_t);
 

@@ -28,7 +28,6 @@
 #include "jrt-bit-fields.h"
 
 JERRY_STATIC_ASSERT (sizeof (ecma_value_t) * JERRY_BITSINBYTE >= ECMA_VALUE_SIZE);
-JERRY_STATIC_ASSERT (sizeof (ecma_completion_value_t) * JERRY_BITSINBYTE >= ECMA_COMPLETION_VALUE_SIZE);
 
 /**
  * Get type field of ecma-value
@@ -482,9 +481,8 @@ ecma_get_completion_value_value_field (ecma_completion_value_t completion_value)
 static vm_instr_counter_t
 ecma_get_completion_value_target (ecma_completion_value_t completion_value) /**< completion value */
 {
-  return (vm_instr_counter_t) jrt_extract_bit_field (completion_value,
-                                                     ECMA_COMPLETION_VALUE_TARGET_POS,
-                                                     ECMA_COMPLETION_VALUE_TARGET_WIDTH);
+  // FIXME
+  return NULL;
 } /* ecma_get_completion_value_target */
 
 /**
@@ -529,10 +527,8 @@ ecma_set_completion_value_target (ecma_completion_value_t completion_value, /**<
                                                                              * to set field in */
                                   vm_instr_counter_t target) /**< break / continue target */
 {
-  return (ecma_completion_value_t) jrt_set_bit_field_value (completion_value,
-                                                            target,
-                                                            ECMA_COMPLETION_VALUE_TARGET_POS,
-                                                            ECMA_COMPLETION_VALUE_TARGET_WIDTH);
+  // FIXME
+  return ecma_make_empty_completion_value ();
 } /* ecma_set_completion_value_target */
 
 /**

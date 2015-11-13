@@ -28,9 +28,9 @@
 #include "jrt.h"
 #include "jrt-libc-includes.h"
 #include "lit-char-helpers.h"
+#include "lit-literal.h"
 #include "lit-magic-strings.h"
-#include "serializer.h"
-#include "vm.h"
+
 
 /**
  * Maximum length of strings' concatenation

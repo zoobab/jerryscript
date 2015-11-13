@@ -28,7 +28,6 @@
 #include "ecma-objects-general.h"
 #include "lit-magic-strings.h"
 #include "parser.h"
-#include "serializer.h"
 
 #define JERRY_INTERNAL
 #include "jerry-internal.h"
@@ -1351,7 +1350,6 @@ jerry_init (jerry_flag_t flags) /**< combination of Jerry flags */
   jerry_make_api_available ();
 
   mem_init ();
-  serializer_init ();
   ecma_init ();
 } /* jerry_init */
 
@@ -1366,7 +1364,6 @@ jerry_cleanup (void)
   bool is_show_mem_stats = ((jerry_flags & JERRY_FLAG_MEM_STATS) != 0);
 
   ecma_finalize ();
-  serializer_free ();
   mem_finalize (is_show_mem_stats);
   vm_finalize ();
 } /* jerry_cleanup */
@@ -1418,16 +1415,15 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 {
   jerry_assert_api_available ();
 
-  bool is_show_instructions = ((jerry_flags & JERRY_FLAG_SHOW_OPCODES) != 0);
+//  bool is_show_instructions = ((jerry_flags & JERRY_FLAG_SHOW_OPCODES) != 0);
 
-  parser_set_show_instrs (is_show_instructions);
+//  parser_set_show_instrs (is_show_instructions);
 
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
 
   parse_status = parser_parse_script (source_p,
-                                      source_size,
-                                      &bytecode_data_p);
+                                      source_size);
 
   if (parse_status != JSP_STATUS_OK)
   {
@@ -1577,7 +1573,7 @@ jerry_parse_and_save_snapshot (const jerry_api_char_t* source_p, /**< script sou
 {
 #ifdef JERRY_ENABLE_SNAPSHOT
   jsp_status_t parse_status;
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
 
   if (is_for_global)
   {
@@ -1746,7 +1742,7 @@ jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
     return JERRY_COMPLETION_CODE_INVALID_SNAPSHOT_FORMAT;
   }
 
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
   bytecode_data_p = serializer_load_bytecode_with_idx_map (snapshot_data_p + snapshot_read,
                                                            header_p->bytecode_size,
                                                            header_p->idx_to_lit_map_size,

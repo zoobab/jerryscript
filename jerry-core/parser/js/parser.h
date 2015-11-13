@@ -16,7 +16,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "jrt.h"
+#include "jerry-api.h"
 
 /**
  * Parser completion status
@@ -28,10 +28,15 @@ typedef enum
   JSP_STATUS_REFERENCE_ERROR /**< ReferenceError early error occured */
 } jsp_status_t;
 
-void parser_set_show_instrs (bool);
-jsp_status_t parser_parse_script (const jerry_api_char_t *, size_t, const bytecode_data_header_t **);
-jsp_status_t parser_parse_eval (const jerry_api_char_t *, size_t, bool, const bytecode_data_header_t **, bool *);
-jsp_status_t parser_parse_new_function (const jerry_api_char_t **, const size_t *, size_t,
-                                        const bytecode_data_header_t **);
+extern void parser_set_show_instrs (bool);
+extern jsp_status_t parser_parse_script (const jerry_api_char_t *, size_t);
+extern jsp_status_t parser_parse_eval (const jerry_api_char_t *,
+                                       size_t,
+                                       bool,
+                                       const cbc_compiled_code_t **,
+                                       bool *);
+extern jsp_status_t parser_parse_new_function (const jerry_api_char_t **,
+                                               const size_t *, size_t,
+                                               const cbc_compiled_code_t **);
 
 #endif /* PARSER_H */

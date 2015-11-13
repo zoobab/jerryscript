@@ -21,7 +21,6 @@
 #include "ecma-helpers.h"
 #include "ecma-lex-env.h"
 #include "parser.h"
-#include "serializer.h"
 #include "vm.h"
 
 /** \addtogroup ecma ECMA
@@ -86,7 +85,7 @@ ecma_op_eval_chars_buffer (const jerry_api_char_t *code_p, /**< code characters 
 
   ecma_completion_value_t completion;
 
-  const bytecode_data_header_t *bytecode_data_p;
+  const cbc_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
 
   bool is_strict_call = (is_direct && is_called_from_strict_mode_code);
@@ -114,7 +113,7 @@ ecma_op_eval_chars_buffer (const jerry_api_char_t *code_p, /**< code characters 
 
     if (!code_contains_functions)
     {
-      serializer_remove_bytecode_data (bytecode_data_p);
+//      serializer_remove_bytecode_data (bytecode_data_p);
     }
   }
 

@@ -32,6 +32,7 @@
 #include "jrt.h"
 #include "jrt-libc-includes.h"
 #include "jrt-bit-fields.h"
+#include "vm-defines.h"
 #include "vm-stack.h"
 
 #define JERRY_INTERNAL

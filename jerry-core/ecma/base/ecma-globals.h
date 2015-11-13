@@ -29,6 +29,7 @@
 #include "lit-magic-strings.h"
 #include "mem-allocator.h"
 #include "rcs-recordset.h"
+#include "vm-defines.h"
 
 /** \addtogroup compressedpointer Compressed pointer
  * @{
@@ -172,20 +173,11 @@ typedef uint32_t ecma_completion_value_t;
 #define ECMA_COMPLETION_VALUE_VALUE_WIDTH (ECMA_VALUE_SIZE)
 
 /**
- * Break / continue jump target
- */
-#define ECMA_COMPLETION_VALUE_TARGET_POS (0)
-#define ECMA_COMPLETION_VALUE_TARGET_WIDTH ((uint32_t) sizeof (vm_instr_counter_t) * JERRY_BITSINBYTE)
-
-/**
  * Type (ecma_completion_type_t)
  */
-#define ECMA_COMPLETION_VALUE_TYPE_POS (JERRY_MAX (JERRY_ALIGNUP (ECMA_COMPLETION_VALUE_VALUE_POS + \
+#define ECMA_COMPLETION_VALUE_TYPE_POS (JERRY_ALIGNUP (ECMA_COMPLETION_VALUE_VALUE_POS + \
                                                                   ECMA_COMPLETION_VALUE_VALUE_WIDTH, \
-                                                                  JERRY_BITSINBYTE), \
-                                                   JERRY_ALIGNUP (ECMA_COMPLETION_VALUE_TARGET_POS + \
-                                                                  ECMA_COMPLETION_VALUE_TARGET_WIDTH, \
-                                                                  JERRY_BITSINBYTE)))
+                                                                  JERRY_BITSINBYTE))
 #define ECMA_COMPLETION_VALUE_TYPE_WIDTH (8)
 
 /**

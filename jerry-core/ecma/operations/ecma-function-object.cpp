@@ -47,7 +47,7 @@ ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
                                                                        *   instantiated for the code */
                                         vm_instr_counter_t instr_oc) /**< position of first instruction */
 {
-  uint32_t value = instr_oc;
+  uint32_t value;/* = instr_oc;
   const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
   const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
 
@@ -63,7 +63,7 @@ ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
   {
     value |= (1u << do_instantiate_arguments_object_bit_offset);
   }
-
+  */
   return value;
 } /* ecma_pack_code_internal_property_value */
 
@@ -216,9 +216,7 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
                                 bool is_strict, /**< 'strict' flag */
                                 bool do_instantiate_arguments_object, /**< should an Arguments object be instantiated
                                                                        *   for the function object upon call */
-                                const bytecode_data_header_t *bytecode_data_p, /**< byte-code array */
-                                vm_instr_counter_t first_instr_pos) /**< position of first instruction
-                                                                     *   of function's body */
+                                const cbc_compiled_code_t *bytecode_data_p) /**< byte-code array */
 {
   // 1., 4., 13.
   ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
@@ -255,9 +253,9 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
 
   ecma_property_t *code_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
-  code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict,
-                                                                                   do_instantiate_arguments_object,
-                                                                                   first_instr_pos);
+//  code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict,
+//                                                                                   do_instantiate_arguments_object,
+//                                                                                   first_instr_pos);
 
   // 14.
   // 15.
@@ -824,8 +822,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       // 8.
       bool is_strict;
       bool do_instantiate_args_obj;
-      const bytecode_data_header_t *bytecode_data_p;
-      bytecode_data_p = MEM_CP_GET_POINTER (const bytecode_data_header_t, bytecode_prop_p->u.internal_property.value);
+      const cbc_compiled_code_t *bytecode_data_p;
+      bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
       vm_instr_counter_t code_first_instr_pos = ecma_unpack_code_internal_property_value (code_prop_value,
                                                                                           &is_strict,
                                                                                           &do_instantiate_args_obj);
@@ -1106,9 +1104,7 @@ ecma_op_function_construct (ecma_object_t *func_obj_p, /**< Function object */
 ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment */
                               ecma_string_t *function_name_p, /**< function name */
-                              const bytecode_data_header_t *bytecode_data_p, /**< byte-code data */
-                              vm_instr_counter_t function_first_instr_pos, /**< position of first instruction
-                                                                            *   of function code */
+                              const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data */
                               ecma_collection_header_t *formal_params_collection_p, /**< formal parameters collection
                                                                                      *   Warning:
                                                                                      *     the collection should not
@@ -1127,8 +1123,7 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
                                                               lex_env_p,
                                                               is_strict,
                                                               do_instantiate_arguments_object,
-                                                              bytecode_data_p,
-                                                              function_first_instr_pos);
+                                                              bytecode_data_p);
 
   // c.
   bool func_already_declared = ecma_op_has_binding (lex_env_p, function_name_p);

@@ -19,8 +19,6 @@
 
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
 
-#include "opcodes-dumper.h"
-
 /**
  * RegExp token type definitions
  */
