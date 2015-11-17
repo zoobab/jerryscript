@@ -30,7 +30,7 @@ const uint8_t cbc_ext_flags[] =
 
 #undef CBC_OPCODE
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 
 #define CBC_OPCODE(arg1, arg2, arg3) #arg1,
 

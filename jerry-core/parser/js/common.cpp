@@ -136,7 +136,7 @@ int
 util_compare_char_literals (lexer_literal_t *literal_p, /* literal */
                             const uint8_t *char_p) /* character array */
 {
-  PARSER_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
+  JERRY_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
                  || literal_p->type == LEXER_STRING_LITERAL);
   return memcmp (literal_p->value.char_p, char_p, literal_p->length) == 0;
 } /* util_compare_char_literals */
@@ -226,7 +226,7 @@ util_free_literal (lexer_literal_t *literal_p) /* literal */
   }
 } /* util_free_literal */
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 /**
  * Print literal.
  */
@@ -272,7 +272,7 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
 } /* util_print_literal */
 #endif
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 /**
  * Debug utility to print a character sequence.
  */

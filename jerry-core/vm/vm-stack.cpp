@@ -70,4 +70,3 @@ void vm_stack_pop_multiple (vm_stack_frame_t *, uint32_t)
 {
 // FIXME: Implement this
 }
-

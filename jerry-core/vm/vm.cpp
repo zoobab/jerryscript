@@ -52,6 +52,9 @@ jerry_completion_code_t
 vm_run_global (void)
 {
   jerry_completion_code_t ret_code;
+  // FIXME: Implement this
+
+
 
   return ret_code;
 } /* vm_run_global */
@@ -110,4 +113,3 @@ ecma_object_t *vm_get_lex_env (void)
 {
 // FIXME: Implement this
 }
-

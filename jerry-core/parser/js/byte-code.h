@@ -402,7 +402,7 @@ typedef enum
 extern const uint8_t cbc_flags[];
 extern const uint8_t cbc_ext_flags[];
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 
 /**
  * Opcode names for debugging.

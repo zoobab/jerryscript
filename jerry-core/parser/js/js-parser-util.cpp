@@ -95,7 +95,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     context_p->byte_code_size += 2;
   }
 
-  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
 
@@ -103,11 +103,11 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
   {
     uint8_t byte_argument = (uint8_t) context_p->last_cbc.u.value;
 
-    PARSER_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
+    JERRY_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
 
     if (flags & CBC_POP_STACK_BYTE_ARG)
     {
-      PARSER_ASSERT (context_p->stack_depth >= byte_argument);
+      JERRY_ASSERT (context_p->stack_depth >= byte_argument);
       context_p->stack_depth -= byte_argument;
     }
 
@@ -131,7 +131,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     context_p->byte_code_size += 2;
   }
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
   if (context_p->is_show_opcodes)
   {
     const char *name;
@@ -191,7 +191,7 @@ void
 parser_emit_cbc (parser_context_t *context_p, /**< context */
                  uint16_t opcode) /**< opcode */
 {
-  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, 0));
+  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, 0));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -209,7 +209,7 @@ parser_emit_cbc_literal (parser_context_t *context_p, /**< context */
                          uint16_t opcode, /**< opcode */
                          uint16_t literal_index) /**< literal index */
 {
-  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
+  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -229,7 +229,7 @@ void
 parser_emit_cbc_literal_from_token (parser_context_t *context_p, /**< context */
                                     uint16_t opcode) /**< opcode */
 {
-  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
+  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -250,8 +250,8 @@ parser_emit_cbc_call (parser_context_t *context_p, /**< context */
                       uint16_t opcode, /**< opcode */
                       size_t call_arguments) /**< number of arguments */
 {
-  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_BYTE_ARG));
-  PARSER_ASSERT (call_arguments <= CBC_MAXIMUM_BYTE_VALUE);
+  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_BYTE_ARG));
+  JERRY_ASSERT (call_arguments <= CBC_MAXIMUM_BYTE_VALUE);
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -294,16 +294,16 @@ parser_emit_cbc_forward_branch (parser_context_t *context_p, /**< context */
     extra_byte_code_increase = 1;
   }
 
-  PARSER_ASSERT (flags & CBC_HAS_BRANCH_ARG);
-  PARSER_ASSERT (CBC_BRANCH_IS_FORWARD (flags));
-  PARSER_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
+  JERRY_ASSERT (flags & CBC_HAS_BRANCH_ARG);
+  JERRY_ASSERT (CBC_BRANCH_IS_FORWARD (flags));
+  JERRY_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
 
   /* Branch opcodes never push anything onto the stack. */
-  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
   if (context_p->is_show_opcodes)
   {
     if (extra_byte_code_increase == 0)
@@ -377,7 +377,7 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
                                  uint32_t offset) /**< destination offset */
 {
   uint8_t flags;
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
   const char *name;
 #endif /* PARSER_DEBUG */
 
@@ -393,7 +393,7 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
   {
     flags = cbc_flags[opcode];
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
     name = cbc_names[opcode];
 #endif /* PARSER_DEBUG */
   }
@@ -405,22 +405,22 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
     flags = cbc_ext_flags[opcode];
     context_p->byte_code_size++;
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
     name = cbc_ext_names[opcode];
 #endif /* PARSER_DEBUG */
   }
 
-  PARSER_ASSERT (flags & CBC_HAS_BRANCH_ARG);
-  PARSER_ASSERT (CBC_BRANCH_IS_BACKWARD (flags));
-  PARSER_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
-  PARSER_ASSERT (offset <= context_p->byte_code_size);
+  JERRY_ASSERT (flags & CBC_HAS_BRANCH_ARG);
+  JERRY_ASSERT (CBC_BRANCH_IS_BACKWARD (flags));
+  JERRY_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
+  JERRY_ASSERT (offset <= context_p->byte_code_size);
 
   /* Branch opcodes never push anything onto the stack. */
-  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
   if (context_p->is_show_opcodes)
   {
     printf ("  [%3d] %s\n", (int) context_p->stack_depth, name);
@@ -485,12 +485,12 @@ parser_set_branch_to_current_position (parser_context_t *context_p, /**< context
 
   context_p->status_flags &= ~PARSER_NO_END_LABEL;
 
-  PARSER_ASSERT (context_p->byte_code_size > (branch_p->offset >> 8));
+  JERRY_ASSERT (context_p->byte_code_size > (branch_p->offset >> 8));
 
   delta = context_p->byte_code_size - (branch_p->offset >> 8);
   offset = (branch_p->offset & CBC_LOWER_SEVEN_BIT_MASK);
 
-  PARSER_ASSERT (delta <= PARSER_MAXIMUM_CODE_SIZE);
+  JERRY_ASSERT (delta <= PARSER_MAXIMUM_CODE_SIZE);
 
 #if PARSER_MAXIMUM_CODE_SIZE <= 65535
   page_p->bytes[offset++] = (delta >> 8);
@@ -823,6 +823,6 @@ parser_error_to_string (parser_error_t error) /**< error code */
     }
   }
 
-  PARSER_ASSERT (error == PARSER_ERR_NO_ERROR);
+  JERRY_ASSERT (error == PARSER_ERR_NO_ERROR);
   return "No error.";
 } /* parser_error_to_string */

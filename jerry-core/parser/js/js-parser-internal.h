@@ -207,7 +207,7 @@ typedef struct
   int16_t stack_limit;                        /**< maximum stack depth */
   parser_saved_context_t *last_context_p;     /**< last saved context */
   parser_stack_iterator_t last_statement;     /**< last statement position */
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
   int is_show_opcodes;                        /**< show opcodes */
   uint32_t total_byte_code_size;              /**< total byte code size */
 #endif

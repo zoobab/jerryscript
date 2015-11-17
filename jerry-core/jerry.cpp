@@ -1423,7 +1423,8 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
   jsp_status_t parse_status;
 
   parse_status = parser_parse_script (source_p,
-                                      source_size);
+                                      source_size,
+                                      bytecode_data_p);
 
   if (parse_status != JSP_STATUS_OK)
   {

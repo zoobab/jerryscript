@@ -26,8 +26,6 @@
 /* The utilites here are just for compiling purposes, JS
  * engines should have an optimized version for them. */
 
-#define PARSER_DEBUG
-
 /* Malloc */
 
 #define PARSER_MALLOC(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_LONG_TERM)
@@ -102,29 +100,8 @@ int util_set_regexp_literal (lexer_literal_t *, const uint8_t *);
 int util_set_function_literal (lexer_literal_t *, void *);
 void util_free_literal (lexer_literal_t *);
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 void util_print_literal (lexer_literal_t *);
-#endif /* PARSER_DEBUG */
-
-/* Assertions */
-
-#ifdef PARSER_DEBUG
-
-#define PARSER_ASSERT(x) \
-  do \
-  { \
-    if (!(x)) \
-    { \
-      printf ("Assertion failure in '%s' at line %d\n", __FILE__, __LINE__); \
-      abort (); \
-    } \
-  } \
-  while (0)
-
-#else
-
-#define PARSER_ASSERT(x)
-
 #endif /* PARSER_DEBUG */
 
 /* TRY/CATCH block */
@@ -154,7 +131,7 @@ void util_print_literal (lexer_literal_t *);
 #define PARSER_INLINE inline
 #define PARSER_NOINLINE __attribute__ ((noinline))
 
-#ifdef PARSER_DEBUG
+#ifndef JERRY_NDEBUG
 void util_print_string (const uint8_t *, size_t);
 #endif
 
