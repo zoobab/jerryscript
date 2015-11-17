@@ -21,18 +21,32 @@
 #include <string.h>
 #include <inttypes.h>
 #include <setjmp.h>
+
 #include "mem-heap.h"
 
 /* The utilites here are just for compiling purposes, JS
  * engines should have an optimized version for them. */
 
-/* Malloc */
+#ifndef JERRY_NDEBUG
+#define PARSER_DEBUG
+#endif
+
+/* Malloc functions. */
 
 #define PARSER_MALLOC(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_LONG_TERM)
 #define PARSER_FREE(ptr) mem_heap_free_block (ptr)
 
-#define PARSER_MALLOC_LOCAL(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_LONG_TERM)
+#define PARSER_MALLOC_LOCAL(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_SHORT_TERM)
 #define PARSER_FREE_LOCAL(ptr) mem_heap_free_block (ptr)
+
+/* Stack consumption of opcodes with context. */
+
+/* PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION must be <= 5 */
+#define PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION 3
+/* PARSER_WITH_CONTEXT_STACK_ALLOCATION must be <= 5 */
+#define PARSER_WITH_CONTEXT_STACK_ALLOCATION 2
+/* PARSER_TRY_CONTEXT_STACK_ALLOCATION must be <= 4 */
+#define PARSER_TRY_CONTEXT_STACK_ALLOCATION 3
 
 /* UTF character management. Only ASCII characters are
  * supported for simplicity. */
@@ -100,14 +114,35 @@ int util_set_regexp_literal (lexer_literal_t *, const uint8_t *);
 int util_set_function_literal (lexer_literal_t *, void *);
 void util_free_literal (lexer_literal_t *);
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
 void util_print_literal (lexer_literal_t *);
+#endif /* PARSER_DEBUG */
+
+/* Assertions */
+
+#ifdef PARSER_DEBUG
+
+#define PARSER_ASSERT(x) \
+  do \
+  { \
+    if (!(x)) \
+    { \
+      printf ("Assertion failure in '%s' at line %d\n", __FILE__, __LINE__); \
+      abort (); \
+    } \
+  } \
+  while (0)
+
+#else
+
+#define PARSER_ASSERT(x)
+
 #endif /* PARSER_DEBUG */
 
 /* TRY/CATCH block */
 
 #define PARSER_TRY_CONTEXT(context_name) \
-  jmp_buf context_name;
+  jmp_buf context_name
 
 #define PARSER_THROW(context_name) \
   longjmp (context_name, 1);
@@ -131,7 +166,7 @@ void util_print_literal (lexer_literal_t *);
 #define PARSER_INLINE inline
 #define PARSER_NOINLINE __attribute__ ((noinline))
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
 void util_print_string (const uint8_t *, size_t);
 #endif
 

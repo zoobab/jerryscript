@@ -27,7 +27,7 @@ parser_emit_two_bytes (parser_context_t *context_p, /**< context */
                        uint8_t first_byte, /**< first byte */
                        uint8_t second_byte) /**< second byte */
 {
-  size_t last_position = context_p->byte_code.last_position;
+  uint32_t last_position = context_p->byte_code.last_position;
 
   if (last_position + 2 <= PARSER_CBC_STREAM_PAGE_SIZE)
   {
@@ -95,20 +95,20 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     context_p->byte_code_size += 2;
   }
 
-  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
-  context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
+  PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
   if (flags & CBC_HAS_BYTE_ARG)
   {
     uint8_t byte_argument = (uint8_t) context_p->last_cbc.u.value;
 
-    JERRY_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
+    PARSER_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
 
     if (flags & CBC_POP_STACK_BYTE_ARG)
     {
-      JERRY_ASSERT (context_p->stack_depth >= byte_argument);
-      context_p->stack_depth -= byte_argument;
+      PARSER_ASSERT (context_p->stack_depth >= byte_argument);
+      PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, byte_argument);
     }
 
     PARSER_APPEND_TO_BYTE_CODE (context_p, byte_argument);
@@ -119,7 +119,9 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
   {
     uint16_t literal_index = context_p->last_cbc.literal_index;
 
-    parser_emit_two_bytes (context_p, literal_index & 0xff, literal_index >> 8);
+    parser_emit_two_bytes (context_p,
+                           (uint8_t) (literal_index & 0xff),
+                           (uint8_t) (literal_index >> 8));
     context_p->byte_code_size += 2;
   }
 
@@ -127,11 +129,13 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
   {
     uint16_t literal_index = context_p->last_cbc.u.value;
 
-    parser_emit_two_bytes (context_p, literal_index & 0xff, literal_index >> 8);
+    parser_emit_two_bytes (context_p,
+                           (uint8_t) (literal_index & 0xff),
+                           (uint8_t) (literal_index >> 8));
     context_p->byte_code_size += 2;
   }
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
   if (context_p->is_show_opcodes)
   {
     const char *name;
@@ -191,7 +195,7 @@ void
 parser_emit_cbc (parser_context_t *context_p, /**< context */
                  uint16_t opcode) /**< opcode */
 {
-  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, 0));
+  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, 0));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -209,7 +213,7 @@ parser_emit_cbc_literal (parser_context_t *context_p, /**< context */
                          uint16_t opcode, /**< opcode */
                          uint16_t literal_index) /**< literal index */
 {
-  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
+  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -229,7 +233,7 @@ void
 parser_emit_cbc_literal_from_token (parser_context_t *context_p, /**< context */
                                     uint16_t opcode) /**< opcode */
 {
-  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
+  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_LITERAL_ARG));
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -250,8 +254,8 @@ parser_emit_cbc_call (parser_context_t *context_p, /**< context */
                       uint16_t opcode, /**< opcode */
                       size_t call_arguments) /**< number of arguments */
 {
-  JERRY_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_BYTE_ARG));
-  JERRY_ASSERT (call_arguments <= CBC_MAXIMUM_BYTE_VALUE);
+  PARSER_ASSERT (PARSER_ARGS_EQ (opcode, CBC_HAS_BYTE_ARG));
+  PARSER_ASSERT (call_arguments <= CBC_MAXIMUM_BYTE_VALUE);
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -259,7 +263,7 @@ parser_emit_cbc_call (parser_context_t *context_p, /**< context */
   }
 
   context_p->last_cbc_opcode = opcode;
-  context_p->last_cbc.u.value = call_arguments;
+  context_p->last_cbc.u.value = (uint16_t) call_arguments;
 } /* parser_emit_cbc_call */
 
 /**
@@ -288,22 +292,22 @@ parser_emit_cbc_forward_branch (parser_context_t *context_p, /**< context */
   else
   {
     PARSER_APPEND_TO_BYTE_CODE (context_p, CBC_EXT_OPCODE);
-    opcode = PARSER_GET_EXT_OPCODE (opcode);
+    opcode = (uint16_t) PARSER_GET_EXT_OPCODE (opcode);
 
     flags = cbc_ext_flags[opcode];
     extra_byte_code_increase = 1;
   }
 
-  JERRY_ASSERT (flags & CBC_HAS_BRANCH_ARG);
-  JERRY_ASSERT (CBC_BRANCH_IS_FORWARD (flags));
-  JERRY_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
+  PARSER_ASSERT (flags & CBC_HAS_BRANCH_ARG);
+  PARSER_ASSERT (CBC_BRANCH_IS_FORWARD (flags));
+  PARSER_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
 
   /* Branch opcodes never push anything onto the stack. */
-  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
-  context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
+  PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
   if (context_p->is_show_opcodes)
   {
     if (extra_byte_code_increase == 0)
@@ -320,7 +324,7 @@ parser_emit_cbc_forward_branch (parser_context_t *context_p, /**< context */
 #if PARSER_MAXIMUM_CODE_SIZE <= 65535
   opcode++;
 #else /* PARSER_MAXIMUM_CODE_SIZE <= 65535 */
-  opcode += 2;
+  PARSER_PLUS_EQUAL_U16 (opcode, 2);
 #endif /* PARSER_MAXIMUM_CODE_SIZE <= 65535 */
 
   parser_emit_two_bytes (context_p, (uint8_t) opcode, 0);
@@ -377,7 +381,7 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
                                  uint32_t offset) /**< destination offset */
 {
   uint8_t flags;
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
   const char *name;
 #endif /* PARSER_DEBUG */
 
@@ -393,34 +397,34 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
   {
     flags = cbc_flags[opcode];
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
     name = cbc_names[opcode];
 #endif /* PARSER_DEBUG */
   }
   else
   {
     PARSER_APPEND_TO_BYTE_CODE (context_p, CBC_EXT_OPCODE);
-    opcode = PARSER_GET_EXT_OPCODE (opcode);
+    opcode = (uint16_t) PARSER_GET_EXT_OPCODE (opcode);
 
     flags = cbc_ext_flags[opcode];
     context_p->byte_code_size++;
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
     name = cbc_ext_names[opcode];
 #endif /* PARSER_DEBUG */
   }
 
-  JERRY_ASSERT (flags & CBC_HAS_BRANCH_ARG);
-  JERRY_ASSERT (CBC_BRANCH_IS_BACKWARD (flags));
-  JERRY_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
-  JERRY_ASSERT (offset <= context_p->byte_code_size);
+  PARSER_ASSERT (flags & CBC_HAS_BRANCH_ARG);
+  PARSER_ASSERT (CBC_BRANCH_IS_BACKWARD (flags));
+  PARSER_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) == 1);
+  PARSER_ASSERT (offset <= context_p->byte_code_size);
 
   /* Branch opcodes never push anything onto the stack. */
-  JERRY_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
+  PARSER_ASSERT ((flags >> CBC_STACK_ADJUST_SHIFT) >= CBC_STACK_ADJUST_BASE
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
-  context_p->stack_depth += CBC_STACK_ADJUST_VALUE (flags);
+  PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
   if (context_p->is_show_opcodes)
   {
     printf ("  [%3d] %s\n", (int) context_p->stack_depth, name);
@@ -437,7 +441,7 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
 #else /* PARSER_MAXIMUM_CODE_SIZE <= 65535 */
   if (offset > 65535)
   {
-    opcode += 2;
+    PARSER_PLUS_EQUAL_U16 (opcode, 2);
     context_p->byte_code_size += 2;
   }
   else if (offset > 255)
@@ -485,28 +489,28 @@ parser_set_branch_to_current_position (parser_context_t *context_p, /**< context
 
   context_p->status_flags &= ~PARSER_NO_END_LABEL;
 
-  JERRY_ASSERT (context_p->byte_code_size > (branch_p->offset >> 8));
+  PARSER_ASSERT (context_p->byte_code_size > (branch_p->offset >> 8));
 
   delta = context_p->byte_code_size - (branch_p->offset >> 8);
   offset = (branch_p->offset & CBC_LOWER_SEVEN_BIT_MASK);
 
-  JERRY_ASSERT (delta <= PARSER_MAXIMUM_CODE_SIZE);
+  PARSER_ASSERT (delta <= PARSER_MAXIMUM_CODE_SIZE);
 
 #if PARSER_MAXIMUM_CODE_SIZE <= 65535
-  page_p->bytes[offset++] = (delta >> 8);
+  page_p->bytes[offset++] = (uint8_t) (delta >> 8);
   if (offset >= PARSER_CBC_STREAM_PAGE_SIZE)
   {
     page_p = page_p->next_p;
     offset = 0;
   }
 #else
-  page_p->bytes[offset++] = (delta >> 16);
+  page_p->bytes[offset++] = (uint8_t) (delta >> 16);
   if (offset >= PARSER_CBC_STREAM_PAGE_SIZE)
   {
     page_p = page_p->next_p;
     offset = 0;
   }
-  page_p->bytes[offset++] = ((delta >> 8) & 0xff);
+  page_p->bytes[offset++] = (uint8_t) ((delta >> 8) & 0xff);
   if (offset >= PARSER_CBC_STREAM_PAGE_SIZE)
   {
     page_p = page_p->next_p;
@@ -823,6 +827,6 @@ parser_error_to_string (parser_error_t error) /**< error code */
     }
   }
 
-  JERRY_ASSERT (error == PARSER_ERR_NO_ERROR);
+  PARSER_ASSERT (error == PARSER_ERR_NO_ERROR);
   return "No error.";
 } /* parser_error_to_string */

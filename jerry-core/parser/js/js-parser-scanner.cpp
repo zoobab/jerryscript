@@ -270,6 +270,7 @@ parser_scan_primary_expression_end (parser_context_t *context_p, /**< context */
       || (type == LEXER_RIGHT_BRACE && stack_top == SCAN_STACK_OBJECT_LITERAL))
   {
     parser_stack_pop_uint8 (context_p);
+    *mode = SCAN_MODE_POST_PRIMARY_EXPRESSION;
     return PARSER_FALSE;
   }
 
@@ -564,7 +565,7 @@ parser_scan_until (parser_context_t *context_p, /**< context */
       }
       case SCAN_MODE_FUNCTION_ARGUMENTS:
       {
-        JERRY_ASSERT (stack_top == SCAN_STACK_BLOCK_STATEMENT
+        PARSER_ASSERT (stack_top == SCAN_STACK_BLOCK_STATEMENT
                        || stack_top == SCAN_STACK_BLOCK_EXPRESSION
                        || stack_top == SCAN_STACK_BLOCK_PROPERTY);
 
@@ -615,7 +616,7 @@ parser_scan_until (parser_context_t *context_p, /**< context */
       }
       case SCAN_MODE_PROPERTY_NAME:
       {
-        JERRY_ASSERT (stack_top == SCAN_STACK_OBJECT_LITERAL);
+        PARSER_ASSERT (stack_top == SCAN_STACK_OBJECT_LITERAL);
 
         lexer_scan_identifier (context_p, PARSER_TRUE);
 

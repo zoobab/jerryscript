@@ -96,7 +96,7 @@ typedef enum
   PARSER_ERR_INVALID_RETURN,                          /**< return must be inside a function */
   PARSER_ERR_INVALID_RIGHT_SQUARE,                    /**< right square must terminate a block */
   PARSER_ERR_DUPLICATED_LABEL,                        /**< duplicated label */
-  PARSER_ERR_NON_STRICT_ARG_DEFINITION,               /**< non-strict argument definition */
+  PARSER_ERR_NON_STRICT_ARG_DEFINITION                /**< non-strict argument definition */
 } parser_error_t;
 
 /* Source code line counter type. */

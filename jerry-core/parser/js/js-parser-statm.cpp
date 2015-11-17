@@ -191,8 +191,8 @@ parser_statement_length (uint8_t type)
     sizeof (parser_try_statement_t) + 1,
   };
 
-  JERRY_ASSERT (type >= PARSER_STATEMENT_BLOCK && type <= PARSER_STATEMENT_TRY);
-  JERRY_ASSERT (PARSER_STATEMENT_TRY - PARSER_STATEMENT_BLOCK == 11);
+  PARSER_ASSERT (type >= PARSER_STATEMENT_BLOCK && type <= PARSER_STATEMENT_TRY);
+  PARSER_ASSERT (PARSER_STATEMENT_TRY - PARSER_STATEMENT_BLOCK == 11);
 
   return statement_lengths[type - PARSER_STATEMENT_BLOCK];
 }
@@ -241,7 +241,7 @@ parser_stack_iterator_init (parser_context_t *context_p, /**< context */
 static PARSER_INLINE uint8_t
 parser_stack_iterator_read_uint8 (parser_stack_iterator_t *iterator) /**< iterator */
 {
-  JERRY_ASSERT (iterator->current_position > 0 && iterator->current_position <= PARSER_STACK_PAGE_SIZE);
+  PARSER_ASSERT (iterator->current_position > 0 && iterator->current_position <= PARSER_STACK_PAGE_SIZE);
   return iterator->current_p->bytes[iterator->current_position - 1];
 } /* parser_stack_iterator_read_uint8 */
 
@@ -254,7 +254,7 @@ parser_stack_change_last_uint8 (parser_context_t *context_p, /**< context */
 {
   parser_mem_page_t *page_p = context_p->stack.first_p;
 
-  JERRY_ASSERT (page_p != NULL
+  PARSER_ASSERT (page_p != NULL
                  && context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 
   page_p->bytes[context_p->stack.last_position - 1] = new_value;
@@ -290,12 +290,12 @@ parser_parse_enclosed_expr (parser_context_t *context_p) /**< context */
 static void
 parser_parse_var_statement (parser_context_t *context_p) /**< context */
 {
-  JERRY_ASSERT (context_p->token.type == LEXER_KEYW_VAR);
+  PARSER_ASSERT (context_p->token.type == LEXER_KEYW_VAR);
 
   while (PARSER_TRUE)
   {
     lexer_expect_identifier (context_p, LEXER_IDENT_LITERAL);
-    JERRY_ASSERT (context_p->token.type == LEXER_LITERAL
+    PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                    && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
     context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_VAR;
@@ -311,7 +311,7 @@ parser_parse_var_statement (parser_context_t *context_p) /**< context */
     }
     else
     {
-      JERRY_ASSERT (context_p->last_cbc_opcode == CBC_PUSH_IDENT);
+      PARSER_ASSERT (context_p->last_cbc_opcode == CBC_PUSH_IDENT);
       /* We don't need to assign anything to this variable. */
       context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
     }
@@ -331,10 +331,10 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
 {
   uint32_t status_flags;
 
-  JERRY_ASSERT (context_p->token.type == LEXER_KEYW_FUNCTION);
+  PARSER_ASSERT (context_p->token.type == LEXER_KEYW_FUNCTION);
 
   lexer_expect_identifier (context_p, LEXER_IDENT_LITERAL);
-  JERRY_ASSERT (context_p->token.type == LEXER_LITERAL
+  PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                  && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
   context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED;
@@ -381,7 +381,7 @@ parser_parse_if_statement_end (parser_context_t *context_p) /**< context */
   parser_if_else_statement_t else_statement;
   parser_stack_iterator_t iterator;
 
-  JERRY_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_IF);
+  PARSER_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_IF);
 
   if (context_p->token.type != LEXER_KEYW_ELSE)
   {
@@ -426,6 +426,10 @@ parser_parse_with_statement_start (parser_context_t *context_p) /**< context */
 
   parser_parse_enclosed_expr (context_p);
 
+#ifdef PARSER_DEBUG
+  PARSER_PLUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_WITH_CONTEXT_STACK_ALLOCATION);
+#endif
+
   context_p->status_flags |= PARSER_IN_WIDTH;
   parser_emit_cbc_ext_forward_branch (context_p,
                                       CBC_EXT_WITH_CREATE_CONTEXT,
@@ -445,11 +449,17 @@ parser_parse_with_statement_end (parser_context_t *context_p) /**< context */
   parser_with_statement_t with_statement;
   parser_stack_iterator_t iterator;
 
-  JERRY_ASSERT (context_p->status_flags & PARSER_IN_WIDTH);
+  PARSER_ASSERT (context_p->status_flags & PARSER_IN_WIDTH);
 
   parser_stack_pop_uint8 (context_p);
   parser_stack_pop (context_p, &with_statement, sizeof (parser_with_statement_t));
   parser_stack_iterator_init (context_p, &context_p->last_statement);
+
+  parser_flush_cbc (context_p);
+  PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, PARSER_WITH_CONTEXT_STACK_ALLOCATION);
+#ifdef PARSER_DEBUG
+  PARSER_MINUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_WITH_CONTEXT_STACK_ALLOCATION);
+#endif
 
   parser_emit_cbc (context_p, CBC_CONTEXT_END);
   parser_set_branch_to_current_position (context_p, &with_statement.branch);
@@ -484,7 +494,7 @@ parser_parse_do_while_statement_end (parser_context_t *context_p) /**< context *
   parser_do_while_statement_t do_while_statement;
   parser_loop_statement_t loop;
 
-  JERRY_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_DO_WHILE);
+  PARSER_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_DO_WHILE);
 
   if (context_p->token.type != LEXER_KEYW_WHILE)
   {
@@ -532,7 +542,7 @@ parser_parse_while_statement_start (parser_context_t *context_p) /**< context */
   parser_while_statement_t while_statement;
   parser_loop_statement_t loop;
 
-  JERRY_ASSERT (context_p->token.type == LEXER_KEYW_WHILE);
+  PARSER_ASSERT (context_p->token.type == LEXER_KEYW_WHILE);
   lexer_next_token (context_p);
 
   if (context_p->token.type != LEXER_LEFT_PAREN)
@@ -542,7 +552,7 @@ parser_parse_while_statement_start (parser_context_t *context_p) /**< context */
 
   parser_emit_cbc_forward_branch (context_p, CBC_JUMP_FORWARD, &while_statement.branch);
 
-  JERRY_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
+  PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
   while_statement.start_offset = context_p->byte_code_size;
 
   /* The conditional part is processed at the end. */
@@ -569,7 +579,7 @@ parser_parse_while_statement_end (parser_context_t *context_p) /**< context */
   lexer_range_t range;
   cbc_opcode_t opcode;
 
-  JERRY_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_WHILE);
+  PARSER_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_WHILE);
 
   parser_stack_pop_uint8 (context_p);
   parser_stack_pop (context_p, &loop, sizeof (parser_loop_statement_t));
@@ -619,7 +629,7 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
   parser_loop_statement_t loop;
   lexer_range_t start_range;
 
-  JERRY_ASSERT (context_p->token.type == LEXER_KEYW_FOR);
+  PARSER_ASSERT (context_p->token.type == LEXER_KEYW_FOR);
   lexer_next_token (context_p);
 
   if (context_p->token.type != LEXER_LEFT_PAREN)
@@ -642,11 +652,15 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
       parser_raise_error (context_p, PARSER_ERR_RIGHT_PAREN_EXPECTED);
     }
 
+#ifdef PARSER_DEBUG
+    PARSER_PLUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+#endif
+
     parser_emit_cbc_ext_forward_branch (context_p,
                                         CBC_EXT_FOR_IN_CREATE_CONTEXT,
                                         &for_in_statement.branch);
 
-    JERRY_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
+    PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
     for_in_statement.start_offset = context_p->byte_code_size;
 
     parser_save_range (context_p, &range, context_p->source_end_p);
@@ -658,7 +672,7 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
       uint16_t literal_index;
 
       lexer_expect_identifier (context_p, LEXER_IDENT_LITERAL);
-      JERRY_ASSERT (context_p->token.type == LEXER_LITERAL
+      PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                      && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
       context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_VAR;
@@ -764,7 +778,7 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
 
     parser_emit_cbc_forward_branch (context_p, CBC_JUMP_FORWARD, &for_statement.branch);
 
-    JERRY_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
+    PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
     for_statement.start_offset = context_p->byte_code_size;
 
     /* The conditional and expression parts are processed at the end. */
@@ -793,7 +807,7 @@ parser_parse_for_statement_end (parser_context_t *context_p) /**< context */
   lexer_range_t range;
   cbc_opcode_t opcode;
 
-  JERRY_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_FOR);
+  PARSER_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_FOR);
 
   parser_stack_pop_uint8 (context_p);
   parser_stack_pop (context_p, &loop, sizeof (parser_loop_statement_t));
@@ -871,7 +885,7 @@ parser_parse_switch_statement_start (parser_context_t *context_p) /**< context *
   int default_case_was_found;
   parser_branch_node_t *cases_p = NULL;
 
-  JERRY_ASSERT (context_p->token.type == LEXER_KEYW_SWITCH);
+  PARSER_ASSERT (context_p->token.type == LEXER_KEYW_SWITCH);
 
   parser_parse_enclosed_expr (context_p);
 
@@ -988,7 +1002,7 @@ parser_parse_switch_statement_start (parser_context_t *context_p) /**< context *
     lexer_next_token (context_p);
   }
 
-  JERRY_ASSERT (switch_case_was_found || default_case_was_found);
+  PARSER_ASSERT (switch_case_was_found || default_case_was_found);
 
   if (!switch_case_was_found)
   {
@@ -1010,15 +1024,15 @@ parser_parse_switch_statement_start (parser_context_t *context_p) /**< context *
 } /* parser_parse_switch_statement_start */
 
 /**
- * Parse try statement.
+ * Parse try statement (ending part).
  */
 static void
-parser_parse_try_statement (parser_context_t *context_p) /**< context */
+parser_parse_try_statement_end (parser_context_t *context_p) /**< context */
 {
   parser_try_statement_t try_statement;
   parser_stack_iterator_t iterator;
 
-  JERRY_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_TRY);
+  PARSER_ASSERT (context_p->stack_top_uint8 == PARSER_STATEMENT_TRY);
 
   parser_stack_iterator_init (context_p, &iterator);
   parser_stack_iterator_skip (&iterator, 1);
@@ -1028,6 +1042,12 @@ parser_parse_try_statement (parser_context_t *context_p) /**< context */
 
   if (try_statement.type == parser_finally_block)
   {
+    parser_flush_cbc (context_p);
+    PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+#ifdef PARSER_DEBUG
+    PARSER_MINUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+#endif
+
     parser_emit_cbc (context_p, CBC_CONTEXT_END);
     parser_set_branch_to_current_position (context_p, &try_statement.branch);
   }
@@ -1039,6 +1059,12 @@ parser_parse_try_statement (parser_context_t *context_p) /**< context */
     {
       if (context_p->token.type != LEXER_KEYW_FINALLY)
       {
+        parser_flush_cbc (context_p);
+        PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+#ifdef PARSER_DEBUG
+        PARSER_MINUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+#endif
+
         parser_emit_cbc (context_p, CBC_CONTEXT_END);
         parser_flush_cbc (context_p);
         try_statement.type = parser_finally_block;
@@ -1073,7 +1099,7 @@ parser_parse_try_statement (parser_context_t *context_p) /**< context */
     }
 
     lexer_expect_identifier (context_p, LEXER_IDENT_LITERAL);
-    JERRY_ASSERT (context_p->token.type == LEXER_LITERAL
+    PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                    && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
     literal_index = context_p->lit_object.index;
@@ -1102,7 +1128,7 @@ parser_parse_try_statement (parser_context_t *context_p) /**< context */
   }
   else
   {
-    JERRY_ASSERT (context_p->token.type == LEXER_KEYW_FINALLY);
+    PARSER_ASSERT (context_p->token.type == LEXER_KEYW_FINALLY);
 
     lexer_next_token (context_p);
 
@@ -1138,7 +1164,7 @@ parser_parse_default_statement (parser_context_t *context_p) /**< context */
 
   lexer_next_token (context_p);
   /* Already checked in parser_parse_switch_statement_start. */
-  JERRY_ASSERT (context_p->token.type == LEXER_COLON);
+  PARSER_ASSERT (context_p->token.type == LEXER_COLON);
   lexer_next_token (context_p);
 
   parser_stack_iterator_init (context_p, &iterator);
@@ -1175,7 +1201,7 @@ parser_parse_case_statement (parser_context_t *context_p) /**< context */
   /* Free memory after the case statement is found. */
 
   branch_p = switch_statement.branch_list_p;
-  JERRY_ASSERT (branch_p != NULL);
+  PARSER_ASSERT (branch_p != NULL);
   switch_statement.branch_list_p = branch_p->next_p;
   parser_stack_iterator_write (&iterator, &switch_statement, sizeof (parser_switch_statement_t));
 
@@ -1449,7 +1475,7 @@ void
 parser_parse_statements (parser_context_t *context_p) /**< context */
 {
   /* Statement parsing cannot be nested. */
-  JERRY_ASSERT (context_p->last_statement.current_p == NULL);
+  PARSER_ASSERT (context_p->last_statement.current_p == NULL);
   parser_stack_push_uint8 (context_p, PARSER_STATEMENT_START);
   parser_stack_iterator_init (context_p, &context_p->last_statement);
 
@@ -1458,7 +1484,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
   {
     lexer_lit_location_t lit_location;
 
-    JERRY_ASSERT (context_p->stack_depth == 0);
+    PARSER_ASSERT (context_p->stack_depth == 0);
 
     lit_location = context_p->token.lit_location;
     lexer_next_token (context_p);
@@ -1494,7 +1520,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         parser_raise_error (context_p, PARSER_ERR_STRICT_IDENT_NOT_ALLOWED);
       }
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
       if (context_p->is_show_opcodes)
       {
         printf ("  Note: switch to strict mode\n\n");
@@ -1519,7 +1545,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
   {
     int statement_terminator_required;
 
-    JERRY_ASSERT (context_p->stack_depth == 0);
+    PARSER_ASSERT (context_p->stack_depth == context_p->context_stack_depth);
 
     switch (context_p->token.type)
     {
@@ -1585,7 +1611,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         parser_do_while_statement_t do_while_statement;
         parser_loop_statement_t loop;
 
-        JERRY_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
+        PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
 
         do_while_statement.start_offset = context_p->byte_code_size;
         loop.branch_list_p = NULL;
@@ -1630,6 +1656,10 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         {
           parser_raise_error (context_p, PARSER_ERR_LEFT_BRACE_EXPECTED);
         }
+
+#ifdef PARSER_DEBUG
+        PARSER_PLUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+#endif
 
         try_statement.type = parser_try_block;
         parser_emit_cbc_ext_forward_branch (context_p,
@@ -1782,7 +1812,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
             parser_stack_pop (context_p, &switch_statement, sizeof (parser_switch_statement_t));
             parser_stack_iterator_init (context_p, &context_p->last_statement);
 
-            JERRY_ASSERT (switch_statement.branch_list_p == NULL);
+            PARSER_ASSERT (switch_statement.branch_list_p == NULL);
 
             if (!has_default)
             {
@@ -1794,7 +1824,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
           }
           else if (context_p->stack_top_uint8 == PARSER_STATEMENT_TRY)
           {
-            parser_parse_try_statement (context_p);
+            parser_parse_try_statement_end (context_p);
           }
           else if (context_p->stack_top_uint8 == PARSER_STATEMENT_START)
           {
@@ -1802,6 +1832,8 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
             {
               parser_stack_pop_uint8 (context_p);
               context_p->last_statement.current_p = NULL;
+              PARSER_ASSERT (context_p->stack_depth == 0);
+              PARSER_ASSERT (context_p->context_stack_depth == 0);
               /* There is no lexer_next_token here, since the
                * next token belongs to the parent context. */
               return;
@@ -1894,6 +1926,12 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
 
           parser_set_continues_to_current_position (context_p, loop.branch_list_p);
 
+          parser_flush_cbc (context_p);
+          PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+#ifdef PARSER_DEBUG
+          PARSER_MINUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+#endif
+
           parser_emit_cbc_ext_backward_branch (context_p,
                                                CBC_EXT_BRANCH_IF_FOR_IN_HAS_NEXT,
                                                for_in_statement.start_offset);
@@ -1920,7 +1958,8 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
     }
   }
 
-  JERRY_ASSERT (context_p->stack_depth == 0);
+  PARSER_ASSERT (context_p->stack_depth == 0);
+  PARSER_ASSERT (context_p->context_stack_depth == 0);
 
   parser_stack_pop_uint8 (context_p);
   context_p->last_statement.current_p = NULL;
@@ -1935,8 +1974,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
  * Free jumps stored on the stack if a parse error is occured.
  */
 void PARSER_NOINLINE
-parser_free_jumps (parser_context_t *context_p, /**< context */
-                   parser_stack_iterator_t iterator) /**< iterator position */
+parser_free_jumps (parser_stack_iterator_t iterator) /**< iterator position */
 {
   while (1)
   {

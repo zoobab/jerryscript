@@ -23,11 +23,11 @@
  *
  * @return aligned position
  */
-static size_t
-align_column_to_tab (size_t column) /**< current column */
+static parser_line_counter_t
+align_column_to_tab (parser_line_counter_t column) /**< current column */
 {
   /* Tab aligns to zero column start position. */
-  return (((column - 1) + 8) & ~0x7) + 1;
+  return (parser_line_counter_t) (((column + (8u - 1u)) & ~0x7u) + 1u);
 } /* align_column_to_tab */
 
 /**
@@ -40,11 +40,11 @@ lexer_hex_to_character (parser_context_t *context_p, /**< context */
                         const uint8_t *source_p, /**< current source position */
                         int length)
 {
-  lexer_character_type_t result = 0;
+  uint32_t result = 0;
 
   do
   {
-    uint8_t byte = *source_p++;
+    uint32_t byte = *source_p++;
 
     result <<= 4;
 
@@ -67,7 +67,7 @@ lexer_hex_to_character (parser_context_t *context_p, /**< context */
   }
   while (--length > 0);
 
-  return result;
+  return (lexer_character_type_t) result;
 } /* lexer_hex_to_character */
 
 /**
@@ -164,7 +164,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
           if (mode != LEXER_SKIP_SPACES)
           {
             context_p->source_p += 2;
-            context_p->column += 2;
+            PARSER_PLUS_EQUAL_LC (context_p->column, 2);
             continue;
           }
         }
@@ -179,7 +179,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
         {
           mode = LEXER_SKIP_SPACES;
           context_p->source_p += 2;
-          context_p->column += 2;
+          PARSER_PLUS_EQUAL_LC (context_p->column, 2);
           continue;
         }
         break;
@@ -200,7 +200,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
 
       case LEXER_NEWLINE_LS_PS_BYTE_1:
       {
-        JERRY_ASSERT (context_p->source_p + 2 < source_end_p);
+        PARSER_ASSERT (context_p->source_p + 2 < source_end_p);
         if (LEXER_NEWLINE_LS_PS_BYTE_23 (context_p->source_p))
         {
           /* Codepoint \u2028 and \u2029 */
@@ -379,7 +379,7 @@ lexer_parse_identifier (parser_context_t *context_p, /**< context */
   const uint8_t *source_p = context_p->source_p;
   const uint8_t *ident_start_p = context_p->source_p;
   /* Note: newline or tab cannot be part of an identifier. */
-  size_t column = context_p->column;
+  parser_line_counter_t column = context_p->column;
   const uint8_t *source_end_p = context_p->source_end_p;
   size_t length = 0;
 
@@ -422,7 +422,7 @@ lexer_parse_identifier (parser_context_t *context_p, /**< context */
 
       length += util_get_utf8_length (character);
       source_p += 6;
-      column += 6;
+      PARSER_PLUS_EQUAL_LC (column, 6);
       continue;
     }
 
@@ -430,7 +430,7 @@ lexer_parse_identifier (parser_context_t *context_p, /**< context */
      * characters, since those characters are represented
      * by 2 ecmascript (UTF-16) characters, and those
      * characters cannot be literal characters. */
-    JERRY_ASSERT (source_p[0] < LEXER_UTF8_4BYTE_START);
+    PARSER_ASSERT (source_p[0] < LEXER_UTF8_4BYTE_START);
 
     source_p++;
     length++;
@@ -488,7 +488,7 @@ lexer_parse_identifier (parser_context_t *context_p, /**< context */
   {
     /* Fill literal data. */
     context_p->token.lit_location.char_p = ident_start_p;
-    context_p->token.lit_location.length = length;
+    context_p->token.lit_location.length = (uint16_t) length;
   }
 
   context_p->source_p = source_p;
@@ -505,19 +505,19 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
   const uint8_t *source_p = context_p->source_p + 1;
   const uint8_t *string_start_p = source_p;
   const uint8_t *source_end_p = context_p->source_end_p;
-  size_t line = context_p->line;
-  size_t column = context_p->column + 1;
-  size_t original_line = line;
-  size_t original_column = column;
+  parser_line_counter_t line = context_p->line;
+  parser_line_counter_t column = (parser_line_counter_t) (context_p->column + 1);
+  parser_line_counter_t original_line = line;
+  parser_line_counter_t original_column = column;
   size_t length = 0;
-  int has_escape = PARSER_FALSE;
+  uint8_t has_escape = PARSER_FALSE;
 
   while (1)
   {
     if (source_p >= source_end_p)
     {
       context_p->token.line = original_line;
-      context_p->token.column = original_column - 1;
+      context_p->token.column = (parser_line_counter_t) (original_column - 1);
       parser_raise_error (context_p, PARSER_ERR_UNTERMINATED_STRING);
     }
 
@@ -553,10 +553,10 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
        * a character which has the same byte length. */
       if (*source_p == 'x' || *source_p == 'u')
       {
-        int hex_part_length = (*source_p == 'x') ? 2 : 4;
+        uint8_t hex_part_length = (*source_p == 'x') ? 2 : 4;
 
         context_p->token.line = line;
-        context_p->token.column = column - 1;
+        context_p->token.column = (parser_line_counter_t) (column - 1);
         if (source_p + 1 + hex_part_length > source_end_p)
         {
           parser_raise_error (context_p, PARSER_ERR_INVALID_ESCAPE_SEQUENCE);
@@ -566,7 +566,7 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
                                                                 source_p + 1,
                                                                 hex_part_length));
         source_p += hex_part_length + 1;
-        column += hex_part_length + 1;
+        PARSER_PLUS_EQUAL_LC (column, hex_part_length + 1u);
         continue;
       }
     }
@@ -592,8 +592,9 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
     }
     else if (*source_p == LEXER_TAB)
     {
+      column = align_column_to_tab (column);
       /* Subtract -1 because column is increased below. */
-      column = align_column_to_tab (column) - 1;
+      column--;
     }
 
     source_p++;
@@ -615,13 +616,13 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
 
   /* Fill literal data. */
   context_p->token.lit_location.char_p = string_start_p;
-  context_p->token.lit_location.length = length;
+  context_p->token.lit_location.length = (uint16_t) length;
   context_p->token.lit_location.type = LEXER_STRING_LITERAL;
   context_p->token.lit_location.has_escape = has_escape;
 
   context_p->source_p = source_p + 1;
   context_p->line = line;
-  context_p->column = column + 1;
+  context_p->column = (parser_line_counter_t) (column + 1);
 } /* lexer_parse_string */
 
 /**
@@ -733,14 +734,14 @@ lexer_parse_number (parser_context_t *context_p) /**< context */
     parser_raise_error (context_p, PARSER_ERR_IDENTIFIER_AFTER_NUMBER);
   }
 
-  length = source_p - context_p->source_p;
+  length = (size_t) (source_p - context_p->source_p);
   if (length > PARSER_MAXIMUM_IDENT_LENGTH)
   {
     parser_raise_error (context_p, PARSER_ERR_NUMBER_TOO_LONG);
   }
 
   context_p->token.lit_location.length = (uint16_t) length;
-  context_p->column += (parser_line_counter_t) length;
+  PARSER_PLUS_EQUAL_LC (context_p->column, length);
   context_p->source_p = source_p;
 } /* lexer_parse_number */
 
@@ -827,7 +828,7 @@ lexer_next_token (parser_context_t *context_p) /**< context */
   context_p->token.line = context_p->line;
   context_p->token.column = context_p->column;
 
-  length = context_p->source_end_p - context_p->source_p;
+  length = (size_t) (context_p->source_end_p - context_p->source_p);
   if (length == 0)
   {
     context_p->token.type = LEXER_EOS;
@@ -984,7 +985,7 @@ lexer_next_token (parser_context_t *context_p) /**< context */
   }
 
   context_p->source_p += length;
-  context_p->column += length;
+  PARSER_PLUS_EQUAL_LC (context_p->column, length);
 } /* lexer_next_token */
 
 #undef LEXER_TYPE_A_TOKEN
@@ -1005,11 +1006,11 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
   lexer_literal_t *literal_p;
   uint32_t literal_index = 0;
 
-  JERRY_ASSERT (literal_type == LEXER_IDENT_LITERAL
+  PARSER_ASSERT (literal_type == LEXER_IDENT_LITERAL
                  || literal_type == LEXER_STRING_LITERAL);
 
-  JERRY_ASSERT (literal_type != LEXER_IDENT_LITERAL || length <= PARSER_MAXIMUM_IDENT_LENGTH);
-  JERRY_ASSERT (literal_type != LEXER_STRING_LITERAL || length <= PARSER_MAXIMUM_STRING_LENGTH);
+  PARSER_ASSERT (literal_type != LEXER_IDENT_LITERAL || length <= PARSER_MAXIMUM_IDENT_LENGTH);
+  PARSER_ASSERT (literal_type != LEXER_STRING_LITERAL || length <= PARSER_MAXIMUM_STRING_LENGTH);
 
   parser_list_iterator_init (&context_p->literal_pool, &literal_iterator);
 
@@ -1026,7 +1027,7 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
     literal_index++;
   }
 
-  JERRY_ASSERT (literal_index == context_p->literal_count);
+  PARSER_ASSERT (literal_index == context_p->literal_count);
 
   if (literal_index >= PARSER_MAXIMUM_NUMBER_OF_LITERALS)
   {
@@ -1064,9 +1065,9 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
   const uint8_t *source_p;
   uint8_t local_byte_array[LEXER_MAX_LITERAL_LOCAL_BUFFER_SIZE];
 
-  JERRY_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
+  PARSER_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
                  || literal_p->type == LEXER_STRING_LITERAL);
-  JERRY_ASSERT (context_p->allocated_buffer_p == NULL);
+  PARSER_ASSERT (context_p->allocated_buffer_p == NULL);
 
   destination_start_p = local_byte_array;
   source_p = literal_p->char_p;
@@ -1085,7 +1086,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
     {
       const uint8_t *source_end_p = context_p->source_end_p;
 
-      JERRY_ASSERT (literal_p->length <= PARSER_MAXIMUM_IDENT_LENGTH);
+      PARSER_ASSERT (literal_p->length <= PARSER_MAXIMUM_IDENT_LENGTH);
 
       do
       {
@@ -1105,13 +1106,11 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
       }
       while ((source_p < source_end_p) && (util_is_identifier_part (source_p) || *source_p == '\\'));
 
-      JERRY_ASSERT (destination_p == destination_start_p + literal_p->length);
+      PARSER_ASSERT (destination_p == destination_start_p + literal_p->length);
     }
     else
     {
       uint8_t str_end_character = source_p[-1];
-
-      JERRY_ASSERT (literal_p->length <= PARSER_MAXIMUM_STRING_LENGTH);
 
       while (1)
       {
@@ -1125,7 +1124,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
           uint8_t conv_character;
 
           source_p++;
-          JERRY_ASSERT (source_p < context_p->source_end_p);
+          PARSER_ASSERT (source_p < context_p->source_end_p);
 
           /* Newline is ignored. */
           if (*source_p == LEXER_NEWLINE_CR
@@ -1139,7 +1138,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
           if (*source_p == 'x' || *source_p == 'u')
           {
             int hex_part_length = (*source_p == 'x') ? 2 : 4;
-            JERRY_ASSERT (source_p + 1 + hex_part_length <= context_p->source_end_p);
+            PARSER_ASSERT (source_p + 1 + hex_part_length <= context_p->source_end_p);
 
             destination_p += util_to_utf8_bytes (destination_p,
                                                  lexer_hex_to_character (context_p,
@@ -1203,10 +1202,12 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
           character |= ((((uint32_t) source_p[2]) & 0x3f) << 6);
           character |= (((uint32_t) source_p[3]) & 0x3f);
 
-          JERRY_ASSERT (character >= 0x10000);
+          PARSER_ASSERT (character >= 0x10000);
           character -= 0x10000;
-          destination_p += util_to_utf8_bytes (destination_p, 0xd800 | (character >> 10));
-          destination_p += util_to_utf8_bytes (destination_p, 0xdc00 | (character & 0x3ff));
+          destination_p += util_to_utf8_bytes (destination_p,
+                                               (lexer_character_type_t) (0xd800 | (character >> 10)));
+          destination_p += util_to_utf8_bytes (destination_p,
+                                               (lexer_character_type_t) (0xdc00 | (character & 0x3ff)));
           source_p += 4;
           continue;
         }
@@ -1218,7 +1219,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         }
       }
 
-      JERRY_ASSERT (destination_p == destination_start_p + literal_p->length);
+      PARSER_ASSERT (destination_p == destination_start_p + literal_p->length);
     }
 
     source_p = destination_start_p;
@@ -1257,13 +1258,13 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
 
   if (destination_start_p != local_byte_array)
   {
-    JERRY_ASSERT (context_p->allocated_buffer_p == destination_start_p);
+    PARSER_ASSERT (context_p->allocated_buffer_p == destination_start_p);
 
     context_p->allocated_buffer_p = NULL;
     parser_free_local (destination_start_p);
   }
 
-  JERRY_ASSERT (context_p->allocated_buffer_p == NULL);
+  PARSER_ASSERT (context_p->allocated_buffer_p == NULL);
 } /* lexer_construct_literal_object */
 
 #undef LEXER_MAX_LITERAL_LOCAL_BUFFER_SIZE
@@ -1287,7 +1288,7 @@ lexer_construct_number_object (parser_context_t *context_p) /**< context */
   literal_p->type = LEXER_UNKNOWN_LITERAL;
   literal_p->status_flags = 0;
 
-  context_p->literal_count = literal_count + 1;
+  context_p->literal_count = (uint16_t) (literal_count + 1);
 
   if (util_set_number_literal (literal_p, context_p->token.lit_location.char_p))
   {
@@ -1351,7 +1352,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   uint32_t current_flags;
   size_t length;
 
-  JERRY_ASSERT (context_p->token.type == LEXER_DIVIDE
+  PARSER_ASSERT (context_p->token.type == LEXER_DIVIDE
                  || context_p->token.type == LEXER_ASSIGN_DIVIDE);
 
   if (context_p->token.type == LEXER_ASSIGN_DIVIDE)
@@ -1388,7 +1389,9 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
       }
       case LEXER_TAB:
       {
-        column = align_column_to_tab (column) - 1;
+        column = align_column_to_tab (column);
+         /* Subtract -1 because column is increased below. */
+        column--;
         break;
       }
       case '[':
@@ -1463,7 +1466,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->source_p = source_p;
   context_p->column = column;
 
-  length = source_p - regex_start_p;
+  length = (size_t) (source_p - regex_start_p);
   if (length > PARSER_MAXIMUM_STRING_LENGTH)
   {
     parser_raise_error (context_p, PARSER_ERR_REGEXP_TOO_LONG);
@@ -1501,7 +1504,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->token.lit_location.type = LEXER_REGEXP_LITERAL;
 
   context_p->lit_object.literal_p = literal_p;
-  context_p->lit_object.index = context_p->literal_count - 1;
+  context_p->lit_object.index = (uint16_t) (context_p->literal_count - 1);
   context_p->lit_object.type = lexer_literal_object_any;
 } /* lexer_construct_regexp_object */
 
@@ -1512,7 +1515,7 @@ void
 lexer_expect_identifier (parser_context_t *context_p, /**< context */
                          uint8_t literal_type) /**< literal type */
 {
-  JERRY_ASSERT (literal_type == LEXER_STRING_LITERAL
+  PARSER_ASSERT (literal_type == LEXER_STRING_LITERAL
                  || literal_type == LEXER_IDENT_LITERAL);
 
   skip_spaces (context_p);
@@ -1542,7 +1545,7 @@ lexer_expect_identifier (parser_context_t *context_p, /**< context */
         }
         else
         {
-          JERRY_ASSERT (context_p->lit_object.type == lexer_literal_object_arguments);
+          PARSER_ASSERT (context_p->lit_object.type == lexer_literal_object_arguments);
           error = PARSER_ERR_ARGUMENTS_NOT_ALLOWED;
         }
 
@@ -1620,7 +1623,7 @@ lexer_expect_object_literal_id (parser_context_t *context_p, /**< context */
     {
       context_p->token.type = LEXER_RIGHT_BRACE;
       context_p->source_p += 1;
-      context_p->column += 1;
+      context_p->column++;
       return;
     }
     else
@@ -1719,8 +1722,15 @@ lexer_decode_unicode_sequence (const uint8_t *source_p)
   do
   {
     uint8_t byte = *source_p++;
-    chr <<= 4;
-    chr += (byte <= '9') ? (byte - '0') : ((byte | 0x20) - ('a' - 10));
+    chr = (lexer_character_type_t) (chr << 4);
+    if (byte <= '9')
+    {
+      chr = (lexer_character_type_t) (chr + byte - '0');
+    }
+    else
+    {
+      chr = (lexer_character_type_t) (chr + LEXER_TO_ASCII_LOWERCASE (byte) - ('a' - 10));
+    }
   }
   while (source_p < source_end_p);
 
@@ -1740,7 +1750,7 @@ lexer_same_identifiers (lexer_lit_location_t *left, /**< left identifier */
   const uint8_t *right_p;
   size_t count;
 
-  JERRY_ASSERT (left->length > 0 && right->length > 0);
+  PARSER_ASSERT (left->length > 0 && right->length > 0);
 
   if (left->length != right->length)
   {
@@ -1797,7 +1807,7 @@ lexer_same_identifiers (lexer_lit_location_t *left, /**< left identifier */
     }
 
     utf8_len = util_to_utf8_bytes (utf8_buf, lexer_decode_unicode_sequence (left_p));
-    JERRY_ASSERT (utf8_len > 0);
+    PARSER_ASSERT (utf8_len > 0);
     count -= utf8_len;
     offset = 0;
 

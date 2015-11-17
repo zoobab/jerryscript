@@ -32,23 +32,23 @@
 /**
  * Byte code flags. Only the lower 5 bit can be used
  * since the stack change is encoded in the upper
- * three bits for each instruction between -4 and 3
+ * three bits for each instruction between -3 and 4
  * (except for call / construct opcodes).
  */
-#define CBC_STACK_ADJUST_BASE          4
+#define CBC_STACK_ADJUST_BASE          3
 #define CBC_STACK_ADJUST_SHIFT         5
 #define CBC_STACK_ADJUST_VALUE(value)  \
   (((value) >> CBC_STACK_ADJUST_SHIFT) - CBC_STACK_ADJUST_BASE)
 
-#define CBC_NO_FLAG                    0x00
-#define CBC_HAS_BYTE_ARG               0x01
-#define CBC_HAS_LITERAL_ARG            0x02
-#define CBC_HAS_LITERAL_ARG2           0x04
-#define CBC_HAS_BRANCH_ARG             0x08
+#define CBC_NO_FLAG                    0x00u
+#define CBC_HAS_BYTE_ARG               0x01u
+#define CBC_HAS_LITERAL_ARG            0x02u
+#define CBC_HAS_LITERAL_ARG2           0x04u
+#define CBC_HAS_BRANCH_ARG             0x08u
 
 /* These flags are shared */
-#define CBC_FORWARD_BRANCH_ARG         0x10
-#define CBC_POP_STACK_BYTE_ARG         0x10
+#define CBC_FORWARD_BRANCH_ARG         0x10u
+#define CBC_POP_STACK_BYTE_ARG         0x10u
 
 #define CBC_ARG_TYPES (CBC_HAS_BYTE_ARG | CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2 | CBC_HAS_BRANCH_ARG)
 
@@ -283,13 +283,13 @@
 #define CBC_EXT_OPCODE_LIST \
   /* Branch opcodes first. Some other opcodes are mixed. */ \
   CBC_OPCODE (CBC_EXT_NOP, CBC_NO_FLAG, 0) \
-  CBC_FORWARD_BRANCH (CBC_EXT_WITH_CREATE_CONTEXT, -1) \
+  CBC_FORWARD_BRANCH (CBC_EXT_WITH_CREATE_CONTEXT, -1 + PARSER_WITH_CONTEXT_STACK_ALLOCATION) \
   CBC_OPCODE (CBC_EXT_FOR_IN_GET_NEXT, CBC_NO_FLAG, 1) \
-  CBC_FORWARD_BRANCH (CBC_EXT_FOR_IN_CREATE_CONTEXT, -1) \
+  CBC_FORWARD_BRANCH (CBC_EXT_FOR_IN_CREATE_CONTEXT, -1 + PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION) \
   CBC_OPCODE (CBC_EXT_CREATE_OBJECT, CBC_NO_FLAG, 1) \
   CBC_BACKWARD_BRANCH (CBC_EXT_BRANCH_IF_FOR_IN_HAS_NEXT, 0) \
   CBC_OPCODE (CBC_EXT_SET_GETTER, CBC_HAS_LITERAL_ARG, -1) \
-  CBC_FORWARD_BRANCH (CBC_EXT_TRY_CREATE_CONTEXT, 0) \
+  CBC_FORWARD_BRANCH (CBC_EXT_TRY_CREATE_CONTEXT, PARSER_TRY_CONTEXT_STACK_ALLOCATION) \
   CBC_OPCODE (CBC_EXT_SET_SETTER, CBC_HAS_LITERAL_ARG, -1) \
   CBC_FORWARD_BRANCH (CBC_EXT_CATCH, 1) \
   CBC_OPCODE (CBC_EXT_CREATE_ARRAY, CBC_NO_FLAG, 1) \
@@ -342,7 +342,7 @@
 typedef enum
 {
   cbc_literal_encoding_small,    /**< one byte for literals <= 254, two byte for literals <= 510 */
-  cbc_literal_encoding_full,     /**< one byte for literals <= 127, two byte for literals <= 32767 */
+  cbc_literal_encoding_full      /**< one byte for literals <= 127, two byte for literals <= 32767 */
 } cbc_literal_encoding_t;
 
 #define CBC_MAXIMUM_BYTE_VALUE 255
@@ -359,8 +359,6 @@ typedef enum
  * argument_end <= index < register_end         : registers
  * register_end <= index < literal_end          : literals
  */
-
-#define BLOCK_SIZE 64u
 
 /**
  * Compiled byte code data.
@@ -402,7 +400,7 @@ typedef enum
 extern const uint8_t cbc_flags[];
 extern const uint8_t cbc_ext_flags[];
 
-#ifndef JERRY_NDEBUG
+#ifdef PARSER_DEBUG
 
 /**
  * Opcode names for debugging.

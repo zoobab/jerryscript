@@ -23,16 +23,16 @@
 #include "js-lexer.h"
 
 /* General parser flags */
-#define PARSER_IS_STRICT                      0x0001
-#define PARSER_IS_FUNCTION                    0x0002
-#define PARSER_IS_CLOSURE                     0x0004
-#define PARSER_IS_PROPERTY_GETTER             0x0008
-#define PARSER_IS_PROPERTY_SETTER             0x0010
-#define PARSER_IS_FUNC_EXPRESSION             0x0020
-#define PARSER_HAS_NON_STRICT_ARG             0x0040
-#define PARSER_IN_WIDTH                       0x0080
-#define PARSER_NO_END_LABEL                   0x0100
-#define PARSER_NO_REG_STORE                   0x0200
+#define PARSER_IS_STRICT                      0x0001u
+#define PARSER_IS_FUNCTION                    0x0002u
+#define PARSER_IS_CLOSURE                     0x0004u
+#define PARSER_IS_PROPERTY_GETTER             0x0008u
+#define PARSER_IS_PROPERTY_SETTER             0x0010u
+#define PARSER_IS_FUNC_EXPRESSION             0x0020u
+#define PARSER_HAS_NON_STRICT_ARG             0x0040u
+#define PARSER_IN_WIDTH                       0x0080u
+#define PARSER_NO_END_LABEL                   0x0100u
+#define PARSER_NO_REG_STORE                   0x0200u
 
 /* Expression parsing flags */
 #define PARSE_EXPR                            0x00
@@ -42,11 +42,18 @@
 #define PARSE_EXPR_HAS_LITERAL                0x08
 
 /* The maximum of PARSER_CBC_STREAM_PAGE_SIZE is 127. */
-#define PARSER_CBC_STREAM_PAGE_SIZE (64 - sizeof (void*))
-#define PARSER_STACK_PAGE_SIZE (((sizeof (void*) > 4) ? 128 : 64) - sizeof (void*))
+#define PARSER_CBC_STREAM_PAGE_SIZE \
+  ((uint32_t) (64 - sizeof (void*)))
 
-/* Other defines */
-#define PARSER_ANONYMOUS_FUNCTION 0xffff
+#define PARSER_STACK_PAGE_SIZE \
+  ((uint32_t) (((sizeof (void*) > 4) ? 128 : 64) - sizeof (void*)))
+
+/* Avoid compiler warnings for += operations. */
+#define PARSER_PLUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) + (value))
+#define PARSER_MINUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) - (value))
+#define PARSER_PLUS_EQUAL_LC(base, value) (base) = (parser_line_counter_t) ((base) + (value))
+
+#define PARSER_ANONYMOUS_FUNCTION 0xffffu
 
 /**
  * Parser boolean type.
@@ -74,7 +81,7 @@ typedef struct
 
 #define PARSER_CBC_UNAVAILABLE CBC_EXT_OPCODE
 
-#define PARSER_TO_EXT_OPCODE(opcode) ((opcode) + 256)
+#define PARSER_TO_EXT_OPCODE(opcode) ((uint16_t) ((opcode) + 256))
 #define PARSER_GET_EXT_OPCODE(opcode) ((opcode) - 256)
 #define PARSER_IS_BASIC_OPCODE(opcode) ((opcode) < 256)
 
@@ -82,7 +89,7 @@ typedef struct
   (PARSER_TO_EXT_OPCODE(opcode) - CBC_ASSIGN + CBC_EXT_ASSIGN_PUSH_RESULT)
 
 #define PARSER_TO_BINARY_OPERATION_WITH_BLOCK(opcode) \
-  (PARSER_TO_EXT_OPCODE(opcode) - CBC_ASSIGN + CBC_EXT_ASSIGN_BLOCK)
+  ((uint16_t) (PARSER_TO_EXT_OPCODE(opcode) - CBC_ASSIGN + CBC_EXT_ASSIGN_BLOCK))
 
 #define PARSER_GET_FLAGS(op) \
   (PARSER_IS_BASIC_OPCODE (op) ? cbc_flags[(op)] : cbc_ext_flags[PARSER_GET_EXT_OPCODE (op)])
@@ -107,7 +114,7 @@ typedef struct
 {
   parser_mem_page_t *first_p;                 /**< first allocated page */
   parser_mem_page_t *last_p;                  /**< last allocated page */
-  size_t last_position;                       /**< position of the last allocated byte */
+  uint32_t last_position;                     /**< position of the last allocated byte */
 } parser_mem_data_t;
 
 /**
@@ -116,9 +123,9 @@ typedef struct
 typedef struct
 {
   parser_mem_data_t data;                     /**< storage space */
-  size_t page_size;                           /**< size of each page */
-  size_t item_size;                           /**< size of each item */
-  size_t item_count;                          /**< number of items on each page */
+  uint32_t page_size;                         /**< size of each page */
+  uint32_t item_size;                         /**< size of each item */
+  uint32_t item_count;                        /**< number of items on each page */
 } parser_list_t;
 
 /**
@@ -175,8 +182,8 @@ typedef struct parser_saved_context_t
 {
   /* Parser members. */
   uint32_t status_flags;                      /**< parsing options */
-  int16_t stack_depth;                        /**< current stack depth */
-  int16_t stack_limit;                        /**< maximum stack depth */
+  uint16_t stack_depth;                       /**< current stack depth */
+  uint16_t stack_limit;                       /**< maximum stack depth */
   struct parser_saved_context_t *prev_context_p; /**< last saved context */
   parser_stack_iterator_t last_statement;     /**< last statement position */
 
@@ -189,6 +196,10 @@ typedef struct parser_saved_context_t
   parser_mem_data_t byte_code;                /**< byte code buffer */
   uint32_t byte_code_size;                    /**< byte code size for branches */
   parser_mem_data_t literal_pool_data;        /**< literal list */
+
+#ifdef PARSER_DEBUG
+  uint16_t context_stack_depth;               /**< current context stack depth */
+#endif
 } parser_saved_context_t;
 
 /**
@@ -203,14 +214,10 @@ typedef struct
 
   /* Parser members. */
   uint32_t status_flags;                      /**< status flags */
-  int16_t stack_depth;                        /**< current stack depth */
-  int16_t stack_limit;                        /**< maximum stack depth */
+  uint16_t stack_depth;                       /**< current stack depth */
+  uint16_t stack_limit;                       /**< maximum stack depth */
   parser_saved_context_t *last_context_p;     /**< last saved context */
   parser_stack_iterator_t last_statement;     /**< last statement position */
-#ifndef JERRY_NDEBUG
-  int is_show_opcodes;                        /**< show opcodes */
-  uint32_t total_byte_code_size;              /**< total byte code size */
-#endif
 
   /* Lexer members. */
   lexer_token_t token;                        /**< current token */
@@ -236,6 +243,13 @@ typedef struct
   parser_mem_data_t stack;                    /**< storage space */
   parser_mem_page_t *free_page_p;             /**< space for fast allocation */
   uint8_t stack_top_uint8;                    /**< top byte stored on the stack */
+
+#ifdef PARSER_DEBUG
+  /* Variables for debugging / logging. */
+  uint16_t context_stack_depth;               /**< current context stack depth */
+  uint32_t total_byte_code_size;              /**< total byte code size */
+  int is_show_opcodes;                        /**< show opcodes */
+#endif
 } parser_context_t;
 
 /* Memory management.
@@ -253,7 +267,7 @@ void parser_cbc_stream_alloc_page (parser_context_t *, parser_mem_data_t *);
 
 /* Parser list. Ensures pointer alignment. */
 
-void parser_list_init (parser_list_t *, size_t, size_t);
+void parser_list_init (parser_list_t *, uint32_t, uint32_t);
 void parser_list_free (parser_list_t *);
 void parser_list_reset (parser_list_t *);
 void * parser_list_append (parser_context_t *, parser_list_t *);
@@ -270,8 +284,8 @@ void parser_stack_push_uint8 (parser_context_t *, uint8_t);
 void parser_stack_pop_uint8 (parser_context_t *);
 void parser_stack_push_uint16 (parser_context_t *, uint16_t);
 uint16_t parser_stack_pop_uint16 (parser_context_t *);
-void parser_stack_push (parser_context_t *, const void *, size_t);
-void parser_stack_pop (parser_context_t *, void *, size_t);
+void parser_stack_push (parser_context_t *, const void *, uint32_t);
+void parser_stack_pop (parser_context_t *, void *, uint32_t);
 void parser_stack_iterator_skip (parser_stack_iterator_t *, size_t);
 void parser_stack_iterator_read (parser_stack_iterator_t *, void *, size_t);
 void parser_stack_iterator_write (parser_stack_iterator_t *, const void *, size_t);
@@ -320,7 +334,7 @@ void parser_parse_expression (parser_context_t *, int);
 void parser_parse_statements (parser_context_t *);
 void parser_scan_until (parser_context_t *, lexer_range_t *, lexer_token_type_t);
 cbc_compiled_code_t *parser_parse_function (parser_context_t *, uint32_t);
-void parser_free_jumps (parser_context_t *, parser_stack_iterator_t);
+void parser_free_jumps (parser_stack_iterator_t);
 
 /* Error management. */
 
