@@ -19,12 +19,12 @@
 jsp_status_t
 parser_parse_script (const jerry_api_char_t *source_p,
                      size_t size,
-                     const cbc_compiled_code_t *bytecode_data_p)
+                     const cbc_compiled_code_t **bytecode_data_p)
 {
   parser_error_location el;
-  bytecode_data_p = parser_parse_script (source_p, size, &el);
+  *bytecode_data_p = parser_parse_script (source_p, size, &el);
 
-  if (!bytecode_data_p)
+  if (!*bytecode_data_p)
   {
     return JSP_STATUS_SYNTAX_ERROR;
   }

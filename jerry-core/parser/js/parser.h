@@ -29,7 +29,7 @@ typedef enum
 } jsp_status_t;
 
 extern void parser_set_show_instrs (bool);
-extern jsp_status_t parser_parse_script (const jerry_api_char_t *, size_t, const cbc_compiled_code_t *);
+extern jsp_status_t parser_parse_script (const jerry_api_char_t *, size_t, const cbc_compiled_code_t **);
 extern jsp_status_t parser_parse_eval (const jerry_api_char_t *,
                                        size_t,
                                        bool,

@@ -1424,7 +1424,7 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 
   parse_status = parser_parse_script (source_p,
                                       source_size,
-                                      bytecode_data_p);
+                                      &bytecode_data_p);
 
   if (parse_status != JSP_STATUS_OK)
   {
