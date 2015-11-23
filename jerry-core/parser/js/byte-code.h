@@ -371,8 +371,15 @@ typedef struct
   uint16_t ident_end;               /**< end position of the identifier group */
   uint16_t const_literal_end;       /**< end position of the const literal group */
   uint16_t literal_end;             /**< end position of the literal group */
-  uint8_t literal_encoding;         /**< literal encoding mode */
+  uint16_t code_flags;              /**< various flags */
 } cbc_compiled_code_t;
+
+/*
+ * The result of code_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING is either
+ * cbc_literal_encoding_small or cbc_literal_encoding_full
+ */
+#define CBC_CODE_FLAGS_FULL_LITERAL_ENCODING 1
+#define CBC_CODE_FLAGS_STRICT_MODE 2
 
 #define CBC_OPCODE(arg1, arg2, arg3) arg1,
 

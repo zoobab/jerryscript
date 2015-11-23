@@ -97,6 +97,7 @@ opcode_scope_code_flags_t vm_get_scope_flags (const cbc_compiled_code_t *)
 bool vm_is_strict_mode (void)
 {
 // FIXME: Implement this
+  return __program->code_flags & CBC_CODE_FLAGS_STRICT_MODE;
 }
 
 bool vm_is_direct_eval_form_call (void)
