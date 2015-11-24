@@ -1005,11 +1005,19 @@ lit_put_ecma_char (ecma_char_t ecma_char) /**< code unit */
 {
   if (ecma_char <= LIT_UTF8_1_BYTE_CODE_POINT_MAX)
   {
-    putchar (ecma_char);
+#if defined (__TARGET_ESP8266)
+    printf ("%c", ecma_char);
+#else
+    putchar ((char) ecma_char);
+#endif
   }
   else
   {
     FIXME ("Support unicode characters printing.");
+#if defined (__TARGET_ESP8266)
+    printf ("_");
+#else
     putchar ('_');
+#endif
   }
 } /* lit_put_ecma_char */

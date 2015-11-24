@@ -120,7 +120,11 @@ extern void __noreturn jerry_unimplemented (const char *, const char *, const ch
 #define JERRY_DDDLOG(...) JERRY_DLOG (__VA_ARGS__)
 #endif /* !JERRY_ENABLE_LOG */
 
+#if defined (__TARGET_ESP8266)
+#define JERRY_ERROR_MSG(...) printf (__VA_ARGS__)
+#else
 #define JERRY_ERROR_MSG(...) fprintf (stderr, __VA_ARGS__)
+#endif
 #define JERRY_WARNING_MSG(...) JERRY_ERROR_MSG (__VA_ARGS__)
 
 /**

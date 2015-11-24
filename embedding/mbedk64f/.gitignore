@@ -1,0 +1,5 @@
+libjerry/
+build/
+yotta_modules/
+yotta_targets/
+source/mbedk64f_js.h
