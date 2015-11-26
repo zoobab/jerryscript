@@ -22,6 +22,8 @@
 #include <inttypes.h>
 #include <setjmp.h>
 
+#include "ecma-globals.h"
+#include "lit-literal.h"
 #include "mem-heap.h"
 
 /* The utilites here are just for compiling purposes, JS
@@ -87,30 +89,17 @@ typedef enum
 #define LEXER_FLAG_INITIALIZED 0x04
 
 /**
- * Literal value.
- */
-typedef union
-{
-  uint8_t *char_p;            /**< char array */
-  void *compiled_code_p;      /**< compiled code */
-} literal_value_t;
-
-/**
  * Literal data.
  */
 typedef struct
 {
-  literal_value_t value;     /**< literal value (not used by the parser) */
+  ecma_value_t value;        /**< literal value (not used by the parser) */
   uint16_t length;           /**< length of ident / string literal */
   uint16_t index;            /**< real index during post processing */
   uint8_t type;              /**< type of the literal */
   uint8_t status_flags;      /**< status flags */
 } lexer_literal_t;
 
-int util_compare_char_literals (lexer_literal_t *, const uint8_t *);
-int util_set_char_literal (lexer_literal_t *, const uint8_t *);
-int util_set_number_literal (lexer_literal_t *, const uint8_t *);
-int util_set_regexp_literal (lexer_literal_t *, const uint8_t *);
 int util_set_function_literal (lexer_literal_t *, void *);
 void util_free_literal (lexer_literal_t *);
 
@@ -167,7 +156,8 @@ void util_print_literal (lexer_literal_t *);
 #define PARSER_NOINLINE __attribute__ ((noinline))
 
 #ifdef PARSER_DEBUG
-void util_print_string (const uint8_t *, size_t);
+void util_print_string (ecma_string_t *);
+void util_print_number (ecma_number_t *);
 #endif
 
 #endif /* COMMON_H */

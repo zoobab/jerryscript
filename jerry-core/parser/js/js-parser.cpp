@@ -275,7 +275,7 @@ parser_encode_literal (uint8_t *dst_p, /**< destination buffer */
 static uint8_t *
 parser_generate_initializers (parser_context_t *context_p, /**< context */
                               uint8_t *dst_p, /**< destination buffer */
-                              literal_value_t *literal_pool_p, /**< start of literal pool */
+                              ecma_value_t *literal_pool_p, /**< start of literal pool */
                               uint16_t uninitialized_var_end, /**< end of the uninitialized var group */
                               uint16_t literal_one_byte_limit) /**< maximum value of a literal
                                                                 *   encoded in one byte */
@@ -621,7 +621,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /* compiled code */
           (int) compiled_code_p->literal_end);
 
   byte_code_start_p = ((uint8_t *) compiled_code_p) + sizeof (cbc_compiled_code_t);
-  byte_code_start_p += compiled_code_p->literal_end * sizeof (literal_value_t);
+  byte_code_start_p += compiled_code_p->literal_end * sizeof (ecma_value_t);
   byte_code_end_p = byte_code_start_p + length;
   byte_code_p = byte_code_start_p;
 
@@ -790,7 +790,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   uint8_t *byte_code_p;
   cbc_opcode_t last_opcode = CBC_EXT_OPCODE;
   cbc_compiled_code_t *compiled_code_p;
-  literal_value_t *literal_pool_p;
+  ecma_value_t *literal_pool_p;
   uint8_t *dst_p;
 
   if ((size_t) context_p->stack_limit + (size_t) context_p->register_count > PARSER_MAXIMUM_STACK_LIMIT)
@@ -963,7 +963,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   }
 
   total_size = sizeof (cbc_compiled_code_t) + length;
-  total_size += context_p->literal_count * sizeof (literal_value_t);
+  total_size += context_p->literal_count * sizeof (ecma_value_t);
   compiled_code_p = (cbc_compiled_code_t *) parser_malloc (context_p, total_size);
 
   compiled_code_p->stack_limit = (uint16_t) (context_p->register_count + context_p->stack_limit);
@@ -981,8 +981,8 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   }
 
   byte_code_p = ((uint8_t *) compiled_code_p) + sizeof (cbc_compiled_code_t);
-  literal_pool_p = (literal_value_t *) byte_code_p;
-  byte_code_p += context_p->literal_count * sizeof (literal_value_t);
+  literal_pool_p = (ecma_value_t *) byte_code_p;
+  byte_code_p += context_p->literal_count * sizeof (ecma_value_t);
 
   dst_p = parser_generate_initializers (context_p,
                                         byte_code_p,
@@ -1409,10 +1409,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
         literal_p->type = LEXER_IDENT_LITERAL;
         literal_p->status_flags = LEXER_FLAG_VAR;
 
-        if (util_set_char_literal (context_p->lit_object.literal_p, NULL) != 0)
-        {
-          parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
-        }
+        context_p->lit_object.literal_p->value = 0;
         context_p->status_flags |= PARSER_HAS_NON_STRICT_ARG;
         context_p->literal_count++;
       }

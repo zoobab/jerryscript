@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "byte-code.h"
 #include "js-parser-internal.h"
 
 /**********************************************************************/

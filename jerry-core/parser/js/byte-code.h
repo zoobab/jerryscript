@@ -18,6 +18,10 @@
 
 #include <stdint.h>
 
+#ifndef JERRY_NDEBUG
+#define PARSER_DEBUG
+#endif
+
 /**
  * Compact byte code (CBC) is a byte code representation
  * of EcmaScript which is designed for low memory
@@ -412,8 +416,8 @@ extern const uint8_t cbc_ext_flags[];
 /**
  * Opcode names for debugging.
  */
-extern const char* cbc_names[];
-extern const char* cbc_ext_names[];
+extern const char *cbc_names[];
+extern const char *cbc_ext_names[];
 
 #endif
 

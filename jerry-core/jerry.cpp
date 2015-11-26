@@ -26,6 +26,7 @@
 #include "ecma-init-finalize.h"
 #include "ecma-objects.h"
 #include "ecma-objects-general.h"
+#include "lit-literal.h"
 #include "lit-magic-strings.h"
 #include "parser.h"
 
@@ -1350,6 +1351,7 @@ jerry_init (jerry_flag_t flags) /**< combination of Jerry flags */
   jerry_make_api_available ();
 
   mem_init ();
+  lit_init ();
   ecma_init ();
 } /* jerry_init */
 
@@ -1365,6 +1367,7 @@ jerry_cleanup (void)
 
   ecma_finalize ();
   mem_finalize (is_show_mem_stats);
+  lit_finalize ();
   vm_finalize ();
 } /* jerry_cleanup */
 

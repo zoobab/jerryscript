@@ -14,6 +14,7 @@
  */
 
 #include "common.h"
+#include "ecma-helpers.h"
 
 /**
  * Checks whether the next UTF8 character is a valid identifier start.
@@ -128,72 +129,6 @@ util_get_utf8_length (uint16_t chr) /**< EcmaScript character */
 } /* util_get_utf8_length */
 
 /**
- * Compares a string literal with a character array.
- *
- * @return non-zero if they match.
- */
-int
-util_compare_char_literals (lexer_literal_t *literal_p, /* literal */
-                            const uint8_t *char_p) /* character array */
-{
-  PARSER_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
-                 || literal_p->type == LEXER_STRING_LITERAL);
-  return memcmp (literal_p->value.char_p, char_p, literal_p->length) == 0;
-} /* util_compare_char_literals */
-
-/**
- * Initializes a string literal from a character array.
- *
- * @return non-zero in an error is occured.
- */
-int
-util_set_char_literal (lexer_literal_t *literal_p, /* literal */
-                       const uint8_t *char_p) /* character array */
-{
-  if (literal_p->length == 0)
-  {
-    literal_p->value.char_p = NULL;
-    return 0;
-  }
-
-  literal_p->value.char_p = (uint8_t *) PARSER_MALLOC (literal_p->length);
-  if (literal_p->value.char_p == NULL)
-  {
-    return 1;
-  }
-
-  memcpy (literal_p->value.char_p, char_p, literal_p->length);
-  return 0;
-} /* util_set_char_literal */
-
-/**
- * Initializes a number literal from a character array.
- *
- * @return non-zero in an error is occured.
- */
-int
-util_set_number_literal (lexer_literal_t *literal_p, /* literal */
-                         const uint8_t *source_p) /* starting source code position */
-{
-  literal_p->value.char_p = (uint8_t *) source_p;
-  return 0;
-} /* util_set_number_literal */
-
-/**
- * Initializes a regexp literal from a character array.
- *
- * @return NULL if an error is occured.
- *         otherwise returns with end position of the number
- */
-int
-util_set_regexp_literal (lexer_literal_t *literal_p, /* literal */
-                         const uint8_t *source_p) /* starting source code position */
-{
-  literal_p->value.char_p = (uint8_t *) source_p;
-  return 0;
-} /* util_set_regexp_literal */
-
-/**
  * Initializes a string literal from a character array.
  *
  * @return non-zero if an error is occured.
@@ -202,9 +137,9 @@ int
 util_set_function_literal (lexer_literal_t *literal_p, /* literal */
                            void *function_p) /* function */
 {
-  literal_p->value.compiled_code_p = function_p;
+  literal_p->value = function_p;
   return 0;
-} /* util_set_char_literal */
+} /* util_set_function_literal */
 
 /**
  * Free literal.
@@ -217,12 +152,12 @@ util_free_literal (lexer_literal_t *literal_p) /* literal */
   {
     if (literal_p->length > 0)
     {
-      PARSER_FREE (literal_p->value.char_p);
+      ecma_deref_ecma_string (ecma_get_string_from_value (literal_p->value));
     }
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
   {
-    PARSER_FREE (literal_p->value.compiled_code_p);
+    PARSER_FREE (literal_p->value);
   }
 } /* util_free_literal */
 
@@ -243,6 +178,7 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
     {
       printf ("ident(");
     }
+    util_print_string (ecma_get_string_from_value (literal_p->value));
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
   {
@@ -252,14 +188,17 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
   else if (literal_p->type == LEXER_STRING_LITERAL)
   {
     printf ("string(");
+    util_print_string (ecma_get_string_from_value (literal_p->value));
   }
   else if (literal_p->type == LEXER_NUMBER_LITERAL)
   {
     printf ("number(");
+    util_print_number (ecma_get_number_from_value (literal_p->value));
   }
   else if (literal_p->type == LEXER_REGEXP_LITERAL)
   {
     printf ("regexp(");
+    util_print_string (ecma_get_string_from_value (literal_p->value));
   }
   else
   {
@@ -267,7 +206,6 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
     return;
   }
 
-  util_print_string (literal_p->value.char_p, literal_p->length);
   printf (")");
 } /* util_print_literal */
 #endif
@@ -277,13 +215,25 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
  * Debug utility to print a character sequence.
  */
 void
-util_print_string (const uint8_t *char_p, /**< character pointer */
-                   size_t size) /**< size */
+util_print_string (ecma_string_t *str_p) /**< String pointer */
 {
-  while (size > 0)
-  {
-    printf ("%c", *char_p++);
-    size--;
-  }
+  lit_utf8_size_t str_size = ecma_string_get_size (str_p);
+  MEM_DEFINE_LOCAL_ARRAY (utf8_str_p, str_size + 1, lit_utf8_byte_t);
+
+  ssize_t sz = ecma_string_to_utf8_string (str_p, utf8_str_p, (ssize_t) str_size);
+  JERRY_ASSERT (sz >= 0);
+  utf8_str_p[sz] = 0;
+  printf ("%s", utf8_str_p);
+
+  MEM_FINALIZE_LOCAL_ARRAY (utf8_str_p);
+}
+
+void
+util_print_number (ecma_number_t *num_p)
+{
+  lit_utf8_byte_t str_buf[ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER];
+  lit_utf8_size_t str_size = ecma_number_to_utf8_string (*num_p, str_buf, sizeof (str_buf));
+  str_buf[str_size] = 0;
+  printf ("%s", str_buf);
 }
 #endif

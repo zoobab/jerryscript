@@ -42,7 +42,10 @@ vm_init (const cbc_compiled_code_t *program_p, /**< pointer to byte-code data */
 void
 vm_finalize (void)
 {
-  __program = NULL;
+  if (__program)
+  {
+    mem_heap_free_block (__program);
+  }
 } /* vm_finalize */
 
 /**

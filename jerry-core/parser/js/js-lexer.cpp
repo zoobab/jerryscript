@@ -13,7 +13,11 @@
  * limitations under the License.
  */
 
+#include "ecma-alloc.h"
+#include "ecma-helpers.h"
+#include "ecma-function-object.h"
 #include "js-parser-internal.h"
+#include "lit-literal.h"
 
 #define UTF8_INTERMEDIATE_OCTET_MASK 0xc0
 #define UTF8_INTERMEDIATE_OCTET 0x80
@@ -1016,14 +1020,21 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
 
   while ((literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator)) != NULL)
   {
-    if (literal_p->type == literal_type
-        && literal_p->length == length
-        && util_compare_char_literals (literal_p, char_p))
+    if (literal_p->value
+        && literal_p->type == literal_type
+        && literal_p->length == length)
     {
-      context_p->lit_object.literal_p = literal_p;
-      context_p->lit_object.index = (uint16_t) literal_index;
-      return;
+      ecma_string_t *str_p = ecma_get_string_from_value (literal_p->value);
+
+      if (str_p->container == ECMA_STRING_CONTAINER_LIT_TABLE
+          && lit_literal_equal_type_cstr (lit_get_literal_by_cp (str_p->u.lit_cp), char_p))
+      {
+        context_p->lit_object.literal_p = literal_p;
+        context_p->lit_object.index = (uint16_t) literal_index;
+        return;
+      }
     }
+
     literal_index++;
   }
 
@@ -1039,10 +1050,14 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
   literal_p->type = literal_type;
   literal_p->status_flags = 0;
 
-  if (util_set_char_literal (literal_p, char_p) != 0)
+  literal_t lit = lit_create_literal_from_utf8_string (char_p, length);
+
+  if (!lit)
   {
     parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
   }
+
+  literal_p->value = ecma_make_string_value (ecma_new_ecma_string_from_lit_cp (lit_cpointer_t::compress(lit)));
 
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = (uint16_t) literal_index;
@@ -1290,11 +1305,16 @@ lexer_construct_number_object (parser_context_t *context_p) /**< context */
 
   context_p->literal_count = (uint16_t) (literal_count + 1);
 
-  if (util_set_number_literal (literal_p, context_p->token.lit_location.char_p))
+  ecma_number_t *num_p = ecma_alloc_number ();
+  *num_p = ecma_utf8_string_to_number (context_p->token.lit_location.char_p,
+                                       context_p->token.lit_location.length);
+
+  if (!num_p)
   {
     parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
   }
 
+  literal_p->value = ecma_make_number_value (num_p);
   literal_p->type = LEXER_NUMBER_LITERAL;
 
   context_p->lit_object.literal_p = literal_p;
@@ -1492,10 +1512,14 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
   context_p->literal_count++;
 
-  if (util_set_regexp_literal (literal_p, regex_start_p))
+  ecma_string_t *str_p = ecma_new_ecma_string_from_utf8 (regex_start_p, length);
+
+  if (!str_p)
   {
     parser_raise_error (context_p, PARSER_ERR_INVALID_REGEXP);
   }
+
+  literal_p->value = ecma_make_string_value (str_p);
 
   literal_p->type = LEXER_REGEXP_LITERAL;
 
