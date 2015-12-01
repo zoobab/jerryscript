@@ -957,19 +957,15 @@ parser_parse_switch_statement_start (parser_context_t *context_p) /**< context *
       if (switch_case_was_found)
       {
         parser_branch_node_t *new_case_p;
+        uint16_t opcode = CBC_BRANCH_IF_STRICT_EQUAL;
 
-        if (context_p->token.type == LEXER_KEYW_CASE)
-        {
-          parser_emit_cbc (context_p, CBC_SWITCH_STRICT_EQUAL);
-        }
-        else
+        if (context_p->token.type != LEXER_KEYW_CASE)
         {
           /* We don't duplicate the value for the last case. */
           parser_emit_cbc (context_p, CBC_STRICT_EQUAL);
+          opcode = CBC_BRANCH_IF_TRUE_FORWARD;
         }
-        new_case_p = parser_emit_cbc_forward_branch_item (context_p,
-                                                          CBC_BRANCH_IF_TRUE_FORWARD,
-                                                          NULL);
+        new_case_p = parser_emit_cbc_forward_branch_item (context_p, opcode, NULL);
         if (cases_p == NULL)
         {
           switch_statement.branch_list_p = new_case_p;
@@ -1708,7 +1704,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
           parser_raise_error (context_p, PARSER_ERR_EXPRESSION_EXPECTED);
         }
         parser_parse_expression (context_p, PARSE_EXPR);
-        parser_emit_cbc_ext (context_p, CBC_EXT_THROW);
+        parser_emit_cbc (context_p, CBC_THROW);
         break;
       }
 

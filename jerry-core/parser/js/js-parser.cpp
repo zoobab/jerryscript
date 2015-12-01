@@ -586,7 +586,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /* compiled code */
 
   printf ("\nFinal byte code dump:\n\n  Maximum stack depth: %d\n", (int) compiled_code_p->stack_limit);
   printf ("  Literal encoding: ");
-  if (compiled_code_p->code_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING == cbc_literal_encoding_small)
+  if (!(compiled_code_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
   {
     printf ("small\n");
     encoding_limit = 255;
@@ -600,7 +600,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /* compiled code */
   }
 
   printf ("  Strict mode: ");
-  if (compiled_code_p->code_flags & CBC_CODE_FLAGS_STRICT_MODE)
+  if (compiled_code_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE)
   {
     printf ("yes\n");
   }
@@ -973,11 +973,15 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   compiled_code_p->const_literal_end = const_literal_end;
   compiled_code_p->literal_end = context_p->literal_count;
 
-  compiled_code_p->code_flags = 0;
-  compiled_code_p->code_flags |= cbc_literal_encoding_small;
+  compiled_code_p->status_flags = 0;
+  if (literal_encoding == cbc_literal_encoding_full)
+  {
+    compiled_code_p->status_flags |= CBC_CODE_FLAGS_FULL_LITERAL_ENCODING;
+  }
+
   if (context_p->status_flags & PARSER_IS_STRICT)
   {
-    compiled_code_p->code_flags |= CBC_CODE_FLAGS_STRICT_MODE;
+    compiled_code_p->status_flags |= CBC_CODE_FLAGS_STRICT_MODE;
   }
 
   byte_code_p = ((uint8_t *) compiled_code_p) + sizeof (cbc_compiled_code_t);

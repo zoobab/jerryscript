@@ -94,6 +94,9 @@ typedef struct
 #define PARSER_GET_FLAGS(op) \
   (PARSER_IS_BASIC_OPCODE (op) ? cbc_flags[(op)] : cbc_ext_flags[PARSER_GET_EXT_OPCODE (op)])
 
+#define PARSER_OPCODE_IS_PUSH_LITERAL(op) \
+  ((op) == CBC_PUSH_IDENT || (op) == CBC_PUSH_LITERAL)
+
 #define PARSER_ARGS_EQ(op, types) \
   ((PARSER_GET_FLAGS (op) & CBC_ARG_TYPES) == (types))
 

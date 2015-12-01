@@ -22,16 +22,16 @@
 #include <inttypes.h>
 #include <setjmp.h>
 
+#ifndef JERRY_NDEBUG
+#define PARSER_DEBUG
+#endif
+
 #include "ecma-globals.h"
 #include "lit-literal.h"
 #include "mem-heap.h"
 
 /* The utilites here are just for compiling purposes, JS
  * engines should have an optimized version for them. */
-
-#ifndef JERRY_NDEBUG
-#define PARSER_DEBUG
-#endif
 
 /* Malloc functions. */
 
