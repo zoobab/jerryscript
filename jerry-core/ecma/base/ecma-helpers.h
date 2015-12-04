@@ -52,6 +52,8 @@
 #define ECMA_SET_POINTER(field, non_compressed_pointer) MEM_CP_SET_POINTER (field, non_compressed_pointer)
 
 /* ecma-helpers-value.cpp */
+extern ecma_type_t ecma_get_value_type_field (ecma_value_t) __attr_pure___;
+
 extern bool ecma_is_value_empty (ecma_value_t);
 extern bool ecma_is_value_undefined (ecma_value_t);
 extern bool ecma_is_value_null (ecma_value_t);

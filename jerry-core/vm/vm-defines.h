@@ -16,6 +16,7 @@
 #define VM_DEFINES_H
 
 #include "byte-code.h"
+#include "ecma-globals.h"
 
 /**
  * Opcode / argument value in an instruction ("idx")
@@ -48,6 +49,7 @@ typedef struct
   const cbc_compiled_code_t *bytecode_header_p; /**< currently executed byte-code data */
   vm_instr_counter_t instr_pos; /**< current position instruction to execute */
   ecma_object_t *lex_env_p; /**< current lexical environment */
+  ecma_value_t *literal_start_p;
   bool is_strict; /**< is current code execution mode strict? */
   bool is_eval_code; /**< is current code executed with eval */
   bool is_call_in_direct_eval_form; /** flag, indicating if there is call of 'Direct call to eval' form in

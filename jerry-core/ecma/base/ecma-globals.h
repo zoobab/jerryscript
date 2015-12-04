@@ -29,7 +29,6 @@
 #include "lit-magic-strings.h"
 #include "mem-allocator.h"
 #include "rcs-recordset.h"
-#include "vm-defines.h"
 
 /** \addtogroup compressedpointer Compressed pointer
  * @{

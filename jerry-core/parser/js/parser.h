@@ -17,6 +17,7 @@
 #define PARSER_H
 
 #include "jerry-api.h"
+#include "byte-code.h"
 
 /**
  * Parser completion status

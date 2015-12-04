@@ -1286,7 +1286,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 #endif /* PARSER_DEBUG */
 
   parser_cbc_stream_free (&context.byte_code);
-  parser_free_literals (&context.literal_pool);
+//  parser_free_literals (&context.literal_pool);
   parser_stack_free (&context);
 
   return compiled_code;
@@ -1488,7 +1488,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 #endif /* PARSER_DEBUG */
 
   parser_cbc_stream_free (&context_p->byte_code);
-  parser_free_literals (&context_p->literal_pool);
+//  parser_free_literals (&context_p->literal_pool);
 
   /* Restore private part of the context. */
 
