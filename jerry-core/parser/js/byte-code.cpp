@@ -15,7 +15,7 @@
 
 #include "js-parser-internal.h"
 
-#define CBC_OPCODE(arg1, arg2, arg3) \
+#define CBC_OPCODE(arg1, arg2, arg3, arg4) \
   ((arg2) | (((arg3) + CBC_STACK_ADJUST_BASE) << CBC_STACK_ADJUST_SHIFT)),
 
 const uint8_t cbc_flags[] =
@@ -32,7 +32,7 @@ const uint8_t cbc_ext_flags[] =
 
 #ifdef PARSER_DEBUG
 
-#define CBC_OPCODE(arg1, arg2, arg3) #arg1,
+#define CBC_OPCODE(arg1, arg2, arg3, arg4) #arg1,
 
 const char *cbc_names[] =
 {

@@ -21,6 +21,53 @@
 #include "jrt.h"
 #include "vm-defines.h"
 
+#define VM_OC_LEFT_OPERAND_SHIFT 28
+#define VM_OC_LEFT_OPERAND_MASK 0xf
+#define VM_OC_LEFT_OPERAND_VALUE(V) (((V) & VM_OC_LEFT_OPERAND_MASK) << VM_OC_LEFT_OPERAND_SHIFT)
+#define VM_OC_LEFT_OPERAND(O) (((O) >> VM_OC_LEFT_OPERAND_SHIFT) & VM_OC_LEFT_OPERAND_MASK)
+
+#define VM_OC_RIGHT_OPERAND_SHIFT 28
+#define VM_OC_RIGHT_OPERAND_MASK 0xf
+#define VM_OC_RIGHT_OPERAND_VALUE(V) (((V) & VM_OC_RIGHT_OPERAND_MASK) << VM_OC_RIGHT_OPERAND_SHIFT)
+#define VM_OC_RIGHT_OPERAND(O) (((O) >> VM_OC_RIGHT_OPERAND_SHIFT) & VM_OC_RIGHT_OPERAND_MASK)
+
+enum {
+  VM_OC_OP_NONE,
+  VM_OC_OP_BRANCH_1,
+  VM_OC_OP_BRANCH_2,
+  VM_OC_OP_BRANCH_3,
+  VM_OC_OP_BYTE,
+  VM_OC_OP_LITERAL,
+  VM_OC_OP_STACK
+};
+
+#define VM_OC_GROUP_SHIFT 16
+#define VM_OC_GROUP_MASK 0xff
+#define VM_OC_GROUP_VALUE(V) (((V) & 0xff) << VM_OC_GROUP_SHIFT)
+#define VM_OC_GROUP(O) (((O) >> VM_OC_GROUP_SHIFT) & 0xff)
+
+enum {
+  VM_OC_GROUP_NONE,
+  VM_OC_GROUP_POP,
+  VM_OC_GROUP_RET,
+
+  VM_OC_GROUP_ADD,
+  VM_OC_GROUP_SUB,
+  VM_OC_GROUP_MUL,
+  VM_OC_GROUP_DIV,
+  VM_OC_GROUP_MOD
+};
+
+#define VM_OC_POST_PROCESS_SHIFT 12
+#define VM_OC_POST_PROCESS_MASK 0xf
+#define VM_OC_POST_PROCESS_VALUE(V) (((V) & VM_OC_POST_PROCESS_MASK) << VM_OC_POST_PROCESS_SHIFT)
+#define VM_OC_POST_PROCESS(O) (((O) >> VM_OC_POST_PROCESS_SHIFT) & VM_OC_POST_PROCESS_MASK)
+
+enum {
+  VM_OC_POST_NONE,
+  VM_OC_POST_PUSH_RESULT
+};
+
 extern void vm_init (const cbc_compiled_code_t *, bool);
 extern void vm_finalize (void);
 extern jerry_completion_code_t vm_run_global (void);
