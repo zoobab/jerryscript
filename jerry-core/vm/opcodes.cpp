@@ -60,7 +60,7 @@ ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                uint16_t func_name_lit_idx,
                uint32_t args_num,
-               ecma_value_t *stack_p)
+               ecma_value_t **stack_p)
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
   ecma_string_t *func_name = ecma_get_string_from_value (frame_ctx_p->literal_start_p[func_name_lit_idx]);
@@ -82,61 +82,60 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 
   uint8_t call_flags;
   ecma_value_t this_value = vm_get_call_this_arg (frame_ctx_p, func_name);
-
   ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
-  ecma_append_to_values_collection (arg_collection_p, ecma_make_string_value (func_name), true);
 
-//  ecma_completion_value_t get_arg_completion = vm_fill_varg_list (frame_ctx_p,
-//                                                                  args_number_idx,
-//                                                                  arg_collection_p);
-//  ecma_length_t args_read = arg_collection_p->unit_number;
+  ecma_value_t *sp = *stack_p;
 
-//  if (ecma_is_completion_value_empty (get_arg_completion))
-//  {
-//    JERRY_ASSERT (args_read == args_num);
-
-    if (!ecma_op_is_callable (func_value))
+  for (int i = 0; i < args_num; i++)
+  {
+    if (*(--sp))
     {
-      ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
+      (*stack_p)--;
+      ecma_append_to_values_collection (arg_collection_p, *sp, true);
     }
     else
     {
-      if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
-      {
-        frame_ctx_p->is_call_in_direct_eval_form = true;
-      }
+      ecma_append_to_values_collection (arg_collection_p,
+                                        ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED),
+                                        true);
+    }
+  }
 
-      ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
+  if (!ecma_op_is_callable (func_value))
+  {
+    ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
+  }
+  else
+  {
+    if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
+    {
+      frame_ctx_p->is_call_in_direct_eval_form = true;
+    }
 
-      ECMA_TRY_CATCH (call_ret_value,
-                      ecma_op_function_call (func_obj_p,
-                                             this_value,
-                                             arg_collection_p),
-                      ret_value);
+    ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
+
+    ECMA_TRY_CATCH (call_ret_value,
+                    ecma_op_function_call (func_obj_p,
+                                           this_value,
+                                           arg_collection_p),
+                    ret_value);
 
 //      ret_value = set_variable_value (frame_ctx_p, lit_oc,
 //                                      lhs_var_idx,
 //                                      call_ret_value);
 
-      ECMA_FINALIZE (call_ret_value);
+    ECMA_FINALIZE (call_ret_value);
 
-      if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
-      {
-        JERRY_ASSERT (frame_ctx_p->is_call_in_direct_eval_form);
-        frame_ctx_p->is_call_in_direct_eval_form = false;
-      }
-      else
-      {
-        JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
-      }
+    if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
+    {
+      JERRY_ASSERT (frame_ctx_p->is_call_in_direct_eval_form);
+      frame_ctx_p->is_call_in_direct_eval_form = false;
     }
-//  }
-//  else
-//  {
-//    JERRY_ASSERT (!ecma_is_completion_value_normal (get_arg_completion));
-
-//    ret_value = get_arg_completion;
-//  }
+    else
+    {
+      JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
+    }
+  }
 
   ecma_free_values_collection (arg_collection_p, true);
   ecma_free_value (this_value, true);

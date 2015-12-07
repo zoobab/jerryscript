@@ -346,6 +346,18 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         {
           break;
         }
+        case  CBC_PUSH_LITERAL:
+        {
+          uint16_t literal_index = *(byte_code_p++);
+
+          if (literal_index >= encoding_limit)
+          {
+            literal_index = ((literal_index << 8) | *(byte_code_p++)) - encoding_delta;
+          }
+
+          *(stack_p++) = literal_start_p[literal_index];
+          break;
+        }
         case CBC_CALL_IDENT_PUSH_RESULT:
         {
 
@@ -362,30 +374,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
             literal_index = ((literal_index << 8) | *(byte_code_p++)) - encoding_delta;
           }
 
-          opfunc_call_n (frame_ctx_p, literal_index, byte_arg, stack_p);
-//          ecma_string_t *func_name = ecma_get_string_from_value (literal_start_p[literal_index]);
-//          ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p,
-//                                                                              func_name);
-
-//          ecma_completion_value_t func_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
-//                                                                               func_name,
-//                                                                               vm_is_strict_mode ());
-
-//          ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
-
-//          ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
-//          ecma_append_to_values_collection (arg_collection_p,
-//                                            ecma_make_string_value (func_name),
-//                                            true);
-
-//          ecma_completion_value_t get_this_completion_value = ecma_op_implicit_this_value (ref_base_lex_env_p);
-//          ecma_value_t this_value = ecma_get_completion_value_value (get_this_completion_value);
-
-//          ecma_op_function_call (func_obj_p,
-//                                 this_value,
-//                                 arg_collection_p);
-
-//          printf (" byte_arg:%d", byte_arg);
+          opfunc_call_n (frame_ctx_p, literal_index, byte_arg, &stack_p);
 
           break;
         }
