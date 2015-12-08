@@ -35,7 +35,7 @@
 ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                ecma_value_t func_value,
-               uint32_t args_num,
+               uint8_t args_num,
                ecma_value_t **stack_p)
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
