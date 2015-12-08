@@ -34,6 +34,6 @@ typedef enum : vm_idx_t
 } opcode_call_flags_t;
 
 ecma_completion_value_t
-opfunc_call_n (vm_frame_ctx_t *, uint16_t, uint32_t, ecma_value_t **);
+opfunc_call_n (vm_frame_ctx_t *, ecma_value_t, uint32_t, ecma_value_t **);
 
 #endif /* OPCODES_H */

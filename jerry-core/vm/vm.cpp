@@ -194,6 +194,16 @@ vm_decode_cbc(uint8_t opcode, uint8_t ext_opcode)
 jerry_completion_code_t
 vm_run_compiled_code (cbc_compiled_code_t *code_p)
 {
+} /* vm_run_compiled_code */
+
+/**
+ * Run global code
+ */
+jerry_completion_code_t
+vm_run_global (void)
+{
+  jerry_completion_code_t ret_code;
+
   JERRY_ASSERT (__program != NULL);
 
 #ifdef MEM_STATS
@@ -220,228 +230,25 @@ vm_run_compiled_code (cbc_compiled_code_t *code_p)
                                                         is_strict,
                                                         false);
 
-  jerry_completion_code_t ret_code = JERRY_COMPLETION_CODE_OK;
+  if (ecma_is_completion_value_return (completion))
+  {
+    JERRY_ASSERT (ecma_is_value_undefined (ecma_get_completion_value_value (completion)));
 
-//  if (ecma_is_completion_value_return (completion))
-//  {
-//    JERRY_ASSERT (ecma_is_value_undefined (ecma_get_completion_value_value (completion)));
+    ret_code = JERRY_COMPLETION_CODE_OK;
+  }
+  else
+  {
+    JERRY_ASSERT (ecma_is_completion_value_throw (completion));
 
-//    ret_code = JERRY_COMPLETION_CODE_OK;
-//  }
-//  else
-//  {
-//    JERRY_ASSERT (ecma_is_completion_value_throw (completion));
-
-//    ret_code = JERRY_COMPLETION_CODE_UNHANDLED_EXCEPTION;
-//  }
+    ret_code = JERRY_COMPLETION_CODE_UNHANDLED_EXCEPTION;
+  }
 
   ecma_free_completion_value (completion);
 
   ecma_deref_object (glob_obj_p);
   ecma_deref_object (lex_env_p);
-  cbc_opcode_t opcode;
-  cbc_ext_opcode_t ext_opcode;
-  uint8_t flags;
-  uint8_t *byte_code_start_p;
-  uint8_t *byte_code_p;
-  uint16_t encoding_limit;
-  uint16_t encoding_delta;
-  ecma_value_t *literal_start_p;
-  bool leave = false;
-
-  /* Prepare */
-  if (__program->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING == cbc_literal_encoding_small)
-  {
-    encoding_limit = 255;
-    encoding_delta = 0xfe01;
-  }
-  else
-  {
-    encoding_limit = 128;
-    encoding_delta = 0x8000;
-  }
-
-  literal_start_p = (ecma_value_t *) (((uint8_t *) __program) + sizeof (cbc_compiled_code_t));
-  byte_code_p = byte_code_start_p = (uint8_t *) (literal_start_p + __program->literal_end);
-
-  /* start execution */
-  while (!leave)
-  {
-    size_t cbc_offset;
-    size_t branch_offset;
-    uint32_t decoded_opcode;
-    uint8_t *instruction_p = byte_code_p;
-
-    cbc_offset = (size_t) (byte_code_p - byte_code_start_p);
-    opcode = (cbc_opcode_t) *(byte_code_p++);
-    ext_opcode = CBC_EXT_NOP;
-
-    if(opcode == CBC_EXT_OPCODE) {
-      ext_opcode = *(byte_code_p++);
-      flags = cbc_ext_flags[ext_opcode];
-    } else {
-      flags = cbc_flags[opcode];
-    }
-
-    branch_offset = 0;
-
-    decoded_opcode = vm_decode_cbc(opcode, ext_opcode);
-    ecma_value_t left_value;
-    ecma_value_t right_value;
-    ecma_value_t result;
-
-    switch(VM_OC_LEFT_OPERAND(decoded_opcode)) {
-      case VM_OC_OP_STACK:
-      {
-        JERRY_ASSERT (vm_stack_top_p > vm_stack);
-        left_value = *(vm_stack_top_p--);
-        break;
-      }
-      case VM_OC_OP_BYTE:
-      {
-        break;
-      }
-      case VM_OC_OP_LITERAL:
-      {
-        uint16_t left_literal_index = *(byte_code_p++);
-        if (left_literal_index >= encoding_limit)
-        {
-          left_literal_index = ((left_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-        }
-        if (left_literal_index < __program->argument_end)
-        {
-        }
-        else if (left_literal_index < __program->register_end)
-        {
-        }
-        else if (left_literal_index < __program->ident_end)
-        {
-        }
-        else
-        {
-          left_value = literal_start_p[left_literal_index];
-        }
-        break;
-      }
-      case VM_OC_OP_BRANCH_3:
-      {
-        branch_offset |= *(byte_code_p++) << 16;
-      }
-      case VM_OC_OP_BRANCH_2:
-      {
-        branch_offset |= *(byte_code_p++) << 8;
-      }
-      case VM_OC_OP_BRANCH_1:
-      {
-        branch_offset |= *(byte_code_p++);
-        break;
-      }
-      case VM_OC_OP_NONE:
-      {
-        break;
-      }
-      default:
-      {
-        JERRY_UNREACHABLE ();
-      }
-    }
-
-    switch(VM_OC_RIGHT_OPERAND(decoded_opcode)) {
-      case VM_OC_OP_STACK:
-      {
-        JERRY_ASSERT (vm_stack_top_p > vm_stack);
-        right_value = *(vm_stack_top_p--);
-        break;
-      }
-      case VM_OC_OP_LITERAL:
-      {
-        uint16_t right_literal_index = *(byte_code_p++);
-        if (right_literal_index >= encoding_limit)
-        {
-          right_literal_index = ((right_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-        }
-        if (right_literal_index < __program->argument_end)
-        {
-        }
-        else if (right_literal_index < __program->register_end)
-        {
-        }
-        else if (right_literal_index < __program->ident_end)
-        {
-        }
-        else
-        {
-          right_value = literal_start_p[right_literal_index];
-        }
-        break;
-      }
-      case VM_OC_OP_NONE:
-      {
-        break;
-      }
-      default:
-      {
-        JERRY_UNREACHABLE ();
-      }
-    }
-
-    switch(VM_OC_GROUP(decoded_opcode)) {
-      case VM_OC_GROUP_ADD:
-      {
-        result = vm_op_add(left_value, right_value);
-        break;
-      }
-      case VM_OC_GROUP_POP:
-      {
-        vm_stack_top_p--;
-        break;
-      }
-      case VM_OC_GROUP_RET:
-      {
-        result = vm_op_return(opcode, left_value);
-        break;
-      }
-      default:
-      {
-        JERRY_UNREACHABLE ();
-      }
-    }
-
-    switch(VM_OC_POST_PROCESS(decoded_opcode)) {
-      case VM_OC_POST_NONE:
-      {
-        break;
-      }
-      case VM_OC_POST_PUSH_RESULT:
-      {
-        *(vm_stack_top_p++) = result;
-        break;
-      }
-      default:
-      {
-        JERRY_UNREACHABLE ();
-      }
-    }
-
-    if(VM_OC_GROUP(decoded_opcode) == VM_OC_GROUP_RET) {
-      leave = true;
-    }
-
-  }
 
   return ret_code;
-} /* vm_run_compiled_code */
-
-/**
- * Run global code
- */
-jerry_completion_code_t
-vm_run_global (void)
-{
-  jerry_completion_code_t ret_code;
-  // FIXME: Implement this
-
-  return vm_run_compiled_code(__program);
 } /* vm_run_global */
 
 /**
@@ -520,9 +327,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
   ecma_value_t *literal_start_p;
   bool leave = false;
 
-  ecma_value_t stack[1024];
-  ecma_value_t *stack_p = stack;
-
+  /* Prepare */
   if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING == cbc_literal_encoding_small)
   {
     encoding_limit = 255;
@@ -535,167 +340,210 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
   }
 
   literal_start_p = (ecma_value_t *) (((uint8_t *) bytecode_header_p) + sizeof (cbc_compiled_code_t));
-  byte_code_start_p = (uint8_t *) (literal_start_p + bytecode_header_p->literal_end);
-  byte_code_p = byte_code_start_p;
+  byte_code_p = byte_code_start_p = (uint8_t *) (literal_start_p + bytecode_header_p->literal_end);
 
-  frame_ctx_p->literal_start_p = literal_start_p;
-
+  /* start execution */
   while (!leave)
   {
     size_t cbc_offset;
+    size_t branch_offset;
+    uint32_t decoded_opcode;
 
-    opcode = (cbc_opcode_t) *byte_code_p;
-    ext_opcode = CBC_EXT_NOP;
     cbc_offset = (size_t) (byte_code_p - byte_code_start_p);
+    opcode = (cbc_opcode_t) *(byte_code_p++);
+    ext_opcode = CBC_EXT_NOP;
 
-    if (opcode != CBC_EXT_OPCODE)
-    {
-      flags = cbc_flags[opcode];
-      byte_code_p++;
-
-      switch(opcode)
-      {
-        case CBC_ADD_TWO_LITERALS:
-        {
-          ecma_value_t left_value;
-          ecma_value_t right_value;
-          ecma_value_t result;
-
-          uint16_t left_literal_index = *(byte_code_p++);
-
-          if (left_literal_index >= encoding_limit)
-          {
-            left_literal_index = ((left_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-          }
-
-          uint16_t right_literal_index = *(byte_code_p++);
-
-          if (right_literal_index >= encoding_limit)
-          {
-            right_literal_index = ((right_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-          }
-
-          if (left_literal_index < bytecode_header_p->argument_end)
-          {
-          }
-          else if (left_literal_index < bytecode_header_p->register_end)
-          {
-          }
-          else if (left_literal_index < bytecode_header_p->ident_end)
-          {
-          }
-          else
-          {
-            left_value = literal_start_p[left_literal_index];
-          }
-
-          if (right_value < bytecode_header_p->argument_end)
-          {
-          }
-          else if (right_value < bytecode_header_p->register_end)
-          {
-          }
-          else if (right_value < bytecode_header_p->ident_end)
-          {
-          }
-          else
-          {
-            right_value = literal_start_p[right_literal_index];
-          }
-
-          result = vm_op_add(left_value, right_value);
-
-          *(stack_p++) = result;
-          break;
-        }
-        case CBC_RETURN_WITH_UNDEFINED:
-        {
-          leave = true;
-          break;
-        }
-        case CBC_POP_BLOCK:
-        {
-          break;
-        }
-        case  CBC_PUSH_LITERAL:
-        {
-          uint16_t literal_index = *(byte_code_p++);
-
-          if (literal_index >= encoding_limit)
-          {
-            literal_index = ((literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-          }
-
-          *(stack_p++) = literal_start_p[literal_index];
-          break;
-        }
-        case CBC_CALL_IDENT_PUSH_RESULT:
-        {
-
-          uint8_t byte_arg = 0u;
-
-          if (flags & CBC_HAS_BYTE_ARG)
-          {
-            byte_arg = *(byte_code_p++);
-          }
-
-          uint16_t literal_index = *(byte_code_p++);
-          if (literal_index >= encoding_limit)
-          {
-            literal_index = ((literal_index << 8) | *(byte_code_p++)) - encoding_delta;
-          }
-
-          opfunc_call_n (frame_ctx_p, literal_index, byte_arg, &stack_p);
-
-          break;
-        }
-        default:
-        {
-          JERRY_UNIMPLEMENTED ("Unimlemented opcode!");
-          return;
-        }
-      }
-    }
-    else
-    {
-      ext_opcode = byte_code_p[1];
+    if(opcode == CBC_EXT_OPCODE) {
+      ext_opcode = *(byte_code_p++);
       flags = cbc_ext_flags[ext_opcode];
-      byte_code_p += 2;
+    } else {
+      flags = cbc_flags[opcode];
+    }
 
-      switch (ext_opcode)
+    branch_offset = 0;
+
+    decoded_opcode = vm_decode_cbc (opcode, ext_opcode);
+    ecma_value_t left_value = 0;
+    ecma_value_t right_value = 0;
+    ecma_value_t result;
+    uint8_t byte_arg = 0u;
+
+    switch (VM_OC_LEFT_OPERAND (decoded_opcode))
+    {
+      case VM_OC_OP_STACK:
       {
-        case CBC_EXT_ASSIGN_IDENT_LITERAL_BLOCK:
+        JERRY_ASSERT (vm_stack_top_p > vm_stack);
+        left_value = *(vm_stack_top_p--);
+        break;
+      }
+      case VM_OC_OP_BYTE:
+      {
+        byte_arg = *(byte_code_p++);
+        break;
+      }
+      case VM_OC_OP_LITERAL:
+      {
+        uint16_t left_literal_index = *(byte_code_p++);
+        if (left_literal_index >= encoding_limit)
         {
-
-
-          while (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
-          {
-            uint16_t literal_index = *byte_code_p;
-
-            byte_code_p++;
-            if (literal_index >= encoding_limit)
-            {
-              byte_code_p++;
-            }
-
-            if (flags & CBC_HAS_LITERAL_ARG)
-            {
-              flags = (uint8_t) (flags - CBC_HAS_LITERAL_ARG);
-            }
-            else
-            {
-              break;
-            }
-          }
-          break;
+          left_literal_index = ((left_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
         }
-        default:
+        if (left_literal_index < bytecode_header_p->argument_end)
         {
-
-          return;
         }
+        else if (left_literal_index < bytecode_header_p->register_end)
+        {
+        }
+        else if (left_literal_index < bytecode_header_p->ident_end)
+        {
+        }
+        else
+        {
+          left_value = literal_start_p[left_literal_index];
+        }
+        break;
+      }
+      case VM_OC_OP_BRANCH_3:
+      {
+        branch_offset |= *(byte_code_p++) << 16;
+      }
+      case VM_OC_OP_BRANCH_2:
+      {
+        branch_offset |= *(byte_code_p++) << 8;
+      }
+      case VM_OC_OP_BRANCH_1:
+      {
+        branch_offset |= *(byte_code_p++);
+        break;
+      }
+      case VM_OC_OP_NONE:
+      {
+        break;
+      }
+      default:
+      {
+        JERRY_UNREACHABLE ();
       }
     }
+
+    switch (VM_OC_RIGHT_OPERAND (decoded_opcode))
+    {
+      case VM_OC_OP_STACK:
+      {
+        JERRY_ASSERT (vm_stack_top_p > vm_stack);
+        right_value = *(vm_stack_top_p--);
+        break;
+      }
+      case VM_OC_OP_LITERAL:
+      {
+        uint16_t right_literal_index = *(byte_code_p++);
+        if (right_literal_index >= encoding_limit)
+        {
+          right_literal_index = ((right_literal_index << 8) | *(byte_code_p++)) - encoding_delta;
+        }
+        if (right_literal_index < bytecode_header_p->argument_end)
+        {
+        }
+        else if (right_literal_index < bytecode_header_p->register_end)
+        {
+        }
+        else if (right_literal_index < bytecode_header_p->ident_end)
+        {
+          ecma_string_t *func_name = ecma_get_string_from_value (literal_start_p[right_literal_index]);
+
+          ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p,
+                                                                              func_name);
+
+          JERRY_ASSERT (ref_base_lex_env_p != NULL);
+
+          frame_ctx_p->ref_base_lex_env_p = ref_base_lex_env_p;
+          ecma_completion_value_t func_comp_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
+                                                                                    func_name,
+                                                                                    frame_ctx_p->is_strict);
+          if (ecma_is_completion_value_throw (func_comp_value))
+          {
+            return func_comp_value;
+          }
+
+          right_value = ecma_get_completion_value_value (func_comp_value);
+        }
+        else
+        {
+          right_value = literal_start_p[right_literal_index];
+        }
+        break;
+      }
+      case VM_OC_OP_NONE:
+      {
+        break;
+      }
+      default:
+      {
+        JERRY_UNREACHABLE ();
+      }
+    }
+
+    switch (VM_OC_GROUP (decoded_opcode))
+    {
+      case VM_OC_GROUP_ADD:
+      {
+        result = vm_op_add(left_value, right_value);
+        break;
+      }
+      case VM_OC_GROUP_POP:
+      {
+        vm_stack_top_p--;
+        break;
+      }
+      case VM_OC_GROUP_RET:
+      {
+        result = vm_op_return(opcode, left_value);
+        break;
+      }
+      case  VM_OC_GROUP_PUSH:
+      {
+        result = left_value;
+        break;
+      }
+      case VM_OC_GROUP_CALL:
+      {
+        opfunc_call_n (frame_ctx_p, right_value, byte_arg, &vm_stack_top_p);
+
+        break;
+      }
+      default:
+      {
+        JERRY_UNREACHABLE ();
+      }
+    }
+
+    switch (VM_OC_POST_PROCESS(decoded_opcode))
+    {
+      case VM_OC_POST_NONE:
+      {
+        break;
+      }
+      case VM_OC_POST_PUSH_RESULT:
+      {
+        *(vm_stack_top_p++) = result;
+        break;
+      }
+      default:
+      {
+        JERRY_UNREACHABLE ();
+      }
+    }
+
+    if(VM_OC_GROUP(decoded_opcode) == VM_OC_GROUP_RET) {
+      leave = true;
+    }
+
+  }
+
+  if (ecma_is_completion_value_empty (ret_value))
+  {
+    return ecma_make_completion_value (ECMA_COMPLETION_TYPE_RETURN,
+                                       ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED));
   }
 
   return ret_value;
