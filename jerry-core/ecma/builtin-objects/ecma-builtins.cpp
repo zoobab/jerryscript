@@ -271,7 +271,6 @@ ecma_finalize_builtins (void)
     if (ecma_builtin_objects[id] != NULL)
     {
       ecma_deref_object (ecma_builtin_objects[id]);
-
       ecma_builtin_objects[id] = NULL;
     }
   }

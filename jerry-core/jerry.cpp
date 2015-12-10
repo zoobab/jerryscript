@@ -1366,9 +1366,9 @@ jerry_cleanup (void)
   bool is_show_mem_stats = ((jerry_flags & JERRY_FLAG_MEM_STATS) != 0);
 
   ecma_finalize ();
-  mem_finalize (is_show_mem_stats);
   lit_finalize ();
   vm_finalize ();
+  mem_finalize (is_show_mem_stats);
 } /* jerry_cleanup */
 
 /**

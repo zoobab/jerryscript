@@ -1246,6 +1246,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
     PARSER_ASSERT (context.allocated_buffer_p == NULL);
 
     compiled_code = parser_post_processing (&context);
+    parser_list_free (&context.literal_pool);
 
 #ifdef PARSER_DEBUG
     if (context.is_show_opcodes)
@@ -1275,6 +1276,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
     }
 
     compiled_code = NULL;
+    parser_free_literals (&context.literal_pool);
   }
   PARSER_TRY_END
 
@@ -1286,7 +1288,6 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 #endif /* PARSER_DEBUG */
 
   parser_cbc_stream_free (&context.byte_code);
-//  parser_free_literals (&context.literal_pool);
   parser_stack_free (&context);
 
   return compiled_code;

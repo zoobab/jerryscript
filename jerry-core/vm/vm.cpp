@@ -153,6 +153,14 @@ vm_finalize (void)
 {
   if (__program)
   {
+    ecma_value_t *literal_p = (ecma_value_t *) (((uint8_t *) __program) + sizeof (cbc_compiled_code_t));
+    ecma_value_t *literal_end_p = literal_p + __program->literal_end;
+
+    while (literal_p && literal_p < literal_end_p)
+    {
+      ecma_free_value (*(literal_p++), true);
+    }
+
     mem_heap_free_block (__program);
   }
   __program = NULL;
@@ -461,6 +469,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           ecma_completion_value_t func_comp_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
                                                                                     func_name,
                                                                                     frame_ctx_p->is_strict);
+
           if (ecma_is_completion_value_throw (func_comp_value))
           {
             return func_comp_value;
@@ -493,7 +502,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       }
       case VM_OC_GROUP_POP:
       {
-        vm_stack_top_p--;
+        ecma_free_value (*(--vm_stack_top_p), true);
         break;
       }
       case VM_OC_GROUP_RET:
@@ -523,6 +532,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         result = value;
 
         ECMA_FINALIZE (value);
+
+        ecma_free_value (right_value, true);
 
         if (ecma_is_completion_value_throw (ret_value))
         {

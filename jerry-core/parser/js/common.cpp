@@ -159,6 +159,10 @@ util_free_literal (lexer_literal_t *literal_p) /* literal */
   {
     PARSER_FREE (literal_p->value);
   }
+  else
+  {
+    ecma_free_value (literal_p->value, true);
+  }
 } /* util_free_literal */
 
 #ifdef PARSER_DEBUG

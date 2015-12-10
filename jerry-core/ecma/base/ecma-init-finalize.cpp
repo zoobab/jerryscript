@@ -50,8 +50,8 @@ ecma_finalize (void)
   mem_unregister_a_try_give_memory_back_callback (ecma_try_to_give_back_some_memory);
 
   ecma_finalize_environment ();
-  ecma_finalize_builtins ();
   ecma_lcache_invalidate_all ();
+  ecma_finalize_builtins ();
   ecma_gc_run ();
 } /* ecma_finalize */
 
