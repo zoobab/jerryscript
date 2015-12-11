@@ -55,6 +55,7 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
     {
       (*stack_p)--;
       ecma_append_to_values_collection (arg_collection_p, *sp, true);
+      ecma_free_value (*sp, true);
     }
     else
     {

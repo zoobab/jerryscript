@@ -48,4 +48,25 @@ opfunc_equal_value_type (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
 ecma_completion_value_t
 opfunc_not_equal_value_type (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
 
+ecma_completion_value_t
+opfunc_addition (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_substraction (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_multiplication (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_division (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_remainder (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_unary_plus (vm_frame_ctx_t *, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_unary_minus (vm_frame_ctx_t *, ecma_value_t);
+
 #endif /* OPCODES_H */
