@@ -72,4 +72,25 @@ opfunc_unary_plus (vm_frame_ctx_t *, ecma_value_t);
 ecma_completion_value_t
 opfunc_unary_minus (vm_frame_ctx_t *, ecma_value_t);
 
+ecma_completion_value_t
+opfunc_b_or (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_xor (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_and (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_shift_left (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_shift_right (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_shift_uright (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_b_not (vm_frame_ctx_t *, ecma_value_t);
+
 #endif /* OPCODES_H */
