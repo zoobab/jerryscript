@@ -16,6 +16,7 @@
 
 #include "ecma-alloc.h"
 #include "ecma-builtins.h"
+#include "ecma-conversion.h"
 #include "ecma-function-object.h"
 #include "ecma-gc.h"
 #include "ecma-helpers.h"
@@ -301,6 +302,31 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
     ecma_value_t result;
     uint8_t byte_arg = 0u;
 
+    switch (VM_OC_BRANCH_OPERAND (decoded_opcode))
+    {
+      case VM_OC_BRANCH_3:
+      {
+        branch_offset |= *(byte_code_p++) << 16;
+      }
+      case VM_OC_BRANCH_2:
+      {
+        branch_offset |= *(byte_code_p++) << 8;
+      }
+      case VM_OC_BRANCH_1:
+      {
+        branch_offset |= *(byte_code_p++);
+        break;
+      }
+      case VM_OC_BRANCH_NONE:
+      {
+        break;
+      }
+      default:
+      {
+        JERRY_UNREACHABLE ();
+      }
+    }
+
     switch (VM_OC_LEFT_OPERAND (decoded_opcode))
     {
       case VM_OC_OP_STACK:
@@ -343,19 +369,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         {
           left_value = literal_start_p[left_literal_index];
         }
-        break;
-      }
-      case VM_OC_OP_BRANCH_3:
-      {
-        branch_offset |= *(byte_code_p++) << 16;
-      }
-      case VM_OC_OP_BRANCH_2:
-      {
-        branch_offset |= *(byte_code_p++) << 8;
-      }
-      case VM_OC_OP_BRANCH_1:
-      {
-        branch_offset |= *(byte_code_p++);
         break;
       }
       case VM_OC_OP_NONE:
@@ -439,7 +452,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_MINUS:
       {
@@ -457,7 +470,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_ADD:
       {
@@ -475,7 +488,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_SUB:
       {
@@ -493,7 +506,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_MUL:
       {
@@ -511,7 +524,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_DIV:
       {
@@ -529,7 +542,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
       case VM_OC_GROUP_MOD:
       {
@@ -547,7 +560,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           return ret_value;
         }
 
-          break;
+        break;
       }
 
       case VM_OC_GROUP_POP:
@@ -832,9 +845,55 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
         break;
       }
+      case VM_OC_GROUP_JUMP:
+      {
+        byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
+        break;
+      }
+      case VM_OC_GROUP_BRANCH_IF_TRUE:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, ecma_op_to_boolean (left_value), ret_value);
+
+          if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
+          {
+            byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
+          }
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_BRANCH_IF_FALSE:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, ecma_op_to_boolean (left_value), ret_value);
+
+          if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_FALSE))
+          {
+            byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
+          }
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
       default:
       {
-          JERRY_ASSERT (false);
         JERRY_UNREACHABLE ();
       }
     }

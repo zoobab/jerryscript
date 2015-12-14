@@ -105,20 +105,27 @@ opfunc_addition (ecma_value_t left_value, /**< left value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  if (ecma_is_value_string (left_value)
-      || ecma_is_value_string (right_value))
-  {
-    ECMA_TRY_CATCH (str_left_value, ecma_op_to_string (left_value), ret_value);
-    ECMA_TRY_CATCH (str_right_value, ecma_op_to_string (right_value), ret_value);
+  ECMA_TRY_CATCH (prim_left_value,
+                  ecma_op_to_primitive (left_value,
+                                        ECMA_PREFERRED_TYPE_NO),
+                  ret_value);
+  ECMA_TRY_CATCH (prim_right_value,
+                  ecma_op_to_primitive (right_value,
+                                        ECMA_PREFERRED_TYPE_NO),
+                  ret_value);
 
-    ecma_string_t *string1_p = ecma_get_string_from_value (left_value);
-    ecma_string_t *string2_p = ecma_get_string_from_value (right_value);
+  if (ecma_is_value_string (prim_left_value)
+      || ecma_is_value_string (prim_right_value))
+  {
+    ECMA_TRY_CATCH (str_left_value, ecma_op_to_string (prim_left_value), ret_value);
+    ECMA_TRY_CATCH (str_right_value, ecma_op_to_string (prim_right_value), ret_value);
+
+    ecma_string_t *string1_p = ecma_get_string_from_value (str_left_value);
+    ecma_string_t *string2_p = ecma_get_string_from_value (str_right_value);
 
     ecma_string_t *concat_str_p = ecma_concat_ecma_strings (string1_p, string2_p);
 
     ret_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_NORMAL, ecma_make_string_value (concat_str_p));
-
-    ecma_deref_ecma_string (concat_str_p);
 
     ECMA_FINALIZE (str_right_value);
     ECMA_FINALIZE (str_left_value);
@@ -129,6 +136,9 @@ opfunc_addition (ecma_value_t left_value, /**< left value */
                                       left_value,
                                       right_value);
   }
+
+  ECMA_FINALIZE (prim_right_value);
+  ECMA_FINALIZE (prim_left_value);
 
   return ret_value;
 } /* opfunc_addition */
