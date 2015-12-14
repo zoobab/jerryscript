@@ -1,4 +1,5 @@
-/* Copyright 2015 University of Szeged.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
+ * Copyright 2015 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +48,6 @@ typedef enum : vm_idx_t
 typedef struct
 {
   const cbc_compiled_code_t *bytecode_header_p; /**< currently executed byte-code data */
-  vm_instr_counter_t instr_pos; /**< current position instruction to execute */
   ecma_object_t *lex_env_p; /**< current lexical environment */
   ecma_object_t *ref_base_lex_env_p; /**< current lexical environment */
   ecma_value_t *literal_start_p;

@@ -1,4 +1,5 @@
 /* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+ * Copyright 2015 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +43,9 @@ typedef enum
  *         Returned value must be freed with ecma_free_completion_value
  */
 static ecma_completion_value_t
-do_number_arithmetic (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                      number_arithmetic_op op, /**< number arithmetic operation */
+do_number_arithmetic (number_arithmetic_op op, /**< number arithmetic operation */
                       ecma_value_t left_value, /**< left value */
-                      ecma_value_t right_value) /** right value */
+                      ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -100,9 +100,8 @@ do_number_arithmetic (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_addition (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                 ecma_value_t left_value,
-                 ecma_value_t right_value)
+opfunc_addition (ecma_value_t left_value, /**< left value */
+                 ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -126,8 +125,7 @@ opfunc_addition (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   }
   else
   {
-    ret_value = do_number_arithmetic (frame_ctx_p,
-                                      number_arithmetic_addition,
+    ret_value = do_number_arithmetic (number_arithmetic_addition,
                                       left_value,
                                       right_value);
   }
@@ -144,14 +142,12 @@ opfunc_addition (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_substraction (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                     ecma_value_t left_value,
-                     ecma_value_t right_value)
+opfunc_substraction (ecma_value_t left_value, /**< left value */
+                     ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  ret_value = do_number_arithmetic (frame_ctx_p,
-                                    number_arithmetic_substraction,
+  ret_value = do_number_arithmetic (number_arithmetic_substraction,
                                     left_value,
                                     right_value);
 
@@ -167,14 +163,12 @@ opfunc_substraction (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_multiplication (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                       ecma_value_t left_value,
-                       ecma_value_t right_value)
+opfunc_multiplication (ecma_value_t left_value, /**< left value */
+                       ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  ret_value = do_number_arithmetic (frame_ctx_p,
-                                    number_arithmetic_multiplication,
+  ret_value = do_number_arithmetic (number_arithmetic_multiplication,
                                     left_value,
                                     right_value);
 
@@ -190,14 +184,12 @@ opfunc_multiplication (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_division (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                 ecma_value_t left_value,
-                 ecma_value_t right_value)
+opfunc_division (ecma_value_t left_value, /**< left value */
+                 ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  ret_value = do_number_arithmetic (frame_ctx_p,
-                                    number_arithmetic_division,
+  ret_value = do_number_arithmetic (number_arithmetic_division,
                                     left_value,
                                     right_value);
 
@@ -213,14 +205,12 @@ opfunc_division (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_remainder (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                  ecma_value_t left_value,
-                  ecma_value_t right_value)
+opfunc_remainder (ecma_value_t left_value, /**< left value */
+                  ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  ret_value = do_number_arithmetic (frame_ctx_p,
-                                    number_arithmetic_remainder,
+  ret_value = do_number_arithmetic (number_arithmetic_remainder,
                                     left_value,
                                     right_value);
 
@@ -236,13 +226,12 @@ opfunc_remainder (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_unary_plus (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                   ecma_value_t left)
+opfunc_unary_plus (ecma_value_t left_value) /**< left value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
   ECMA_OP_TO_NUMBER_TRY_CATCH (num_var_value,
-                               left,
+                               left_value,
                                ret_value);
 
   ecma_number_t *tmp_p = ecma_alloc_number();
@@ -264,13 +253,12 @@ opfunc_unary_plus (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_unary_minus (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                    ecma_value_t left)
+opfunc_unary_minus (ecma_value_t left_value) /**< left value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
   ECMA_OP_TO_NUMBER_TRY_CATCH (num_var_value,
-                               left,
+                               left_value,
                                ret_value);
 
   ecma_number_t *tmp_p = ecma_alloc_number();

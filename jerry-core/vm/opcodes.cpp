@@ -40,8 +40,6 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  frame_ctx_p->instr_pos++;
-
   JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
 
   uint8_t call_flags;
@@ -141,8 +139,6 @@ opfunc_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   }
 
 //  ecma_deref_ecma_string (var_name_str_p);
-
-  frame_ctx_p->instr_pos++;
 
   return ecma_make_empty_completion_value ();
 } /* opfunc_var_decl */

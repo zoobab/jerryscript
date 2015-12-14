@@ -40,57 +40,57 @@ ecma_completion_value_t
 opfunc_var_decl (vm_frame_ctx_t *, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_equal_value (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_equal_value (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_not_equal_value (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_not_equal_value (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_equal_value_type (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_equal_value_type (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_not_equal_value_type (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_not_equal_value_type (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_addition (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_addition (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_substraction (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_substraction (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_multiplication (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_multiplication (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_division (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_division (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_remainder (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_remainder (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_unary_plus (vm_frame_ctx_t *, ecma_value_t);
+opfunc_unary_plus (ecma_value_t);
 
 ecma_completion_value_t
-opfunc_unary_minus (vm_frame_ctx_t *, ecma_value_t);
+opfunc_unary_minus (ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_or (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_or (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_xor (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_xor (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_and (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_and (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_shift_left (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_shift_left (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_shift_right (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_shift_right (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_shift_uright (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
+opfunc_b_shift_uright (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_not (vm_frame_ctx_t *, ecma_value_t);
+opfunc_b_not (ecma_value_t);
 
 #endif /* OPCODES_H */

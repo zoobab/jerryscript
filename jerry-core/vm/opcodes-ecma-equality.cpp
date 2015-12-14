@@ -1,4 +1,5 @@
 /* Copyright 2014-2015 Samsung Electronics Co., Ltd.
+ * Copyright 2015 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +34,7 @@
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                    ecma_value_t left_value, /**< left value */
+opfunc_equal_value (ecma_value_t left_value, /**< left value */
                     ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -50,8 +50,6 @@ opfunc_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 
   ECMA_FINALIZE (compare_result);
 
-  frame_ctx_p->instr_pos++;
-
   return ret_value;
 } /* opfunc_equal_value */
 
@@ -64,8 +62,7 @@ opfunc_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_not_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                        ecma_value_t left_value, /**< left value */
+opfunc_not_equal_value (ecma_value_t left_value, /**< left value */
                         ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -83,8 +80,6 @@ opfunc_not_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 
   ECMA_FINALIZE (compare_result);
 
-  frame_ctx_p->instr_pos++;
-
   return ret_value;
 } /* opfunc_not_equal_value */
 
@@ -97,8 +92,7 @@ opfunc_not_equal_value (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_equal_value_type (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                         ecma_value_t left_value, /**< left value */
+opfunc_equal_value_type (ecma_value_t left_value, /**< left value */
                          ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -107,8 +101,6 @@ opfunc_equal_value_type (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context *
 
   ret_value = ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_TRUE
                                                                                   : ECMA_SIMPLE_VALUE_FALSE));
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_equal_value_type */
@@ -122,8 +114,7 @@ opfunc_equal_value_type (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context *
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_not_equal_value_type (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                             ecma_value_t left_value, /**< left value */
+opfunc_not_equal_value_type (ecma_value_t left_value, /**< left value */
                              ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -132,8 +123,6 @@ opfunc_not_equal_value_type (vm_frame_ctx_t *frame_ctx_p, /**< interpreter conte
 
   ret_value = ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_FALSE
                                                                                   : ECMA_SIMPLE_VALUE_TRUE));
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_not_equal_value_type */

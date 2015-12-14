@@ -1,4 +1,5 @@
-/* Copyright 2015 University of Szeged.
+/* Copyright 2015 Samsung Electronics Co., Ltd.
+ * Copyright 2015 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -330,8 +331,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         }
         else if (left_literal_index < bytecode_header_p->ident_end)
         {
-          ecma_completion_value_t func_comp_value = resolve_ident(literal_start_p[left_literal_index],
-                                                                  frame_ctx_p);
+          ecma_completion_value_t func_comp_value = resolve_ident (literal_start_p[left_literal_index],
+                                                                   frame_ctx_p);
           if (ecma_is_completion_value_throw (func_comp_value))
           {
             return func_comp_value;
@@ -392,8 +393,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         }
         else if (right_literal_index < bytecode_header_p->ident_end)
         {
-          ecma_completion_value_t func_comp_value = resolve_ident(literal_start_p[right_literal_index],
-                                                                  frame_ctx_p);
+          ecma_completion_value_t func_comp_value = resolve_ident (literal_start_p[right_literal_index],
+                                                                   frame_ctx_p);
           if (ecma_is_completion_value_throw (func_comp_value))
           {
             return func_comp_value;
@@ -426,7 +427,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_unary_plus (frame_ctx_p, left_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_unary_plus (left_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -444,7 +445,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_unary_minus (frame_ctx_p, left_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_unary_minus (left_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -462,7 +463,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_addition (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_addition (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -480,7 +481,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_substraction (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_substraction (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -498,7 +499,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_multiplication (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_multiplication (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -516,7 +517,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_division (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_division (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -534,7 +535,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_remainder (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_remainder (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -597,7 +598,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_equal_value (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_equal_value (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -615,7 +616,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_not_equal_value (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_not_equal_value (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -633,7 +634,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_equal_value_type (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_equal_value_type (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -651,7 +652,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_not_equal_value_type (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_not_equal_value_type (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -669,7 +670,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_or (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_or (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -687,7 +688,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_xor (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_xor (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -705,7 +706,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_and (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_and (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -723,7 +724,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_left (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_shift_left (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -741,7 +742,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_right (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_shift_right (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -759,7 +760,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_uright (frame_ctx_p, left_value, right_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_shift_uright (left_value, right_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -777,7 +778,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, opfunc_b_not (frame_ctx_p, left_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_b_not (left_value), ret_value);
 
         result = ecma_copy_value (value, true);
 
@@ -895,7 +896,6 @@ vm_run_from_pos (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code da
 
   vm_frame_ctx_t frame_ctx;
   frame_ctx.bytecode_header_p = bytecode_header_p;
-  frame_ctx.instr_pos = (vm_instr_counter_t) (start_pos + 1);
   frame_ctx.lex_env_p = lex_env_p;
   frame_ctx.is_eval_code = is_eval_code;
   frame_ctx.is_call_in_direct_eval_form = false;

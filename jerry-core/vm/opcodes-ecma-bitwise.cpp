@@ -119,8 +119,7 @@ do_number_bitwise_logic (number_bitwise_logic_op op, /**< number bitwise logic o
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_and (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-              ecma_value_t left_value, /**< left value */
+opfunc_b_and (ecma_value_t left_value, /**< left value */
               ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -128,8 +127,6 @@ opfunc_b_and (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_logic_and,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_and */
@@ -143,8 +140,7 @@ opfunc_b_and (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_or (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-             ecma_value_t left_value, /**< left value */
+opfunc_b_or (ecma_value_t left_value, /**< left value */
              ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -152,8 +148,6 @@ opfunc_b_or (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_logic_or,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_or */
@@ -167,8 +161,7 @@ opfunc_b_or (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_xor (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-              ecma_value_t left_value, /**< left value */
+opfunc_b_xor (ecma_value_t left_value, /**< left value */
               ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -176,8 +169,6 @@ opfunc_b_xor (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_logic_xor,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_xor */
@@ -191,8 +182,7 @@ opfunc_b_xor (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_shift_left (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                     ecma_value_t left_value, /**< left value */
+opfunc_b_shift_left (ecma_value_t left_value, /**< left value */
                      ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -200,8 +190,6 @@ opfunc_b_shift_left (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_shift_left,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_shift_left */
@@ -215,8 +203,7 @@ opfunc_b_shift_left (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_shift_right (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                      ecma_value_t left_value, /**< left value */
+opfunc_b_shift_right (ecma_value_t left_value, /**< left value */
                       ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -224,8 +211,6 @@ opfunc_b_shift_right (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_shift_right,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_shift_right */
@@ -239,8 +224,7 @@ opfunc_b_shift_right (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_shift_uright (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                       ecma_value_t left_value, /**< left value */
+opfunc_b_shift_uright (ecma_value_t left_value, /**< left value */
                        ecma_value_t right_value) /**< right value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -248,8 +232,6 @@ opfunc_b_shift_uright (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   ret_value = do_number_bitwise_logic (number_bitwise_shift_uright,
                                        left_value,
                                        right_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_shift_uright */
@@ -263,16 +245,13 @@ opfunc_b_shift_uright (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-opfunc_b_not (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-              ecma_value_t left_value) /**< left value */
+opfunc_b_not (ecma_value_t left_value) /**< left value */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
   ret_value = do_number_bitwise_logic (number_bitwise_not,
                                        left_value,
                                        left_value);
-
-  frame_ctx_p->instr_pos++;
 
   return ret_value;
 } /* opfunc_b_not */
