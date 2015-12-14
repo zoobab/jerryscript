@@ -28,6 +28,7 @@ void vm_stack_finalize (void)
 
 vm_stack_frame_t *vm_stack_get_top_frame (void)
 {
+  return NULL;
 // FIXME: Implement this
 }
 

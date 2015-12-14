@@ -418,6 +418,10 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
     switch (VM_OC_GROUP (decoded_opcode))
     {
+      case VM_OC_GROUP_ASSIGN:
+      {
+        break;
+      }
       case VM_OC_GROUP_PLUS:
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -454,7 +458,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
           break;
       }
-
       case VM_OC_GROUP_ADD:
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -674,6 +677,24 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           case CBC_PUSH_FALSE:
           {
             result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_FALSE);
+            break;
+          }
+          case CBC_PUSH_UNDEFINED:
+          {
+            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+            break;
+          }
+          case CBC_DEFINE_VARS:
+          {
+            uint16_t literal_idx = *(byte_code_p++);
+
+            if (literal_idx >= encoding_limit)
+            {
+              literal_idx = ((literal_idx << 8) | *(byte_code_p++)) - encoding_delta;
+            }
+
+            opfunc_var_decl (frame_ctx_p, literal_start_p[literal_idx]);
+
             break;
           }
           default:

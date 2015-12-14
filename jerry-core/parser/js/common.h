@@ -93,7 +93,12 @@ typedef enum
  */
 typedef struct
 {
-  ecma_value_t value;        /**< literal value (not used by the parser) */
+  union
+  {
+    ecma_value_t value;      /**< literal value (not used by the parser) */
+    uint8_t *char_p;         /**< character value */
+    void *function_p;        /**< compiled function pointer */
+  } u;
   uint16_t length;           /**< length of ident / string literal */
   uint16_t index;            /**< real index during post processing */
   uint8_t type;              /**< type of the literal */

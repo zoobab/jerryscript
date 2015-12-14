@@ -13,7 +13,9 @@
  * limitations under the License.
  */
 
+#include "ecma-helpers.h"
 #include "js-parser-internal.h"
+#include "lit-literal.h"
 
 /**
  * Compute real literal indicies.
@@ -298,7 +300,23 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
 
   while ((literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator)))
   {
-    literal_pool_p[literal_p->index] = literal_p->value;
+    if (literal_p->type == LEXER_IDENT_LITERAL
+        || literal_p->type == LEXER_STRING_LITERAL)
+    {
+      literal_t lit = lit_create_literal_from_utf8_string (literal_p->u.char_p, literal_p->length);
+      PARSER_FREE (literal_p->u.char_p);
+
+      if (!lit)
+      {
+        parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
+      }
+
+      literal_pool_p[literal_p->index] = ecma_make_string_value (ecma_new_ecma_string_from_lit_cp (lit_cpointer_t::compress(lit)));
+    }
+    else
+    {
+      literal_pool_p[literal_p->index] = literal_p->u.value;
+    }
 
     if (current_index < argument_count
         && (literal_p->status_flags & LEXER_FLAG_NO_REG_STORE))
@@ -1213,7 +1231,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 #ifdef PARSER_DEBUG
   context.context_stack_depth = 0;
   context.total_byte_code_size = 0;
-  context.is_show_opcodes = 1;
+  context.is_show_opcodes = 0;
 
   if (context.is_show_opcodes)
   {
@@ -1407,14 +1425,14 @@ parser_parse_function (parser_context_t *context_p, /**< context */
          * and the original record is cleared. */
         literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
 
-        literal_p->value = context_p->lit_object.literal_p->value;
+        literal_p->u.char_p = context_p->lit_object.literal_p->u.char_p;
         literal_p->length = context_p->lit_object.literal_p->length;
         context_p->lit_object.literal_p->length = 0;
 
         literal_p->type = LEXER_IDENT_LITERAL;
         literal_p->status_flags = LEXER_FLAG_VAR;
 
-        context_p->lit_object.literal_p->value = 0;
+        context_p->lit_object.literal_p->u.char_p = NULL;
         context_p->status_flags |= PARSER_HAS_NON_STRICT_ARG;
         context_p->literal_count++;
       }

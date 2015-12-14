@@ -137,7 +137,7 @@ int
 util_set_function_literal (lexer_literal_t *literal_p, /* literal */
                            void *function_p) /* function */
 {
-  literal_p->value = function_p;
+  literal_p->u.function_p = function_p;
   return 0;
 } /* util_set_function_literal */
 
@@ -152,16 +152,16 @@ util_free_literal (lexer_literal_t *literal_p) /* literal */
   {
     if (literal_p->length > 0)
     {
-      ecma_deref_ecma_string (ecma_get_string_from_value (literal_p->value));
+      PARSER_FREE (literal_p->u.char_p);
     }
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
   {
-    PARSER_FREE (literal_p->value);
+    PARSER_FREE (literal_p->u.function_p);
   }
   else
   {
-    ecma_free_value (literal_p->value, true);
+    ecma_free_value (literal_p->u.value, true);
   }
 } /* util_free_literal */
 
@@ -182,7 +182,7 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
     {
       printf ("ident(");
     }
-    util_print_string (ecma_get_string_from_value (literal_p->value));
+    printf ("%s", literal_p->u.char_p);
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
   {
@@ -191,18 +191,17 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
   }
   else if (literal_p->type == LEXER_STRING_LITERAL)
   {
-    printf ("string(");
-    util_print_string (ecma_get_string_from_value (literal_p->value));
+    printf ("string(%s", literal_p->u.char_p);
   }
   else if (literal_p->type == LEXER_NUMBER_LITERAL)
   {
     printf ("number(");
-    util_print_number (ecma_get_number_from_value (literal_p->value));
+    util_print_number (ecma_get_number_from_value (literal_p->u.value));
   }
   else if (literal_p->type == LEXER_REGEXP_LITERAL)
   {
     printf ("regexp(");
-    util_print_string (ecma_get_string_from_value (literal_p->value));
+    util_print_string (ecma_get_string_from_value (literal_p->u.value));
   }
   else
   {
