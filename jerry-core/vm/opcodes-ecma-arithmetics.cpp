@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-#include "opcodes.h"
-#include "opcodes-ecma-support.h"
+#include "ecma-alloc.h"
+#include "ecma-conversion.h"
+#include "ecma-helpers.h"
 #include "ecma-number-arithmetic.h"
+#include "ecma-try-catch-macro.h"
+#include "opcodes.h"
+#include "opcodes-variable-helpers.h"
 #include "jrt-libc-includes.h"
 
 /**

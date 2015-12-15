@@ -20,11 +20,6 @@
 #include "ecma-globals.h"
 
 /**
- * Opcode / argument value in an instruction ("idx")
- */
-typedef uint8_t vm_idx_t;
-
-/**
  * Instruction counter / position
  */
 typedef const uint8_t *vm_instr_counter_t;
@@ -32,7 +27,7 @@ typedef const uint8_t *vm_instr_counter_t;
 /**
  * Flags indicating various properties of a scope's code
  */
-typedef enum : vm_idx_t
+typedef enum : uint8_t
 {
   OPCODE_SCOPE_CODE_FLAGS__EMPTY                       = (0u),      /**< initializer for empty flag set */
   OPCODE_SCOPE_CODE_FLAGS_STRICT                       = (1u << 0), /**< code is strict mode code */

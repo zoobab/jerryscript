@@ -289,6 +289,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
     branch_offset = 0;
 
     decoded_opcode = vm_decode_cbc (opcode, ext_opcode);
+    uint16_t left_literal_index = 0;
+    uint16_t right_literal_index = 0;
     ecma_value_t left_value = 0;
     ecma_value_t right_value = 0;
     ecma_value_t result;
@@ -334,7 +336,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       }
       case VM_OC_OP_LITERAL:
       {
-        uint16_t left_literal_index = *(byte_code_p++);
+        left_literal_index = *(byte_code_p++);
         if (left_literal_index >= encoding_limit)
         {
           left_literal_index = (uint16_t) (((left_literal_index << 8) | *(byte_code_p++)) - encoding_delta);
@@ -383,7 +385,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       }
       case VM_OC_OP_LITERAL:
       {
-        uint16_t right_literal_index = *(byte_code_p++);
+        right_literal_index = *(byte_code_p++);
         if (right_literal_index >= encoding_limit)
         {
           right_literal_index = (uint16_t) (((right_literal_index << 8) | *(byte_code_p++)) - encoding_delta);
@@ -426,6 +428,18 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
     {
       case VM_OC_GROUP_ASSIGN:
       {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ret_value = opfunc_assignment (frame_ctx_p, literal_start_p[left_literal_index], right_value);
+
+        ecma_free_value (right_value, true);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
         break;
       }
       case VM_OC_GROUP_PLUS:

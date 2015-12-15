@@ -20,7 +20,7 @@
 #include "ecma-globals.h"
 #include "vm-defines.h"
 
-typedef enum : vm_idx_t
+typedef enum : uint8_t
 {
   OPCODE_CALL_FLAGS__EMPTY                   = (0u),      /**< initializer for empty flag set */
   OPCODE_CALL_FLAGS_HAVE_THIS_ARG            = (1u << 0), /**< flag, indicating that call is performed
@@ -38,6 +38,9 @@ opfunc_call_n (vm_frame_ctx_t *, ecma_value_t, uint8_t, ecma_value_t **);
 
 ecma_completion_value_t
 opfunc_var_decl (vm_frame_ctx_t *, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_assignment (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
 opfunc_equal_value (ecma_value_t, ecma_value_t);
