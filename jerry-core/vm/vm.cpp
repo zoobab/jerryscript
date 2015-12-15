@@ -262,7 +262,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
   bool leave = false;
 
   /* Prepare */
-  if ((bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING) == cbc_literal_encoding_small)
+  if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
   {
     encoding_limit = 255;
     encoding_delta = 0xfe01;

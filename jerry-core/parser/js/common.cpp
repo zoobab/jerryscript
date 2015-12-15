@@ -130,16 +130,13 @@ util_get_utf8_length (uint16_t chr) /**< EcmaScript character */
 } /* util_get_utf8_length */
 
 /**
- * Initializes a string literal from a character array.
- *
- * @return non-zero if an error is occured.
+ * Initializes a function literal from the argument.
  */
-int
+void
 util_set_function_literal (lexer_literal_t *literal_p, /* literal */
                            void *function_p) /* function */
 {
   literal_p->u.function_p = function_p;
-  return 0;
 } /* util_set_function_literal */
 
 /**
@@ -183,7 +180,7 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
     {
       printf ("ident(");
     }
-    printf ("%s", literal_p->u.char_p);
+    util_print_chars (literal_p->u.char_p, literal_p->length);
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
   {
@@ -192,7 +189,8 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
   }
   else if (literal_p->type == LEXER_STRING_LITERAL)
   {
-    printf ("string(%s", literal_p->u.char_p);
+    printf ("string(");
+    util_print_chars (literal_p->u.char_p, literal_p->length);
   }
   else if (literal_p->type == LEXER_NUMBER_LITERAL)
   {
@@ -215,6 +213,20 @@ util_print_literal (lexer_literal_t *literal_p) /* literal */
 #endif
 
 #ifdef PARSER_DEBUG
+/**
+ * Debug utility to print a character sequence.
+ */
+void
+util_print_chars (const uint8_t *char_p, /**< character pointer */
+                  size_t size) /**< size */
+{
+  while (size > 0)
+  {
+    printf ("%c", *char_p++);
+    size--;
+  }
+}
+
 /**
  * Debug utility to print a character sequence.
  */

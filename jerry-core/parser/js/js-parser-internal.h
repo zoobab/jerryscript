@@ -23,7 +23,7 @@
 #include "js-parser-limits.h"
 #include "js-lexer.h"
 
-/* General parser flags */
+/* General parser flags. */
 #define PARSER_IS_STRICT                      0x0001u
 #define PARSER_IS_FUNCTION                    0x0002u
 #define PARSER_IS_CLOSURE                     0x0004u
@@ -31,16 +31,23 @@
 #define PARSER_IS_PROPERTY_SETTER             0x0010u
 #define PARSER_IS_FUNC_EXPRESSION             0x0020u
 #define PARSER_HAS_NON_STRICT_ARG             0x0040u
-#define PARSER_IN_WIDTH                       0x0080u
-#define PARSER_NO_END_LABEL                   0x0100u
-#define PARSER_NO_REG_STORE                   0x0200u
+#define PARSER_INSIDE_WITH                    0x0080u
+#define PARSER_NAMED_FUNCTION_EXP             0x0100u
+#define PARSER_HAS_INITIALIZED_VARS           0x0200u
+#define PARSER_NO_END_LABEL                   0x0400u
+#define PARSER_NO_REG_STORE                   0x0800u
 
-/* Expression parsing flags */
+/* Expression parsing flags. */
 #define PARSE_EXPR                            0x00
 #define PARSE_EXPR_STATEMENT                  0x01
 #define PARSE_EXPR_BLOCK                      0x02
 #define PARSE_EXPR_NO_COMMA                   0x04
 #define PARSE_EXPR_HAS_LITERAL                0x08
+
+/* Special literal indicies. */
+#define PARSE_FUNCTION_NAME                   0xd000u
+#define PARSE_ENCODE_FUNCTION_ARG(value)      ((uint16_t) (0xd001u + (value)))
+#define PARSE_DECODE_FUNCTION_ARG(value)      ((uint16_t) ((value) - 0xd001u))
 
 /* The maximum of PARSER_CBC_STREAM_PAGE_SIZE is 127. */
 #define PARSER_CBC_STREAM_PAGE_SIZE \

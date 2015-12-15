@@ -217,6 +217,7 @@
   CBC_OPCODE (CBC_NEW_IDENT, CBC_HAS_LITERAL_ARG | CBC_HAS_POP_STACK_BYTE_ARG, 1, VM_OC_GROUP_NONE) \
   CBC_OPCODE (CBC_DEFINE_VARS, CBC_HAS_LITERAL_ARG, 0, VM_OC_GROUP_NONE) \
   CBC_OPCODE (CBC_INITIALIZE_VAR, CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2, 0, VM_OC_GROUP_NONE) \
+  CBC_OPCODE (CBC_INITIALIZE_VARS, CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2, 0, VM_OC_GROUP_NONE) \
   CBC_OPCODE (CBC_CONTEXT_END, CBC_NO_FLAG, 0, VM_OC_GROUP_NONE) \
   CBC_OPCODE (CBC_THROW, CBC_NO_FLAG, -1, VM_OC_GROUP_NONE) \
   \
@@ -334,15 +335,6 @@
   \
   /* Last opcode (not a real opcode). */ \
   CBC_OPCODE (CBC_EXT_END, CBC_NO_FLAG, 0, VM_OC_GROUP_NONE)
-
-/**
- * Literal encodings.
- */
-typedef enum
-{
-  cbc_literal_encoding_small,    /**< one byte for literals <= 254, two byte for literals <= 510 */
-  cbc_literal_encoding_full      /**< one byte for literals <= 127, two byte for literals <= 32767 */
-} cbc_literal_encoding_t;
 
 #define CBC_MAXIMUM_BYTE_VALUE 255
 #define CBC_MAXIMUM_SMALL_VALUE 510

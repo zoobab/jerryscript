@@ -102,11 +102,12 @@ typedef struct
   } u;
   uint16_t length;           /**< length of ident / string literal */
   uint16_t index;            /**< real index during post processing */
+  uint16_t init_index;       /**< initialized index during post processing */
   uint8_t type;              /**< type of the literal */
   uint8_t status_flags;      /**< status flags */
 } lexer_literal_t;
 
-int util_set_function_literal (lexer_literal_t *, void *);
+void util_set_function_literal (lexer_literal_t *, void *);
 void util_free_literal (lexer_literal_t *);
 
 #ifdef PARSER_DEBUG
@@ -162,6 +163,7 @@ void util_print_literal (lexer_literal_t *);
 #define PARSER_NOINLINE __attribute__ ((noinline))
 
 #ifdef PARSER_DEBUG
+void util_print_chars (const uint8_t *, size_t);
 void util_print_string (ecma_string_t *);
 void util_print_number (ecma_number_t *);
 #endif

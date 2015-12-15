@@ -1237,7 +1237,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
 
   if (literal_p->type == LEXER_IDENT_LITERAL)
   {
-    if (context_p->status_flags & PARSER_IN_WIDTH)
+    if (context_p->status_flags & PARSER_INSIDE_WITH)
     {
       context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
     }
@@ -1327,7 +1327,7 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
   }
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
-  literal_p->length = literal_index;
+  literal_p->init_index = literal_index;
   literal_p->type = LEXER_UNKNOWN_LITERAL;
   literal_p->status_flags = 0;
 
@@ -1335,10 +1335,7 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
 
   compiled_code_p = parser_parse_function (context_p, extra_status_flags);
 
-  if (util_set_function_literal (literal_p, compiled_code_p) != 0)
-  {
-    parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
-  }
+  util_set_function_literal (literal_p, compiled_code_p);
 
   literal_p->type = LEXER_FUNCTION_LITERAL;
   context_p->status_flags |= PARSER_NO_REG_STORE;
