@@ -96,4 +96,22 @@ opfunc_b_shift_uright (ecma_value_t, ecma_value_t);
 ecma_completion_value_t
 opfunc_b_not (ecma_value_t);
 
+ecma_completion_value_t
+opfunc_less_than (ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_greater_than (ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_less_or_equal_than (ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_greater_or_equal_than (ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_in (ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+opfunc_instanceof (ecma_value_t, ecma_value_t);
+
 #endif /* OPCODES_H */

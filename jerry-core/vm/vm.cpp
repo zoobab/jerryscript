@@ -811,6 +811,114 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
         break;
       }
+      case VM_OC_GROUP_LESS:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_less_than (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_GREATER:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_greater_than (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_LESS_EQUAL:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_less_or_equal_than (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_GREATER_EQUAL:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_greater_or_equal_than (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_IN:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_in (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
+      case VM_OC_GROUP_INSTANCEOF:
+      {
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_instanceof (left_value, right_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
+        break;
+      }
       case VM_OC_GROUP_NONE:
       {
         switch (opcode)

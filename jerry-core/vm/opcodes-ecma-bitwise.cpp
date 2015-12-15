@@ -19,7 +19,6 @@
 #include "ecma-helpers.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
-#include "vm-defines.h"
 
 /**
  * Number bitwise logic operations.
