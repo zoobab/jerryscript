@@ -964,15 +964,20 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
         break;
       }
-      case VM_OC_GROUP_BRANCH_IF_TRUE:
+      case VM_OC_GROUP_BRANCH_IF:
       {
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
         ECMA_TRY_CATCH (value, ecma_op_to_boolean (left_value), ret_value);
 
-          if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
+          if (value == ecma_make_simple_value ((VM_OC_FLAGS (decoded_opcode) & VM_OC_FLAGS_BRANCH_IF_TRUE) ? ECMA_SIMPLE_VALUE_TRUE : ECMA_SIMPLE_VALUE_FALSE))
           {
             byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
+            if (VM_OC_FLAGS (decoded_opcode) & VM_OC_FLAGS_BRANCH_LOGICAL)
+            {
+              left_value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+              ++vm_stack_top_p;
+            }
           }
 
         ECMA_FINALIZE (value);
@@ -985,16 +990,19 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
         break;
       }
-      case VM_OC_GROUP_BRANCH_IF_FALSE:
+      case VM_OC_GROUP_BRANCH_STRICT_EQUAL:
       {
+        JERRY_ASSERT (vm_stack_top_p > vm_stack);
+
         ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-        ECMA_TRY_CATCH (value, ecma_op_to_boolean (left_value), ret_value);
+        ECMA_TRY_CATCH (value, opfunc_equal_value_type (left_value, vm_stack_top_p[-1]), ret_value);
 
-          if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_FALSE))
-          {
-            byte_code_p = byte_code_start_p + (cbc_offset + ((CBC_BRANCH_IS_FORWARD (flags)) ? 1 : -1) * branch_offset);
-          }
+        if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
+        {
+          byte_code_p = byte_code_start_p + cbc_offset + branch_offset;
+          ecma_free_value (*--vm_stack_top_p, true);
+        }
 
         ECMA_FINALIZE (value);
 
