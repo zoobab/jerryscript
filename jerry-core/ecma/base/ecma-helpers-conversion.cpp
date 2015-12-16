@@ -354,15 +354,16 @@ ecma_utf8_string_to_number (const lit_utf8_byte_t *str_p, /**< utf-8 string */
     return ECMA_NUMBER_ZERO;
   }
 
-  lit_utf8_iterator_t iter = lit_utf8_iterator_create (str_p, str_size);
+  lit_utf8_byte_t *str_curr_p = (lit_utf8_byte_t *) str_p;
+  const lit_utf8_byte_t *str_end_p = str_p + str_size;
   ecma_char_t code_unit;
 
-  while (!lit_utf8_iterator_is_eos (&iter))
+  while (str_curr_p < str_end_p)
   {
-    code_unit = lit_utf8_iterator_peek_next (&iter);
+    code_unit = lit_utf8_peek_next (str_curr_p);
     if (lit_char_is_white_space (code_unit) || lit_char_is_line_terminator (code_unit))
     {
-      lit_utf8_iterator_incr (&iter);
+      lit_utf8_incr (&str_curr_p);
     }
     else
     {
@@ -370,17 +371,15 @@ ecma_utf8_string_to_number (const lit_utf8_byte_t *str_p, /**< utf-8 string */
     }
   }
 
-  JERRY_ASSERT (!iter.buf_pos.is_non_bmp_middle);
-  const lit_utf8_byte_t *begin_p = iter.buf_p + iter.buf_pos.offset;
+  const lit_utf8_byte_t *begin_p = str_curr_p;
+  str_curr_p = (lit_utf8_byte_t *) str_end_p;
 
-  iter = lit_utf8_iterator_create (iter.buf_p + iter.buf_pos.offset, str_size - iter.buf_pos.offset);
-  lit_utf8_iterator_seek_eos (&iter);
-  while (!lit_utf8_iterator_is_bos (&iter))
+  while (str_curr_p > str_p)
   {
-    code_unit = lit_utf8_iterator_peek_prev (&iter);
+    code_unit = lit_utf8_peek_prev (str_curr_p);
     if (lit_char_is_white_space (code_unit) || lit_char_is_line_terminator (code_unit))
     {
-      lit_utf8_iterator_decr (&iter);
+      lit_utf8_decr (&str_curr_p);
     }
     else
     {
@@ -388,8 +387,7 @@ ecma_utf8_string_to_number (const lit_utf8_byte_t *str_p, /**< utf-8 string */
     }
   }
 
-  JERRY_ASSERT (!iter.buf_pos.is_non_bmp_middle);
-  const lit_utf8_byte_t *end_p = iter.buf_p + iter.buf_pos.offset - 1;
+  const lit_utf8_byte_t *end_p = str_curr_p - 1;
 
   if (begin_p > end_p)
   {
@@ -628,7 +626,7 @@ ecma_utf8_string_to_number (const lit_utf8_byte_t *str_p, /**< utf-8 string */
   }
 
 #if CONFIG_ECMA_NUMBER_TYPE == CONFIG_ECMA_NUMBER_FLOAT64
-  int32_t binary_exponent = 1;
+  int32_t binary_exponent = 33;
 
   /*
    * 128-bit mantissa storage
@@ -637,9 +635,9 @@ ecma_utf8_string_to_number (const lit_utf8_byte_t *str_p, /**< utf-8 string */
    */
   ECMA_NUMBER_CONVERSION_128BIT_INTEGER (fraction_uint128);
   ECMA_NUMBER_CONVERSION_128BIT_INTEGER_INIT (fraction_uint128,
+                                             0ull,
                                              fraction_uint64 >> 32u,
                                              (uint32_t) fraction_uint64,
-                                             0ull,
                                              0ull);
 
   /* Normalizing mantissa */

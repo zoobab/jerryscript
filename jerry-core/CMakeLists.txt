@@ -80,6 +80,9 @@ project (JerryCore CXX C ASM)
  # Valgrind
   set(DEFINES_JERRY_VALGRIND JERRY_VALGRIND)
 
+ # Valgrind Freya
+  set(DEFINES_JERRY_VALGRIND_FREYA JERRY_VALGRIND_FREYA)
+
  # Platform-specific
   # Linux
 
@@ -131,8 +134,7 @@ project (JerryCore CXX C ASM)
   file(GLOB SOURCE_CORE_PARSER_REGEXP         parser/regexp/*.cpp)
   file(GLOB SOURCE_CORE_JRT                   jrt/*.cpp)
 
-  set(SOURCE_CORE
-      jerry.cpp
+  set(SOURCE_CORE_FILES
       ${SOURCE_CORE_API}
       ${SOURCE_CORE_LIT}
       ${SOURCE_CORE_RCS}
@@ -146,11 +148,37 @@ project (JerryCore CXX C ASM)
       ${SOURCE_CORE_PARSER_REGEXP}
       ${SOURCE_CORE_JRT})
 
+ # All-in-one build
+ if("${ENABLE_ALL_IN_ONE}" STREQUAL "ON")
+  set(ALL_IN_FILE "${CMAKE_BINARY_DIR}/jerry-all-in.cpp")
+  list(SORT SOURCE_CORE_FILES)
+  file(REMOVE ${ALL_IN_FILE})
+
+  foreach(FILE ${SOURCE_CORE_FILES})
+   file(APPEND ${ALL_IN_FILE} "#include \"${FILE}\"\n")
+  endforeach()
+
+  set(SOURCE_CORE ${ALL_IN_FILE})
+ else()
+  set(SOURCE_CORE ${SOURCE_CORE_FILES})
+ endif()
+
 # Per-option configuration
  # Valgrind
  if("${ENABLE_VALGRIND}" STREQUAL "ON")
   set(DEFINES_JERRY ${DEFINES_JERRY} ${DEFINES_JERRY_VALGRIND})
   set(INCLUDE_CORE ${INCLUDE_CORE} ${INCLUDE_THIRD_PARTY_VALGRIND})
+ endif()
+
+ # Valgrind Freya
+ if("${ENABLE_VALGRIND_FREYA}" STREQUAL "ON")
+  set(DEFINES_JERRY ${DEFINES_JERRY} ${DEFINES_JERRY_VALGRIND_FREYA})
+  set(INCLUDE_CORE ${INCLUDE_CORE} ${INCLUDE_THIRD_PARTY_VALGRIND})
+ endif()
+
+ # JERRY_HEAP_SECTION_ATTR
+ if(DEFINED JERRY_HEAP_SECTION_ATTR)
+  set(DEFINES_JERRY ${DEFINES_JERRY} JERRY_HEAP_SECTION_ATTR=${JERRY_HEAP_SECTION_ATTR})
  endif()
 
  # Log

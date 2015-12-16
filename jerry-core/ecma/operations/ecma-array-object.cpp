@@ -15,6 +15,7 @@
 
 #include "ecma-alloc.h"
 #include "ecma-array-object.h"
+#include "ecma-builtin-helpers.h"
 #include "ecma-builtins.h"
 #include "ecma-exceptions.h"
 #include "ecma-gc.h"
@@ -30,25 +31,6 @@
  * \addtogroup ecmaarrayobject ECMA Array object related routines
  * @{
  */
-
-/**
- * Reject sequence
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-static ecma_completion_value_t
-ecma_reject (bool is_throw) /**< Throw flag */
-{
-  if (is_throw)
-  {
-    return ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
-  }
-  else
-  {
-    return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE);
-  }
-} /* ecma_reject */
 
 /**
  * Array object creation operation.
@@ -138,25 +120,13 @@ ecma_op_create_array_object (const ecma_value_t *arguments_list_p, /**< list of 
 
     ecma_string_t* item_name_string_p = ecma_new_ecma_string_from_uint32 (index);
 
-    ecma_property_descriptor_t item_prop_desc = ecma_make_empty_property_descriptor ();
-    {
-      item_prop_desc.is_value_defined = true;
-      item_prop_desc.value = array_items_p[index];
-
-      item_prop_desc.is_writable_defined = true;
-      item_prop_desc.is_writable = true;
-
-      item_prop_desc.is_enumerable_defined = true;
-      item_prop_desc.is_enumerable = true;
-
-      item_prop_desc.is_configurable_defined = true;
-      item_prop_desc.is_configurable = true;
-    }
-
-    ecma_op_object_define_own_property (obj_p,
-                                        item_name_string_p,
-                                        &item_prop_desc,
-                                        false);
+    ecma_builtin_helper_def_prop (obj_p,
+                                  item_name_string_p,
+                                  array_items_p[index],
+                                  true, /* Writable */
+                                  true, /* Enumerable */
+                                  true, /* Configurable */
+                                  false); /* Failure handling */
 
     ecma_deref_ecma_string (item_name_string_p);
   }
@@ -302,29 +272,60 @@ ecma_op_array_object_define_own_property (ecma_object_t *obj_p, /**< the array o
             // l
             JERRY_ASSERT (new_len_uint32 < old_len_uint32);
 
-            bool reduce_succeeded = true;
+            /*
+             * Item i. is replaced with faster iteration: only indices that actually exist in the array, are iterated
+             */
+            bool is_reduce_succeeded = true;
 
-            while (new_len_uint32 < old_len_uint32)
+            ecma_collection_header_t *array_index_props_p = ecma_op_object_get_property_names (obj_p,
+                                                                                               true,
+                                                                                               false,
+                                                                                               false);
+
+            ecma_length_t array_index_props_num = array_index_props_p->unit_number;
+
+            MEM_DEFINE_LOCAL_ARRAY (array_index_values_p, array_index_props_num, uint32_t);
+
+            ecma_collection_iterator_t iter;
+            ecma_collection_iterator_init (&iter, array_index_props_p);
+
+            uint32_t array_index_values_pos = 0;
+
+            while (ecma_collection_iterator_next (&iter))
             {
-              // i
-              old_len_uint32--;
+              ecma_string_t *property_name_p = ecma_get_string_from_value (*iter.current_value_p);
 
-              // ii
-              ecma_string_t *old_length_string_p = ecma_new_ecma_string_from_uint32 (old_len_uint32);
+              uint32_t index;
+              bool is_index = ecma_string_get_array_index (property_name_p, &index);
+              JERRY_ASSERT (is_index);
+              JERRY_ASSERT (index < old_len_uint32);
+
+              array_index_values_p[array_index_values_pos++] = index;
+            }
+
+            JERRY_ASSERT (array_index_values_pos == array_index_props_num);
+
+            while (array_index_values_pos != 0
+                   && array_index_values_p[--array_index_values_pos] >= new_len_uint32)
+            {
+              uint32_t index = array_index_values_p[array_index_values_pos];
+
+              // ii.
+              ecma_string_t *index_string_p = ecma_new_ecma_string_from_uint32 (index);
               ecma_completion_value_t delete_succeeded = ecma_op_object_delete (obj_p,
-                                                                                old_length_string_p,
+                                                                                index_string_p,
                                                                                 false);
-              ecma_deref_ecma_string (old_length_string_p);
+              ecma_deref_ecma_string (index_string_p);
 
-              // iii
               if (ecma_is_completion_value_normal_false (delete_succeeded))
               {
-                JERRY_ASSERT (ecma_is_value_number (new_len_property_desc.value));
+                // iii.
+                new_len_uint32 = (index + 1u);
 
                 ecma_number_t *new_len_num_p = ecma_get_number_from_value (new_len_property_desc.value);
 
                 // 1.
-                *new_len_num_p = ecma_uint32_to_number (old_len_uint32 + 1);
+                *new_len_num_p = ecma_uint32_to_number (index + 1u);
 
                 // 2.
                 if (!new_writable)
@@ -344,13 +345,17 @@ ecma_op_array_object_define_own_property (ecma_object_t *obj_p, /**< the array o
                 JERRY_ASSERT (ecma_is_completion_value_normal_true (completion)
                               || ecma_is_completion_value_normal_false (completion));
 
-                reduce_succeeded = false;
+                is_reduce_succeeded = false;
 
                 break;
               }
             }
 
-            if (!reduce_succeeded)
+            MEM_FINALIZE_LOCAL_ARRAY (array_index_values_p);
+
+            ecma_free_values_collection (array_index_props_p, true);
+
+            if (!is_reduce_succeeded)
             {
               ret_value = ecma_reject (is_throw);
             }

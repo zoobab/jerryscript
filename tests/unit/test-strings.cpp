@@ -30,18 +30,17 @@
 
 typedef enum
 {
-  UTF8_ANY_SIZE,
-  UTF8_ONE_BYTE,
-  UTF8_TWO_BYTES,
-  UTF8_THREE_BYTES,
-  UTF8_FOUR_BYTES
+  CESU8_ANY_SIZE,
+  CESU8_ONE_BYTE,
+  CESU8_TWO_BYTES,
+  CESU8_THREE_BYTES,
 } utf8_char_size;
 
 static lit_utf8_size_t
-generate_utf8_char (utf8_char_size char_size,
-                    lit_utf8_byte_t *buf)
+generate_cesu8_char (utf8_char_size char_size,
+                     lit_utf8_byte_t *buf)
 {
-  JERRY_ASSERT (char_size >= 0 && char_size <= LIT_UTF8_MAX_BYTES_IN_CODE_POINT);
+  JERRY_ASSERT (char_size >= 0 && char_size <= LIT_CESU8_MAX_BYTES_IN_CODE_UNIT);
   lit_code_point_t code_point = (lit_code_point_t) rand ();
 
   if (char_size == 1)
@@ -58,14 +57,9 @@ generate_utf8_char (utf8_char_size char_size,
     code_point = LIT_UTF8_3_BYTE_CODE_POINT_MIN + code_point % (LIT_UTF8_3_BYTE_CODE_POINT_MAX -
                                                                 LIT_UTF8_3_BYTE_CODE_POINT_MIN);
   }
-  else if (char_size == 4)
-  {
-    code_point = LIT_UTF8_4_BYTE_CODE_POINT_MIN + code_point % (LIT_UTF8_4_BYTE_CODE_POINT_MAX -
-                                                                LIT_UTF8_4_BYTE_CODE_POINT_MIN);
-  }
   else
   {
-    code_point %= LIT_UTF8_4_BYTE_CODE_POINT_MAX;
+    code_point %= LIT_UTF8_3_BYTE_CODE_POINT_MAX;
   }
 
   if (code_point >= LIT_UTF16_HIGH_SURROGATE_MIN
@@ -74,29 +68,29 @@ generate_utf8_char (utf8_char_size char_size,
     code_point = LIT_UTF16_HIGH_SURROGATE_MIN - 1;
   }
 
-  return lit_code_point_to_utf8 (code_point, buf);
+  return lit_code_unit_to_utf8 ((ecma_char_t) code_point, buf);
 }
 
 static ecma_length_t
-generate_utf8_string (lit_utf8_byte_t *buf_p,
-                      lit_utf8_size_t buf_size)
+generate_cesu8_string (lit_utf8_byte_t *buf_p,
+                       lit_utf8_size_t buf_size)
 {
   ecma_length_t length = 0;
 
   lit_utf8_size_t size = 0;
   while (size  < buf_size)
   {
-    const utf8_char_size char_size = (((buf_size - size) > LIT_UTF8_MAX_BYTES_IN_CODE_POINT)
-                                      ? UTF8_ANY_SIZE
+    const utf8_char_size char_size = (((buf_size - size) > LIT_CESU8_MAX_BYTES_IN_CODE_UNIT)
+                                      ? CESU8_ANY_SIZE
                                       : (utf8_char_size) (buf_size - size));
 
-    lit_utf8_size_t bytes_generated = generate_utf8_char (char_size, buf_p);
+    lit_utf8_size_t bytes_generated = generate_cesu8_char (char_size, buf_p);
 
-    JERRY_ASSERT (lit_is_utf8_string_valid (buf_p, bytes_generated));
+    JERRY_ASSERT (lit_is_cesu8_string_valid (buf_p, bytes_generated));
 
     size += bytes_generated;
     buf_p += bytes_generated;
-    length += (bytes_generated == LIT_UTF8_MAX_BYTES_IN_CODE_POINT) ? 2 : 1;
+    length++;
   }
 
   JERRY_ASSERT (size == buf_size);
@@ -113,29 +107,31 @@ main (int __attr_unused___ argc,
 
   mem_init ();
 
-  lit_utf8_byte_t utf8_string[max_bytes_in_string];
+  lit_utf8_byte_t cesu8_string[max_bytes_in_string];
   ecma_char_t code_units[max_code_units_in_string];
-  lit_utf8_iterator_pos_t saved_positions[max_code_units_in_string];
+  lit_utf8_byte_t *saved_positions[max_code_units_in_string];
 
   for (int i = 0; i < test_iters; i++)
   {
-    lit_utf8_size_t utf8_string_size = (i == 0) ? 0 : (lit_utf8_size_t) (rand () % max_bytes_in_string);
-    ecma_length_t length = generate_utf8_string (utf8_string, utf8_string_size);
+    lit_utf8_size_t cesu8_string_size = (i == 0) ? 0 : (lit_utf8_size_t) (rand () % max_bytes_in_string);
+    ecma_length_t length = generate_cesu8_string (cesu8_string, cesu8_string_size);
 
-    JERRY_ASSERT (lit_utf8_string_length (utf8_string, utf8_string_size) == length);
+    JERRY_ASSERT (lit_utf8_string_length (cesu8_string, cesu8_string_size) == length);
 
-    lit_utf8_iterator_t iter = lit_utf8_iterator_create (utf8_string, utf8_string_size);
+    lit_utf8_byte_t *curr_p = cesu8_string;
+    const lit_utf8_byte_t *end_p = cesu8_string + cesu8_string_size;
+
     ecma_length_t calculated_length = 0;
-
     ecma_length_t code_units_count = 0;
-    while (!lit_utf8_iterator_is_eos (&iter))
+
+    while (curr_p < end_p)
     {
-      code_units[code_units_count] = lit_utf8_iterator_peek_next (&iter);
-      saved_positions[code_units_count] = lit_utf8_iterator_get_pos (&iter);
+      code_units[code_units_count] = lit_utf8_peek_next (curr_p);
+      saved_positions[code_units_count] = curr_p;
       code_units_count++;
       calculated_length++;
 
-      lit_utf8_iterator_incr (&iter);
+      lit_utf8_incr (&curr_p);
     }
 
     JERRY_ASSERT (length == calculated_length);
@@ -145,67 +141,56 @@ main (int __attr_unused___ argc,
       for (int j = 0; j < test_subiters; j++)
       {
         ecma_length_t index = (ecma_length_t) rand () % code_units_count;
-        lit_utf8_iterator_seek (&iter, saved_positions[index]);
-        JERRY_ASSERT (lit_utf8_iterator_peek_next (&iter) == code_units[index]);
-        JERRY_ASSERT (lit_utf8_iterator_get_index (&iter) == index);
+        curr_p = saved_positions[index];
+        JERRY_ASSERT (lit_utf8_peek_next (curr_p) == code_units[index]);
       }
     }
 
-    lit_utf8_iterator_seek_eos (&iter);
-    while (!lit_utf8_iterator_is_bos (&iter))
+    curr_p = (lit_utf8_byte_t *) end_p;
+    while (curr_p > cesu8_string)
     {
       JERRY_ASSERT (code_units_count > 0);
       calculated_length--;
-      JERRY_ASSERT (code_units[calculated_length] == lit_utf8_iterator_peek_prev (&iter));
-      lit_utf8_iterator_decr (&iter);
+      JERRY_ASSERT (code_units[calculated_length] == lit_utf8_peek_prev (curr_p));
+      lit_utf8_decr (&curr_p);
     }
 
     JERRY_ASSERT (calculated_length == 0);
 
-    while (!lit_utf8_iterator_is_eos (&iter))
+    while (curr_p < end_p)
     {
-      ecma_char_t code_unit = lit_utf8_iterator_read_next (&iter);
+      ecma_char_t code_unit = lit_utf8_read_next (&curr_p);
       JERRY_ASSERT (code_unit == code_units[calculated_length]);
       calculated_length++;
     }
 
     JERRY_ASSERT (length == calculated_length);
 
-    while (!lit_utf8_iterator_is_bos (&iter))
+    while (curr_p > cesu8_string)
     {
       JERRY_ASSERT (code_units_count > 0);
       calculated_length--;
-      JERRY_ASSERT (code_units[calculated_length] == lit_utf8_iterator_read_prev (&iter));
+      JERRY_ASSERT (code_units[calculated_length] == lit_utf8_read_prev (&curr_p));
     }
 
     JERRY_ASSERT (calculated_length == 0);
   }
 
   /* Overlong-encoded code point */
-  lit_utf8_byte_t invalid_utf8_string_1[] = {0xC0, 0x82};
-  JERRY_ASSERT (!lit_is_utf8_string_valid (invalid_utf8_string_1, sizeof (invalid_utf8_string_1)));
+  lit_utf8_byte_t invalid_cesu8_string_1[] = {0xC0, 0x82};
+  JERRY_ASSERT (!lit_is_cesu8_string_valid (invalid_cesu8_string_1, sizeof (invalid_cesu8_string_1)));
 
   /* Overlong-encoded code point */
-  lit_utf8_byte_t invalid_utf8_string_2[] = {0xE0, 0x80, 0x81};
-  JERRY_ASSERT (!lit_is_utf8_string_valid (invalid_utf8_string_2, sizeof (invalid_utf8_string_2)));
+  lit_utf8_byte_t invalid_cesu8_string_2[] = {0xE0, 0x80, 0x81};
+  JERRY_ASSERT (!lit_is_cesu8_string_valid (invalid_cesu8_string_2, sizeof (invalid_cesu8_string_2)));
 
   /* Pair of surrogates: 0xD901 0xDFF0 which encode Unicode character 0x507F0 */
-  lit_utf8_byte_t invalid_utf8_string_3[] = {0xED, 0xA4, 0x81, 0xED, 0xBF, 0xB0};
-  JERRY_ASSERT (!lit_is_utf8_string_valid (invalid_utf8_string_3, sizeof (invalid_utf8_string_3)));
+  lit_utf8_byte_t invalid_cesu8_string_3[] = {0xED, 0xA4, 0x81, 0xED, 0xBF, 0xB0};
+  JERRY_ASSERT (lit_is_cesu8_string_valid (invalid_cesu8_string_3, sizeof (invalid_cesu8_string_3)));
 
   /* Isolated high surrogate 0xD901 */
   lit_utf8_byte_t valid_utf8_string_1[] = {0xED, 0xA4, 0x81};
-  JERRY_ASSERT (lit_is_utf8_string_valid (valid_utf8_string_1, sizeof (valid_utf8_string_1)));
-
-  /* 4-byte long utf-8 character - Unicode character 0x507F0 */
-  lit_utf8_byte_t valid_utf8_string_2[] = {0xF1, 0x90, 0x9F, 0xB0};
-  JERRY_ASSERT (lit_is_utf8_string_valid (valid_utf8_string_2, sizeof (valid_utf8_string_2)));
-
-  lit_utf8_byte_t buf[] = {0xF0, 0x90, 0x8D, 0x88};
-  lit_code_point_t code_point;
-  lit_utf8_size_t bytes_count = lit_read_code_point_from_utf8 (buf, sizeof (buf), &code_point);
-  JERRY_ASSERT (bytes_count == 4);
-  JERRY_ASSERT (code_point == 0x10348);
+  JERRY_ASSERT (lit_is_cesu8_string_valid (valid_utf8_string_1, sizeof (valid_utf8_string_1)));
 
   lit_utf8_byte_t res_buf[3];
   lit_utf8_size_t res_size;

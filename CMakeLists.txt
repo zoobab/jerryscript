@@ -34,15 +34,6 @@ project (Jerry CXX C ASM)
    if(${GNU_CXX_VERSION} VERSION_LESS 4.7.0)
     message(FATAL_ERROR "g++ compiler version 4.7.0 or higher required")
    endif()
-
-  # Use gcc-ar and gcc-ranlib to support LTO
-   get_filename_component(PATH_TO_GCC ${CMAKE_C_COMPILER} REALPATH)
-   get_filename_component(DIRECTORY_GCC ${PATH_TO_GCC} DIRECTORY)
-   get_filename_component(FILE_NAME_GCC ${PATH_TO_GCC} NAME)
-   string(REPLACE "gcc" "gcc-ar" CMAKE_AR ${FILE_NAME_GCC})
-   string(REPLACE "gcc" "gcc-ranlib" CMAKE_RANLIB ${FILE_NAME_GCC})
-   set(CMAKE_AR ${DIRECTORY_GCC}/${CMAKE_AR})
-   set(CMAKE_RANLIB ${DIRECTORY_GCC}/${CMAKE_RANLIB})
  endif()
 
 # Imported and third-party targets prefix
@@ -67,9 +58,11 @@ project (Jerry CXX C ASM)
  set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS )
 
 # Defining options
- option(ENABLE_VALGRIND "Enable valgrind helpers in memory allocators" OFF)
- option(ENABLE_LTO      "Enable LTO build" ON)
- option(ENABLE_LOG      "Enable LOG build" OFF)
+ option(ENABLE_VALGRIND       "Enable valgrind helpers in memory allocators" OFF)
+ option(ENABLE_VALGRIND_FREYA "Enable valgrind-freya helpers in memory allocators" OFF)
+ option(ENABLE_LTO            "Enable LTO build" ON)
+ option(ENABLE_LOG            "Enable LOG build" OFF)
+ option(ENABLE_ALL_IN_ONE     "Enable ALL_IN_ONE build" OFF)
 
  if("${PLATFORM}" STREQUAL "LINUX")
   set(PLATFORM_EXT "LINUX")
@@ -96,6 +89,19 @@ project (Jerry CXX C ASM)
   set(EXTERNAL_MEM_HEAP_SIZE_KB "256" CACHE STRING "Size of memory heap, in kilobytes")
  else()
   message(FATAL_ERROR "Platform '${PLATFORM}' is not supported")
+ endif()
+
+ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  if("${ENABLE_LTO}" STREQUAL "ON")
+   # Use gcc-ar and gcc-ranlib to support LTO
+   get_filename_component(PATH_TO_GCC ${CMAKE_C_COMPILER} REALPATH)
+   get_filename_component(DIRECTORY_GCC ${PATH_TO_GCC} DIRECTORY)
+   get_filename_component(FILE_NAME_GCC ${PATH_TO_GCC} NAME)
+   string(REPLACE "gcc" "gcc-ar" CMAKE_AR ${FILE_NAME_GCC})
+   string(REPLACE "gcc" "gcc-ranlib" CMAKE_RANLIB ${FILE_NAME_GCC})
+   set(CMAKE_AR ${DIRECTORY_GCC}/${CMAKE_AR})
+   set(CMAKE_RANLIB ${DIRECTORY_GCC}/${CMAKE_RANLIB})
+  endif()
  endif()
 
 # Intermediate files
@@ -228,6 +234,14 @@ project (Jerry CXX C ASM)
    set(LINKER_FLAGS_COMMON "${LINKER_FLAGS_COMMON} -flto")
   endif()
 
+ # Generage map file
+  if("${PLATFORM}" STREQUAL "DARWIN")
+   set(MAP_FILE_FLAGS "-Xlinker -map -Xlinker jerry.map")
+  else()
+   set(MAP_FILE_FLAGS "-Xlinker -Map -Xlinker jerry.map")
+  endif()
+  set(LINKER_FLAGS_COMMON "${LINKER_FLAGS_COMMON} ${MAP_FILE_FLAGS}")
+
  # Turn off stack protector
   set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -fno-stack-protector")
 
@@ -235,14 +249,31 @@ project (Jerry CXX C ASM)
   set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -g -gdwarf-4")
 
  # Warnings
-  set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wall -Wextra -pedantic")
-  set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wformat-nonliteral -Winit-self -Wno-stack-protector")
-  set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wconversion -Wsign-conversion -Wformat-security")
-  set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wmissing-declarations -Wno-attributes")
+  macro(append variable value)
+    set(${variable} "${${variable}} ${value}")
+  endmacro()
+
+  macro(add_jerry_compile_flags)
+    foreach(_flag ${ARGV})
+      append(COMPILE_FLAGS_JERRY ${_flag})
+    endforeach()
+  endmacro()
+
+  macro(add_jerry_compile_warnings)
+    foreach(_warning ${ARGV})
+      add_jerry_compile_flags(-W${_warning})
+      if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+ #      add_jerry_compile_flags(-Werror=${_warning})
+      endif()
+    endforeach()
+  endmacro()
+
+  add_jerry_compile_warnings(all extra format-nonliteral init-self conversion sign-conversion format-security missing-declarations)
+  add_jerry_compile_flags(-pedantic -Wno-stack-protector -Wno-attributes)
   if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wlogical-op")
+    add_jerry_compile_warnings(logical-op)
   else()
-    set(COMPILE_FLAGS_JERRY "${COMPILE_FLAGS_JERRY} -Wno-nested-anon-types")
+    add_jerry_compile_flags(-Wno-nested-anon-types)
   endif()
 
  # Static build
@@ -397,11 +428,11 @@ endif()
     target_include_directories(${TARGET_NAME} SYSTEM PRIVATE ${INCLUDE_EXTERNAL_LIBS_INTERFACE})
     if(("${PLATFORM}" STREQUAL "DARWIN") AND (NOT (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)))
      target_link_libraries(${TARGET_NAME} ${CORE_TARGET_NAME} ${LIBC_TARGET_NAME}
-		                   ${FDLIBM_TARGET_NAME} ${PREFIX_IMPORTED_LIB}libclang_rt.osx)
-	else()
+                           ${FDLIBM_TARGET_NAME} ${PREFIX_IMPORTED_LIB}libclang_rt.osx)
+    else()
      target_link_libraries(${TARGET_NAME} ${CORE_TARGET_NAME} ${LIBC_TARGET_NAME}
-		                   ${FDLIBM_TARGET_NAME} ${PREFIX_IMPORTED_LIB}libgcc ${PREFIX_IMPORTED_LIB}libgcc_eh)
-	endif()
+                           ${FDLIBM_TARGET_NAME} ${PREFIX_IMPORTED_LIB}libgcc ${PREFIX_IMPORTED_LIB}libgcc_eh)
+    endif()
 
     add_cppcheck_target(${TARGET_NAME})
 
@@ -479,7 +510,7 @@ endif()
     if(("${PLATFORM}" STREQUAL "DARWIN") AND (NOT (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)))
       target_link_libraries(${TARGET_NAME} ${CORE_TARGET_NAME} ${LIBC_TARGET_NAME} ${FDLIBM_TARGET_NAME}
                             ${PREFIX_IMPORTED_LIB}libclang_rt.osx)
-	else()
+    else()
       target_link_libraries(${TARGET_NAME} ${CORE_TARGET_NAME} ${LIBC_TARGET_NAME} ${FDLIBM_TARGET_NAME}
                             ${PREFIX_IMPORTED_LIB}libgcc ${PREFIX_IMPORTED_LIB}libgcc_eh)
     endif()

@@ -186,7 +186,7 @@ ecma_builtin_json_parse_string (ecma_json_token_t *token_p) /**< token argument 
           }
 
           current_p += 5;
-          write_p += lit_code_point_to_utf8 (code_point, write_p);
+          write_p += lit_code_point_to_cesu8 (code_point, write_p);
           continue;
           /* FALLTHRU */
         }
@@ -198,57 +198,6 @@ ecma_builtin_json_parse_string (ecma_json_token_t *token_p) /**< token argument 
     }
     *write_p++ = *current_p++;
   }
-
-  /*
-   * Post processing surrogate pairs.
-   *
-   * The general issue is, that surrogate fragments can come from
-   * the original stream and can be constructed by \u sequences
-   * as well. We need to construct code points from them.
-   *
-   * Example: JSON.parse ('"\\ud801\udc00"') === "\ud801\udc00"
-   *          The first \u is parsed by JSON, the second is by the lexer.
-   *
-   * The rewrite happens in-place, since the write pointer is always
-   * precede the read-pointer. We also cannot create an UTF8 iterator,
-   * because the lit_is_utf8_string_valid assertion may fail.
-   */
-
-  lit_utf8_byte_t *read_p = token_p->u.string.start_p;
-  lit_utf8_byte_t *read_end_p = write_p;
-  write_p = read_p;
-
-  while (read_p < read_end_p)
-  {
-    lit_code_point_t code_point;
-    read_p += lit_read_code_point_from_utf8 (read_p,
-                                             (lit_utf8_size_t) (read_end_p - read_p),
-                                             &code_point);
-
-    /* The lit_is_code_unit_high_surrogate expects ecma_char_t argument
-       so code_points above maximum UTF16 code unit must not be tested. */
-    if (read_p < read_end_p
-        && code_point <= LIT_UTF16_CODE_UNIT_MAX
-        && lit_is_code_unit_high_surrogate ((ecma_char_t) code_point))
-    {
-      lit_code_point_t next_code_point;
-      lit_utf8_size_t next_code_point_size = lit_read_code_point_from_utf8 (read_p,
-                                                                            (lit_utf8_size_t) (read_end_p - read_p),
-                                                                            &next_code_point);
-
-      if (next_code_point <= LIT_UTF16_CODE_UNIT_MAX
-          && lit_is_code_unit_low_surrogate ((ecma_char_t) next_code_point))
-      {
-        code_point = lit_convert_surrogate_pair_to_code_point ((ecma_char_t) code_point,
-                                                               (ecma_char_t) next_code_point);
-        read_p += next_code_point_size;
-      }
-    }
-    write_p += lit_code_point_to_utf8 (code_point, write_p);
-  }
-
-  JERRY_ASSERT (lit_is_utf8_string_valid (token_p->u.string.start_p,
-                                          (lit_utf8_size_t) (write_p - token_p->u.string.start_p)));
 
   token_p->u.string.size = (lit_utf8_size_t) (write_p - token_p->u.string.start_p);
   token_p->current_p = current_p + 1;
@@ -475,25 +424,14 @@ ecma_builtin_json_define_value_property (ecma_object_t *obj_p, /**< this object 
                                          ecma_string_t *property_name_p, /**< property name */
                                          ecma_value_t value) /**< value */
 {
-  ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-  {
-    prop_desc.is_value_defined = true;
-    prop_desc.value = value;
+  ecma_completion_value_t completion_value = ecma_builtin_helper_def_prop (obj_p,
+                                                                           property_name_p,
+                                                                           value,
+                                                                           true, /* Writable */
+                                                                           true, /* Enumerable */
+                                                                           true, /* Configurable */
+                                                                           false); /* Failure handling */
 
-    prop_desc.is_writable_defined = true;
-    prop_desc.is_writable = true;
-
-    prop_desc.is_enumerable_defined = true;
-    prop_desc.is_enumerable = true;
-
-    prop_desc.is_configurable_defined = true;
-    prop_desc.is_configurable = true;
-  }
-
-  ecma_completion_value_t completion_value = ecma_op_object_define_own_property (obj_p,
-                                                                                 property_name_p,
-                                                                                 &prop_desc,
-                                                                                 false);
   JERRY_ASSERT (ecma_is_completion_value_normal_true (completion_value)
                 || ecma_is_completion_value_normal_false (completion_value));
 } /* ecma_builtin_json_define_value_property */
@@ -626,27 +564,16 @@ ecma_builtin_json_parse_value (ecma_json_token_t *token_p) /**< token argument *
           break;
         }
 
-        ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-        {
-          prop_desc.is_value_defined = true;
-          prop_desc.value = value;
-
-          prop_desc.is_writable_defined = true;
-          prop_desc.is_writable = true;
-
-          prop_desc.is_enumerable_defined = true;
-          prop_desc.is_enumerable = true;
-
-          prop_desc.is_configurable_defined = true;
-          prop_desc.is_configurable = true;
-        }
-
         ecma_string_t *index_str_p = ecma_new_ecma_string_from_uint32 (length);
 
-        ecma_completion_value_t completion = ecma_op_object_define_own_property (array_p,
-                                                                                 index_str_p,
-                                                                                 &prop_desc,
-                                                                                 false);
+        ecma_completion_value_t completion = ecma_builtin_helper_def_prop (array_p,
+                                                                           index_str_p,
+                                                                           value,
+                                                                           true, /* Writable */
+                                                                           true, /* Enumerable */
+                                                                           true, /* Configurable */
+                                                                           false); /* Failure handling */
+
         JERRY_ASSERT (ecma_is_completion_value_normal_true (completion));
 
         ecma_deref_ecma_string (index_str_p);
@@ -698,91 +625,45 @@ ecma_builtin_json_walk (ecma_object_t *reviver_p, /**< reviver function */
   {
     ecma_object_t *object_p = ecma_get_object_from_value (value_get);
 
-    uint32_t no_properties = 0;
+    ecma_collection_header_t *props_p = ecma_op_object_get_property_names (object_p, false, true, false);
 
-    /*
-     * The following algorithm works with arrays and objects as well.
-     */
-    for (ecma_property_t *property_p = ecma_get_property_list (object_p);
-         property_p != NULL;
-         property_p = ECMA_GET_POINTER (ecma_property_t, property_p->next_property_p))
+    ecma_collection_iterator_t iter;
+    ecma_collection_iterator_init (&iter, props_p);
+
+    while (ecma_collection_iterator_next (&iter)
+           && ecma_is_completion_value_empty (ret_value))
     {
+      ecma_string_t *property_name_p = ecma_get_string_from_value (*iter.current_value_p);
+
+      ECMA_TRY_CATCH (value_walk,
+                      ecma_builtin_json_walk (reviver_p,
+                                              object_p,
+                                              property_name_p),
+                      ret_value);
+
       /*
-       * All properties must be named data or internal properties, since we constructed them.
+       * We cannot optimize this function since any members
+       * can be changed (deleted) by the reviver function.
        */
-      JERRY_ASSERT (property_p->type == ECMA_PROPERTY_NAMEDDATA
-                    || property_p->type == ECMA_PROPERTY_INTERNAL);
-
-      if (property_p->type == ECMA_PROPERTY_NAMEDDATA
-          && ecma_is_property_enumerable (property_p))
+      if (ecma_is_value_undefined (value_walk))
       {
-        no_properties++;
+        ecma_completion_value_t delete_val = ecma_op_general_object_delete (object_p,
+                                                                            property_name_p,
+                                                                            false);
+        JERRY_ASSERT (ecma_is_completion_value_normal_true (delete_val)
+                      || ecma_is_completion_value_normal_false (delete_val));
       }
+      else
+      {
+        ecma_builtin_json_define_value_property (object_p,
+                                                 property_name_p,
+                                                 value_walk);
+      }
+
+      ECMA_FINALIZE (value_walk);
     }
 
-    if (no_properties > 0)
-    {
-      MEM_DEFINE_LOCAL_ARRAY (property_names_p, no_properties, ecma_string_t *);
-
-      uint32_t property_index = no_properties;
-      for (ecma_property_t *property_p = ecma_get_property_list (object_p);
-           property_p != NULL;
-           property_p = ECMA_GET_POINTER (ecma_property_t, property_p->next_property_p))
-      {
-        if (property_p->type == ECMA_PROPERTY_NAMEDDATA
-            && ecma_is_property_enumerable (property_p))
-        {
-          ecma_string_t *property_name_p = ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                                      property_p->u.named_data_property.name_p);
-         /*
-          * The property list must be in creation order.
-          */
-          property_index--;
-          property_names_p[property_index] = ecma_copy_or_ref_ecma_string (property_name_p);
-        }
-      }
-
-      JERRY_ASSERT (property_index == 0);
-
-      for (property_index = 0;
-           property_index < no_properties && ecma_is_completion_value_empty (ret_value);
-           property_index++)
-      {
-        ECMA_TRY_CATCH (value_walk,
-                        ecma_builtin_json_walk (reviver_p,
-                                                object_p,
-                                                property_names_p[property_index]),
-                        ret_value);
-
-        /*
-         * We cannot optimize this function since any members
-         * can be changed (deleted) by the reviver function.
-         */
-        if (ecma_is_value_undefined (value_walk))
-        {
-          ecma_completion_value_t delete_val = ecma_op_general_object_delete (object_p,
-                                                                              property_names_p[property_index],
-                                                                              false);
-          JERRY_ASSERT (ecma_is_completion_value_normal_true (delete_val)
-                        || ecma_is_completion_value_normal_false (delete_val));
-        }
-        else
-        {
-          ecma_builtin_json_define_value_property (object_p,
-                                                   property_names_p[property_index],
-                                                   value_walk);
-        }
-
-        ECMA_FINALIZE (value_walk);
-      }
-
-      for (uint32_t i = 0; i < no_properties; i++)
-      {
-        ecma_deref_ecma_string (property_names_p[i]);
-      }
-
-      MEM_FINALIZE_LOCAL_ARRAY (property_names_p);
-    }
+    ecma_free_values_collection (props_p, true);
   }
 
   if (ecma_is_completion_value_empty (ret_value))
@@ -1196,11 +1077,12 @@ ecma_builtin_json_quote (ecma_string_t *string_p) /**< string that should be quo
 
   JERRY_ASSERT (bytes_copied > 0 || !string_size);
 
-  lit_utf8_iterator_t iter = lit_utf8_iterator_create (string_buff, string_size);
+  lit_utf8_byte_t *str_p = string_buff;
+  const lit_utf8_byte_t *str_end_p = str_p + string_size;
 
-  while (!lit_utf8_iterator_is_eos (&iter))
+  while (str_p < str_end_p)
   {
-    ecma_char_t current_char = lit_utf8_iterator_read_next (&iter);
+    ecma_char_t current_char = lit_utf8_read_next (&str_p);
 
     /* 2.a */
     if (current_char == LIT_CHAR_BACKSLASH || current_char == LIT_CHAR_DOUBLE_QUOTE)
@@ -1564,20 +1446,25 @@ ecma_builtin_json_object (ecma_object_t *obj_p, /**< the object*/
   {
     property_keys_p = ecma_new_values_collection (NULL, 0, true);
 
-    for (ecma_property_t *property_p = ecma_get_property_list (obj_p);
-         property_p != NULL;
-         property_p = ECMA_GET_POINTER (ecma_property_t, property_p->next_property_p))
+    ecma_collection_header_t *props_p = ecma_op_object_get_property_names (obj_p, false, true, false);
+
+    ecma_collection_iterator_t iter;
+    ecma_collection_iterator_init (&iter, props_p);
+
+    while (ecma_collection_iterator_next (&iter))
     {
-      if (property_p->type == ECMA_PROPERTY_NAMEDDATA && ecma_is_property_enumerable (property_p))
+      ecma_string_t *property_name_p = ecma_get_string_from_value (*iter.current_value_p);
+      ecma_property_t *property_p = ecma_op_object_get_own_property (obj_p, property_name_p);
+
+      JERRY_ASSERT (ecma_is_property_enumerable (property_p));
+
+      if (property_p->type == ECMA_PROPERTY_NAMEDDATA)
       {
-        ecma_string_t *prop_key = ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                             property_p->u.named_data_property.name_p);
-
-        JERRY_ASSERT (prop_key != NULL);
-
-        ecma_append_to_values_collection (property_keys_p, ecma_make_string_value (prop_key), true);
+        ecma_append_to_values_collection (property_keys_p, *iter.current_value_p, true);
       }
     }
+
+    ecma_free_values_collection (props_p, true);
   }
 
   /* 7. */

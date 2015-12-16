@@ -491,7 +491,7 @@ ecma_gc_run (void)
        frame_iter_p != NULL;
        frame_iter_p = frame_iter_p->prev_frame_p)
   {
-    for (int32_t reg_index = 0; reg_index < frame_iter_p->regs_number; reg_index++)
+    for (uint32_t reg_index = 0; reg_index < frame_iter_p->regs_number; reg_index++)
     {
       ecma_value_t reg_value = vm_stack_frame_get_reg_value (frame_iter_p, reg_index);
 
@@ -581,14 +581,9 @@ ecma_try_to_give_back_some_memory (mem_try_give_memory_back_severity_t severity)
       ecma_gc_run ();
     }
   }
-  else if (severity == MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_MEDIUM
-           || severity == MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_HIGH)
-  {
-    ecma_gc_run ();
-  }
   else
   {
-    JERRY_ASSERT (severity == MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_CRITICAL);
+    JERRY_ASSERT (severity == MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_HIGH);
 
     /* Freeing as much memory as we currently can */
     ecma_lcache_invalidate_all ();

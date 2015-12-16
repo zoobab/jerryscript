@@ -123,34 +123,28 @@ int32_t lit_utf8_iterator_pos_cmp (lit_utf8_iterator_pos_t, lit_utf8_iterator_po
 
 /* validation */
 bool lit_is_utf8_string_valid (const lit_utf8_byte_t *, lit_utf8_size_t);
+bool lit_is_cesu8_string_valid (const lit_utf8_byte_t *, lit_utf8_size_t);
 
 /* checks */
-bool lit_is_code_unit_low_surrogate (ecma_char_t);
-bool lit_is_code_unit_high_surrogate (ecma_char_t);
+bool lit_is_code_point_utf16_low_surrogate (lit_code_point_t);
+bool lit_is_code_point_utf16_high_surrogate (lit_code_point_t);
 
 /* iteration */
 lit_utf8_iterator_t lit_utf8_iterator_create (const lit_utf8_byte_t *, lit_utf8_size_t);
 
 void lit_utf8_iterator_seek_bos (lit_utf8_iterator_t *);
-void lit_utf8_iterator_seek_eos (lit_utf8_iterator_t *);
 
 lit_utf8_iterator_pos_t lit_utf8_iterator_get_pos (const lit_utf8_iterator_t *);
 void lit_utf8_iterator_seek (lit_utf8_iterator_t *, lit_utf8_iterator_pos_t);
 
-ecma_length_t lit_utf8_iterator_get_index (const lit_utf8_iterator_t *);
-
 ecma_char_t lit_utf8_iterator_peek_next (const lit_utf8_iterator_t *);
-ecma_char_t lit_utf8_iterator_peek_prev (const lit_utf8_iterator_t *);
 
 void lit_utf8_iterator_incr (lit_utf8_iterator_t *);
-void lit_utf8_iterator_decr (lit_utf8_iterator_t *);
 void lit_utf8_iterator_advance (lit_utf8_iterator_t *, ecma_length_t);
 
 ecma_char_t lit_utf8_iterator_read_next (lit_utf8_iterator_t *);
-ecma_char_t lit_utf8_iterator_read_prev (lit_utf8_iterator_t *);
 
 bool lit_utf8_iterator_is_eos (const lit_utf8_iterator_t *);
-bool lit_utf8_iterator_is_bos (const lit_utf8_iterator_t *);
 
 /* size */
 lit_utf8_size_t lit_zt_utf8_string_size (const lit_utf8_byte_t *);
@@ -169,16 +163,30 @@ lit_utf8_size_t lit_get_unicode_char_size_by_utf8_first_byte (lit_utf8_byte_t);
 /* conversion */
 lit_utf8_size_t lit_code_unit_to_utf8 (ecma_char_t, lit_utf8_byte_t *);
 lit_utf8_size_t lit_code_point_to_utf8 (lit_code_point_t, lit_utf8_byte_t *);
+lit_utf8_size_t lit_code_point_to_cesu8 (lit_code_point_t, lit_utf8_byte_t *);
 lit_code_point_t lit_convert_surrogate_pair_to_code_point (ecma_char_t, ecma_char_t);
 
-/* comparison */
-bool lit_compare_utf8_strings (const lit_utf8_byte_t *, lit_utf8_size_t, const lit_utf8_byte_t *, lit_utf8_size_t);
+bool lit_compare_utf8_strings (const lit_utf8_byte_t *, lit_utf8_size_t,
+                               const lit_utf8_byte_t *, lit_utf8_size_t);
 
-bool lit_compare_utf8_strings_relational (const lit_utf8_byte_t *, lit_utf8_size_t,
-                                          const lit_utf8_byte_t *, lit_utf8_size_t);
+bool lit_compare_utf8_strings_relational (const lit_utf8_byte_t *string1_p, lit_utf8_size_t,
+                                          const lit_utf8_byte_t *string2_p, lit_utf8_size_t);
 
 /* read code point from buffer */
 lit_utf8_size_t lit_read_code_point_from_utf8 (const lit_utf8_byte_t *, lit_utf8_size_t, lit_code_point_t *);
+
+lit_utf8_size_t lit_read_code_unit_from_utf8 (const lit_utf8_byte_t *,
+                                              ecma_char_t *);
+
+lit_utf8_size_t lit_read_prev_code_unit_from_utf8 (const lit_utf8_byte_t *,
+                                                   ecma_char_t *);
+
+ecma_char_t lit_utf8_read_next (lit_utf8_byte_t **);
+ecma_char_t lit_utf8_read_prev (lit_utf8_byte_t **);
+ecma_char_t lit_utf8_peek_next (lit_utf8_byte_t *);
+ecma_char_t lit_utf8_peek_prev (lit_utf8_byte_t *);
+void lit_utf8_incr (lit_utf8_byte_t **);
+void lit_utf8_decr (lit_utf8_byte_t **);
 
 /* print */
 void lit_put_ecma_char (ecma_char_t);

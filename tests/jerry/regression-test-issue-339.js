@@ -1,4 +1,5 @@
-// Copyright 2014 Samsung Electronics Co., Ltd.
+// Copyright 2015 Samsung Electronics Co., Ltd.
+// Copyright 2015 University of Szeged.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,5 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-a=new Number(13475865.23561782356176235123856134)
-assert(a.toString(36) === "80u1l.8hczgt3y3tbj4i");
+try
+{
+  eval ('var y = 4e;');
+  assert (false);
+}
+catch (e)
+{
+  assert (e instanceof SyntaxError);
+}

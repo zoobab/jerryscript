@@ -95,8 +95,18 @@ typedef struct mem_pool_chunk_t
                                                *   in the pool containing this chunk */
       uint8_t list_id; /**< identifier of a pool list */
     } pool_gc;
+
+    /**
+     * The field is added to make sizeof (mem_pool_chunk_t) equal to MEM_POOL_CHUNK_SIZE
+     */
+    uint8_t allocated_area[MEM_POOL_CHUNK_SIZE];
   } u;
 } mem_pool_chunk_t;
+
+/**
+ * The condition is assumed when using pointer arithmetics on (mem_pool_chunk_t *) pointer type
+ */
+JERRY_STATIC_ASSERT (sizeof (mem_pool_chunk_t) == MEM_POOL_CHUNK_SIZE);
 
 /**
  * List of free pool chunks
@@ -136,14 +146,24 @@ static void mem_pools_stat_free_chunk (void);
 #ifdef JERRY_VALGRIND
 # include "memcheck.h"
 
-# define VALGRIND_NOACCESS_SPACE(p, s)  (void)VALGRIND_MAKE_MEM_NOACCESS((p), (s))
-# define VALGRIND_UNDEFINED_SPACE(p, s) (void)VALGRIND_MAKE_MEM_UNDEFINED((p), (s))
-# define VALGRIND_DEFINED_SPACE(p, s)   (void)VALGRIND_MAKE_MEM_DEFINED((p), (s))
+# define VALGRIND_NOACCESS_SPACE(p, s)   VALGRIND_MAKE_MEM_NOACCESS((p), (s))
+# define VALGRIND_UNDEFINED_SPACE(p, s)  VALGRIND_MAKE_MEM_UNDEFINED((p), (s))
+# define VALGRIND_DEFINED_SPACE(p, s)    VALGRIND_MAKE_MEM_DEFINED((p), (s))
 #else /* JERRY_VALGRIND */
 # define VALGRIND_NOACCESS_SPACE(p, s)
 # define VALGRIND_UNDEFINED_SPACE(p, s)
 # define VALGRIND_DEFINED_SPACE(p, s)
 #endif /* JERRY_VALGRIND */
+
+#ifdef JERRY_VALGRIND_FREYA
+# include "memcheck.h"
+
+# define VALGRIND_FREYA_MALLOCLIKE_SPACE(p, s) VALGRIND_MALLOCLIKE_BLOCK((p), (s), 0, 0)
+# define VALGRIND_FREYA_FREELIKE_SPACE(p)      VALGRIND_FREELIKE_BLOCK((p), 0)
+#else /* JERRY_VALGRIND_FREYA */
+# define VALGRIND_FREYA_MALLOCLIKE_SPACE(p, s)
+# define VALGRIND_FREYA_FREELIKE_SPACE(p)
+#endif /* JERRY_VALGRIND_FREYA */
 
 /**
  * Initialize pool manager
@@ -391,6 +411,7 @@ mem_pools_collect_empty (void)
         mem_free_chunks_number -= MEM_POOL_CHUNKS_NUMBER;
 #endif /* !JERRY_NDEBUG */
 
+        MEM_HEAP_VALGRIND_FREYA_MEMPOOL_REQUEST ();
         mem_heap_free_block (pool_list_iter_p);
 
         MEM_POOLS_STAT_FREE_POOL ();
@@ -455,11 +476,13 @@ mem_pools_alloc_longpath (void)
   JERRY_ASSERT (MEM_POOL_SIZE <= mem_heap_get_chunked_block_data_size ());
   JERRY_ASSERT (MEM_POOL_CHUNKS_NUMBER >= 1);
 
+  MEM_HEAP_VALGRIND_FREYA_MEMPOOL_REQUEST ();
   mem_pool_chunk_t *pool_start_p = (mem_pool_chunk_t*) mem_heap_alloc_chunked_block (MEM_HEAP_ALLOC_LONG_TERM);
 
   if (mem_free_chunk_p != NULL)
   {
     /* some chunks were freed due to GC invoked by heap allocator */
+    MEM_HEAP_VALGRIND_FREYA_MEMPOOL_REQUEST ();
     mem_heap_free_block (pool_start_p);
 
     return;
@@ -523,7 +546,7 @@ uint8_t* __attr_always_inline___
 mem_pools_alloc (void)
 {
 #ifdef MEM_GC_BEFORE_EACH_ALLOC
-  mem_run_try_to_give_memory_back_callbacks (MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_CRITICAL);
+  mem_run_try_to_give_memory_back_callbacks (MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_HIGH);
 #endif /* MEM_GC_BEFORE_EACH_ALLOC */
 
   mem_check_pools ();
@@ -549,6 +572,7 @@ mem_pools_alloc (void)
 
       mem_check_pools ();
 
+      VALGRIND_FREYA_MALLOCLIKE_SPACE (chunk_p, MEM_POOL_CHUNK_SIZE);
       return (uint8_t *) chunk_p;
     }
     else
@@ -574,6 +598,7 @@ mem_pools_free (uint8_t *chunk_p) /**< pointer to the chunk */
   chunk_to_free_p->u.free.next_p = mem_free_chunk_p;
   mem_free_chunk_p = chunk_to_free_p;
 
+  VALGRIND_FREYA_FREELIKE_SPACE (chunk_to_free_p);
   VALGRIND_NOACCESS_SPACE (chunk_to_free_p, MEM_POOL_CHUNK_SIZE);
 
 #ifndef JERRY_NDEBUG

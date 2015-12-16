@@ -185,7 +185,7 @@ ecma_builtin_helper_get_to_locale_string_at_index (ecma_object_t *obj_p, /** < t
 
 
 /**
- * The Object.keys and Object.getOwnPropertyName routine's common part.
+ * The Object.keys and Object.getOwnPropertyNames routine's common part.
  *
  * See also:
  *          ECMA-262 v5, 15.2.3.4 steps 2-5
@@ -206,63 +206,34 @@ ecma_builtin_helper_object_get_properties (ecma_object_t *obj_p, /** < object */
 
   uint32_t index = 0;
 
-  for (ecma_property_t *property_p = ecma_get_property_list (obj_p);
-       property_p != NULL;
-       property_p = ECMA_GET_POINTER (ecma_property_t, property_p->next_property_p))
+  ecma_collection_header_t *props_p = ecma_op_object_get_property_names (obj_p,
+                                                                         false,
+                                                                         only_enumerable_properties,
+                                                                         false);
+
+  ecma_collection_iterator_t iter;
+  ecma_collection_iterator_init (&iter, props_p);
+
+  while (ecma_collection_iterator_next (&iter))
   {
-    ecma_string_t *property_name_p;
-
-    if (property_p->type == ECMA_PROPERTY_NAMEDDATA)
-    {
-      property_name_p = ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                   property_p->u.named_data_property.name_p);
-    }
-    else if (property_p->type == ECMA_PROPERTY_NAMEDACCESSOR)
-    {
-      property_name_p = ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                   property_p->u.named_accessor_property.name_p);
-    }
-    else
-    {
-      continue;
-    }
-
-    if (only_enumerable_properties && !ecma_is_property_enumerable (property_p))
-    {
-      continue;
-    }
-
-    JERRY_ASSERT (property_name_p != NULL);
-
     ecma_string_t *index_string_p = ecma_new_ecma_string_from_uint32 (index);
 
-    ecma_property_descriptor_t item_prop_desc = ecma_make_empty_property_descriptor ();
-    {
-      item_prop_desc.is_value_defined = true;
-      item_prop_desc.value = ecma_make_string_value (property_name_p);
-
-      item_prop_desc.is_writable_defined = true;
-      item_prop_desc.is_writable = true;
-
-      item_prop_desc.is_enumerable_defined = true;
-      item_prop_desc.is_enumerable = true;
-
-      item_prop_desc.is_configurable_defined = true;
-      item_prop_desc.is_configurable = true;
-    }
-
-    ecma_completion_value_t completion = ecma_op_object_define_own_property (new_array_p,
-                                                                             index_string_p,
-                                                                             &item_prop_desc,
-                                                                             false);
+    ecma_completion_value_t completion = ecma_builtin_helper_def_prop (new_array_p,
+                                                                       index_string_p,
+                                                                       *iter.current_value_p,
+                                                                       true, /* Writable */
+                                                                       true, /* Enumerable */
+                                                                       true, /* Configurable */
+                                                                       false); /* Failure handling */
 
     JERRY_ASSERT (ecma_is_completion_value_normal_true (completion));
 
-    ecma_free_completion_value (completion);
     ecma_deref_ecma_string (index_string_p);
 
     index++;
   }
+
+  ecma_free_values_collection (props_p, true);
 
   return new_array;
 } /* ecma_builtin_helper_object_get_properties */
@@ -394,27 +365,16 @@ ecma_builtin_helper_array_concat_value (ecma_object_t *obj_p, /**< array */
                                             array_index_string_p),
                         ret_value);
 
-        ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-        {
-          prop_desc.is_value_defined = true;
-          prop_desc.value = get_value;
-
-          prop_desc.is_writable_defined = true;
-          prop_desc.is_writable = true;
-
-          prop_desc.is_enumerable_defined = true;
-          prop_desc.is_enumerable = true;
-
-          prop_desc.is_configurable_defined = true;
-          prop_desc.is_configurable = true;
-        }
-
         /* 5.b.iii.3.b */
         /* This will always be a simple value since 'is_throw' is false, so no need to free. */
-        ecma_completion_value_t put_comp = ecma_op_object_define_own_property (obj_p,
-                                                                               new_array_index_string_p,
-                                                                               &prop_desc,
-                                                                               false);
+        ecma_completion_value_t put_comp = ecma_builtin_helper_def_prop (obj_p,
+                                                                         new_array_index_string_p,
+                                                                         get_value,
+                                                                         true, /* Writable */
+                                                                         true, /* Enumerable */
+                                                                         true, /* Configurable */
+                                                                         false); /* Failure handling */
+
         JERRY_ASSERT (ecma_is_completion_value_normal_true (put_comp));
 
         ECMA_FINALIZE (get_value);
@@ -434,27 +394,16 @@ ecma_builtin_helper_array_concat_value (ecma_object_t *obj_p, /**< array */
   {
     ecma_string_t *new_array_index_string_p = ecma_new_ecma_string_from_uint32 ((*length_p)++);
 
-    ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-    {
-      prop_desc.is_value_defined = true;
-      prop_desc.value = value;
-
-      prop_desc.is_writable_defined = true;
-      prop_desc.is_writable = true;
-
-      prop_desc.is_enumerable_defined = true;
-      prop_desc.is_enumerable = true;
-
-      prop_desc.is_configurable_defined = true;
-      prop_desc.is_configurable = true;
-    }
-
     /* 5.c.i */
     /* This will always be a simple value since 'is_throw' is false, so no need to free. */
-    ecma_completion_value_t put_comp = ecma_op_object_define_own_property (obj_p,
-                                                                           new_array_index_string_p,
-                                                                           &prop_desc,
-                                                                           false);
+    ecma_completion_value_t put_comp = ecma_builtin_helper_def_prop (obj_p,
+                                                                     new_array_index_string_p,
+                                                                     value,
+                                                                     true, /* Writable */
+                                                                     true, /* Enumerable */
+                                                                     true, /* Configurable */
+                                                                     false); /* Failure handling */
+
     JERRY_ASSERT (ecma_is_completion_value_normal_true (put_comp));
 
     ecma_deref_ecma_string (new_array_index_string_p);
@@ -481,7 +430,6 @@ ecma_builtin_helper_array_concat_value (ecma_object_t *obj_p, /**< array */
  *
  * Used by:
  *         - The String.prototype.substring routine.
- *         - The String.prototype.indexOf routine.
  *         - The ecma_builtin_helper_string_prototype_object_index_of helper routine.
  *
  * @return uint32_t - the normalized value of the index
@@ -520,7 +468,7 @@ ecma_builtin_helper_string_index_normalize (ecma_number_t index, /**< index */
   return norm_index;
 } /* ecma_builtin_helper_string_index_normalize */
 
-/*
+/**
  * Helper function for string indexOf and lastIndexOf functions
  *
  * This function implements string indexOf and lastIndexOf with required checks and conversions.
@@ -539,7 +487,7 @@ ecma_completion_value_t
 ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**< this argument */
                                                       ecma_value_t arg1, /**< routine's first argument */
                                                       ecma_value_t arg2, /**< routine's second argument */
-                                                      bool firstIndex) /**< routine's third argument */
+                                                      bool first_index) /**< routine's third argument */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -563,28 +511,74 @@ ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**
                                arg2,
                                ret_value);
 
-  /* 6 */
+  /* 5 (indexOf) -- 6 (lastIndexOf) */
   ecma_string_t *original_str_p = ecma_get_string_from_value (to_str_val);
   const ecma_length_t original_len = ecma_string_get_length (original_str_p);
-  const lit_utf8_size_t original_size = ecma_string_get_size (original_str_p);
 
-  /* 4b, 5, 7 */
-  ecma_length_t start = ecma_builtin_helper_string_index_normalize (pos_num, original_len, firstIndex);
+  /* 4b, 6 (indexOf) - 4b, 5, 7 (lastIndexOf) */
+  ecma_length_t start = ecma_builtin_helper_string_index_normalize (pos_num, original_len, first_index);
 
-  /* 8 */
+  /* 7 (indexOf) -- 8 (lastIndexOf) */
   ecma_string_t *search_str_p = ecma_get_string_from_value (search_str_val);
-  const ecma_length_t search_len = ecma_string_get_length (search_str_p);
-  const lit_utf8_size_t search_size = ecma_string_get_size (search_str_p);
 
   ecma_number_t *ret_num_p = ecma_alloc_number ();
   *ret_num_p = ecma_int32_to_number (-1);
 
-  /* 9 */
+  /* 8 (indexOf) -- 9 (lastIndexOf) */
+  ecma_length_t index_of = 0;
+  if (ecma_builtin_helper_string_find_index (original_str_p, search_str_p, first_index, start, &index_of))
+  {
+    *ret_num_p = ecma_uint32_to_number (index_of);
+  }
+
+  ret_value = ecma_make_normal_completion_value (ecma_make_number_value (ret_num_p));
+
+  ECMA_OP_TO_NUMBER_FINALIZE (pos_num);
+  ECMA_FINALIZE (search_str_val);
+  ECMA_FINALIZE (to_str_val);
+  ECMA_FINALIZE (check_coercible_val);
+
+  return ret_value;
+} /* ecma_builtin_helper_string_prototype_object_index_of */
+
+/**
+ * Helper function for finding index of a search string
+ *
+ * This function clamps the given index to the [0, length] range.
+ * If the index is negative, 0 value is used.
+ * If the index is greater than the length of the string, the normalized index will be the length of the string.
+ * NaN is mapped to zero or length depending on the nan_to_zero parameter.
+ *
+ * See also:
+ *          ECMA-262 v5, 15.5.4.7,8,11
+ *
+ * Used by:
+ *         - The ecma_builtin_helper_string_prototype_object_index_of helper routine.
+ *         - The ecma_builtin_string_prototype_object_replace_match helper routine.
+ *
+ * @return uint32_t - the normalized value of the index
+ */
+bool
+ecma_builtin_helper_string_find_index (ecma_string_t *original_str_p, /**< index */
+                                       ecma_string_t *search_str_p, /**< string's length */
+                                       bool first_index, /**< whether search for first (t) or last (f) index */
+                                       ecma_length_t start_pos, /**< start position */
+                                       ecma_length_t *ret_index_p) /**> position found in original string */
+{
+  bool match_found = false;
+
+  const ecma_length_t original_len = ecma_string_get_length (original_str_p);
+  const lit_utf8_size_t original_size = ecma_string_get_size (original_str_p);
+
+  const ecma_length_t search_len = ecma_string_get_length (search_str_p);
+  const lit_utf8_size_t search_size = ecma_string_get_size (search_str_p);
+
   if (search_len <= original_len)
   {
     if (!search_len)
     {
-      *ret_num_p = ecma_uint32_to_number (firstIndex ? 0 : original_len);
+      match_found = true;
+      *ret_index_p = first_index ? 0 : original_len;
     }
     else
     {
@@ -598,10 +592,13 @@ ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**
                                                (ssize_t) (original_size));
       JERRY_ASSERT (sz >= 0);
 
-      lit_utf8_iterator_t original_it = lit_utf8_iterator_create (original_str_utf8_p, original_size);
+      ecma_length_t index = start_pos;
 
-      ecma_length_t index = start;
-      lit_utf8_iterator_advance (&original_it, index);
+      lit_utf8_byte_t *original_str_curr_p = original_str_utf8_p;
+      for (ecma_length_t idx = 0; idx < index; idx++)
+      {
+        lit_utf8_incr (&original_str_curr_p);
+      }
 
       /* create utf8 string from search string */
       MEM_DEFINE_LOCAL_ARRAY (search_str_utf8_p,
@@ -613,41 +610,50 @@ ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**
                                                (ssize_t) (search_size));
       JERRY_ASSERT (sz >= 0);
 
-      lit_utf8_iterator_t search_it = lit_utf8_iterator_create (search_str_utf8_p, search_size);
+      lit_utf8_byte_t *search_str_curr_p = search_str_utf8_p;
 
       /* iterate original string and try to match at each position */
       bool searching = true;
-
+      ecma_char_t first_char = lit_utf8_read_next (&search_str_curr_p);
       while (searching)
       {
         /* match as long as possible */
         ecma_length_t match_len = 0;
-        lit_utf8_iterator_t stored_original_it = original_it;
+        lit_utf8_byte_t *stored_original_str_curr_p = original_str_curr_p;
 
-        while (match_len < search_len &&
-               index + match_len < original_len &&
-               lit_utf8_iterator_read_next (&original_it) == lit_utf8_iterator_read_next (&search_it))
+        if (match_len < search_len &&
+            index + match_len < original_len &&
+            lit_utf8_read_next (&original_str_curr_p) == first_char)
         {
+          lit_utf8_byte_t *nested_search_str_curr_p = search_str_curr_p;
           match_len++;
+
+          while (match_len < search_len &&
+                 index + match_len < original_len &&
+                 lit_utf8_read_next (&original_str_curr_p) == lit_utf8_read_next (&nested_search_str_curr_p))
+          {
+            match_len++;
+          }
         }
 
         /* check for match */
         if (match_len == search_len)
         {
-          *ret_num_p = ecma_uint32_to_number (index);
+          match_found = true;
+          *ret_index_p = index;
+
           break;
         }
         else
         {
           /* inc/dec index and update iterators and search condition */
-          lit_utf8_iterator_seek_bos (&search_it);
-          original_it = stored_original_it;
+          original_str_curr_p = stored_original_str_curr_p;
 
-          if (firstIndex)
+          if (first_index)
           {
             if ((searching = (index <= original_len - search_len)))
             {
-              lit_utf8_iterator_incr (&original_it);
+              lit_utf8_incr (&original_str_curr_p);
               index++;
             }
           }
@@ -655,7 +661,7 @@ ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**
           {
             if ((searching = (index > 0)))
             {
-              lit_utf8_iterator_decr (&original_it);
+              lit_utf8_decr (&original_str_curr_p);
               index--;
             }
           }
@@ -667,16 +673,8 @@ ecma_builtin_helper_string_prototype_object_index_of (ecma_value_t this_arg, /**
     }
   }
 
-  ecma_value_t new_value = ecma_make_number_value (ret_num_p);
-  ret_value = ecma_make_normal_completion_value (new_value);
-
-  ECMA_OP_TO_NUMBER_FINALIZE (pos_num);
-  ECMA_FINALIZE (search_str_val);
-  ECMA_FINALIZE (to_str_val);
-  ECMA_FINALIZE (check_coercible_val);
-
-  return ret_value;
-} /* ecma_builtin_helper_string_index_normalize */
+  return match_found;
+} /* ecma_builtin_helper_string_find_index */
 
 /**
  * Helper function for using [[DefineOwnProperty]].
@@ -702,23 +700,14 @@ ecma_builtin_helper_def_prop (ecma_object_t *obj_p, /**< object */
   prop_desc.is_value_defined = true;
   prop_desc.value = value;
 
-  if (writable)
-  {
-    prop_desc.is_writable_defined = true;
-    prop_desc.is_writable = true;
-  }
+  prop_desc.is_writable_defined = true;
+  prop_desc.is_writable = writable;
 
-  if (enumerable)
-  {
-    prop_desc.is_enumerable_defined = true;
-    prop_desc.is_enumerable = true;
-  }
+  prop_desc.is_enumerable_defined = true;
+  prop_desc.is_enumerable = enumerable;
 
-  if (configurable)
-  {
-    prop_desc.is_configurable_defined = true;
-    prop_desc.is_configurable = true;
-  }
+  prop_desc.is_configurable_defined = true;
+  prop_desc.is_configurable = configurable;
 
   return ecma_op_object_define_own_property (obj_p,
                                              index_p,

@@ -14,6 +14,7 @@
  */
 
 #include "ecma-alloc.h"
+#include "ecma-builtin-helpers.h"
 #include "ecma-builtins.h"
 #include "ecma-exceptions.h"
 #include "ecma-function-object.h"
@@ -45,14 +46,21 @@ static uint32_t
 ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
                                         bool do_instantiate_args_obj, /**< should an Arguments object be
                                                                        *   instantiated for the code */
+                                        bool is_arguments_moved_to_regs, /**< values of the function's arguments
+                                                                          *   are placed on registers */
+                                        bool is_no_lex_env, /**< the function needs no lexical environment */
                                         vm_instr_counter_t instr_oc) /**< position of first instruction */
 {
   uint32_t value;/* = instr_oc;
   const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
   const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
+  const uint32_t arguments_moved_to_regs_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 3);
+  const uint32_t no_lex_env_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 4);
 
   JERRY_ASSERT (((value) & (1u << is_strict_bit_offset)) == 0);
   JERRY_ASSERT (((value) & (1u << do_instantiate_arguments_object_bit_offset)) == 0);
+  JERRY_ASSERT (((value) & (1u << arguments_moved_to_regs_bit_offset)) == 0);
+  JERRY_ASSERT (((value) & (1u << no_lex_env_bit_offset)) == 0);
 
   if (is_strict)
   {
@@ -63,6 +71,17 @@ ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
   {
     value |= (1u << do_instantiate_arguments_object_bit_offset);
   }
+
+  if (is_arguments_moved_to_regs)
+  {
+    value |= (1u << arguments_moved_to_regs_bit_offset);
+  }
+
+  if (is_no_lex_env)
+  {
+    value |= (1u << no_lex_env_bit_offset);
+  }
+
   */
   return value;
 } /* ecma_pack_code_internal_property_value */
@@ -76,18 +95,31 @@ ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
 static vm_instr_counter_t
 ecma_unpack_code_internal_property_value (uint32_t value, /**< packed value */
                                           bool* out_is_strict_p, /**< out: is code strict? */
-                                          bool* out_do_instantiate_args_obj_p) /**< should an Arguments object be
+                                          bool* out_do_instantiate_args_obj_p, /**< should an Arguments object be
                                                                                 *   instantiated for the code */
+                                          bool* out_is_arguments_moved_to_regs_p, /**< values of the function's
+                                                                                   *   arguments are placed
+                                                                                   *   on registers */
+                                          bool* out_is_no_lex_env_p) /**< the function needs no lexical environment */
 {
   JERRY_ASSERT (out_is_strict_p != NULL);
   JERRY_ASSERT (out_do_instantiate_args_obj_p != NULL);
+  JERRY_ASSERT (out_is_arguments_moved_to_regs_p != NULL);
+  JERRY_ASSERT (out_is_no_lex_env_p != NULL);
 
   const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
   const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
+  const uint32_t is_arguments_moved_to_regs_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 3);
+  const uint32_t is_no_lex_env_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 4);
 
   *out_is_strict_p = ((value & (1u << is_strict_bit_offset)) != 0);
   *out_do_instantiate_args_obj_p = ((value & (1u << do_instantiate_arguments_object_bit_offset)) != 0);
-  value &= ~((1u << is_strict_bit_offset) | (1u << do_instantiate_arguments_object_bit_offset));
+  *out_is_arguments_moved_to_regs_p = ((value & (1u << is_arguments_moved_to_regs_bit_offset)) != 0);
+  *out_is_no_lex_env_p = ((value & (1u << is_no_lex_env_bit_offset)) != 0);
+  value &= ~((1u << is_strict_bit_offset)
+             | (1u << do_instantiate_arguments_object_bit_offset)
+             | (1u << is_arguments_moved_to_regs_bit_offset)
+             | (1u << is_no_lex_env_bit_offset));
 
   return (vm_instr_counter_t) value;
 } /* ecma_unpack_code_internal_property_value */
@@ -213,11 +245,44 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
                                                                                        *     by caller after passing it
                                                                                        *     to the routine */
                                 ecma_object_t *scope_p, /**< function's scope */
-                                bool is_strict, /**< 'strict' flag */
-                                bool do_instantiate_arguments_object, /**< should an Arguments object be instantiated
-                                                                       *   for the function object upon call */
+                                bool is_decl_in_strict_mode, /**< is function declared in strict mode code? */
                                 const cbc_compiled_code_t *bytecode_data_p) /**< byte-code array */
 {
+  bool is_strict_mode_code = is_decl_in_strict_mode;
+  bool do_instantiate_arguments_object = true;
+  bool is_arguments_moved_to_regs = false;
+  bool is_no_lex_env = false;
+
+// FIXME
+//  vm_instr_counter_t instr_pos = first_instr_pos;
+//  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (bytecode_header_p, instr_pos++);
+  vm_instr_counter_t instr_pos = 0;
+  opcode_scope_code_flags_t scope_flags = 0;
+
+  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT)
+  {
+    is_strict_mode_code = true;
+  }
+
+  if ((scope_flags & OPCODE_SCOPE_CODE_FLAGS_NOT_REF_ARGUMENTS_IDENTIFIER)
+      && (scope_flags & OPCODE_SCOPE_CODE_FLAGS_NOT_REF_EVAL_IDENTIFIER))
+  {
+    /* the code doesn't use 'arguments' identifier
+     * and doesn't perform direct call to eval,
+     * so Arguments object can't be referenced */
+    do_instantiate_arguments_object = false;
+  }
+
+//  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_ARGUMENTS_ON_REGISTERS)
+//  {
+//    is_arguments_moved_to_regs = true;
+//  }
+
+//  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_NO_LEX_ENV)
+//  {
+//    is_no_lex_env = true;
+//  }
+
   // 1., 4., 13.
   ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
 
@@ -244,18 +309,24 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
   ECMA_SET_POINTER (scope_prop_p->u.internal_property.value, scope_p);
 
   // 10., 11.
-  ecma_property_t *formal_parameters_prop_p = ecma_create_internal_property (f,
-                                                                             ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-  ECMA_SET_POINTER (formal_parameters_prop_p->u.internal_property.value, formal_params_collection_p);
+  if (formal_params_collection_p != NULL
+      && formal_params_collection_p->unit_number != 0)
+  {
+    ecma_property_t *formal_params_prop_p = ecma_create_internal_property (f,
+                                                                           ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
+    ECMA_SET_POINTER (formal_params_prop_p->u.internal_property.value, formal_params_collection_p);
+  }
 
   // 12.
   ecma_property_t *bytecode_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
 
   ecma_property_t *code_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
-//  code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict,
+//  code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict_mode_code,
 //                                                                                   do_instantiate_arguments_object,
-//                                                                                   first_instr_pos);
+//                                                                                   is_arguments_moved_to_regs,
+//                                                                                   is_no_lex_env,
+//                                                                                   instr_pos);
 
   // 14.
   // 15.
@@ -270,7 +341,7 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
    */
 
   // 19.
-  if (is_strict)
+  if (is_strict_mode_code)
   {
     ecma_object_t *thrower_p = ecma_builtin_get (ECMA_BUILTIN_ID_TYPE_ERROR_THROWER);
 
@@ -310,6 +381,44 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
 } /* ecma_op_create_function_object */
 
 /**
+ * List names of a Function object's lazy instantiated properties,
+ * adding them to corresponding string collections
+ *
+ * See also:
+ *          ecma_op_function_try_lazy_instantiate_property
+ */
+void
+ecma_op_function_list_lazy_property_names (bool separate_enumerable, /**< true - list enumerable properties into
+                                                                      *          main collection and non-enumerable
+                                                                      *          to collection of 'skipped
+                                                                      *          non-enumerable' properties,
+                                                                      *   false - list all properties into main
+                                                                      *           collection.
+                                                                      */
+                                           ecma_collection_header_t *main_collection_p, /**< 'main' collection */
+                                           ecma_collection_header_t *non_enum_collection_p) /**< skipped
+                                                                                             *   'non-enumerable'
+                                                                                             *   collection */
+{
+  ecma_collection_header_t *for_enumerable_p = main_collection_p;
+  (void) for_enumerable_p;
+
+  ecma_collection_header_t *for_non_enumerable_p = separate_enumerable ? non_enum_collection_p : main_collection_p;
+
+  ecma_string_t *name_p;
+
+  /* 'length' property is non-enumerable (ECMA-262 v5, 13.2.5) */
+  name_p = ecma_get_magic_string (LIT_MAGIC_STRING_LENGTH);
+  ecma_append_to_values_collection (for_non_enumerable_p, ecma_make_string_value (name_p), true);
+  ecma_deref_ecma_string (name_p);
+
+  /* 'prototype' property is non-enumerable (ECMA-262 v5, 13.2.18) */
+  name_p = ecma_get_magic_string (LIT_MAGIC_STRING_PROTOTYPE);
+  ecma_append_to_values_collection (for_non_enumerable_p, ecma_make_string_value (name_p), true);
+  ecma_deref_ecma_string (name_p);
+} /* ecma_op_function_list_lazy_property_names */
+
+/**
  * Lazy instantation of non-builtin ecma function object's properties
  *
  * Warning:
@@ -339,12 +448,40 @@ ecma_op_function_try_lazy_instantiate_property (ecma_object_t *obj_p, /**< the f
     // 14
     ecma_number_t *len_p = ecma_alloc_number ();
 
-    ecma_property_t *formal_parameters_prop_p = ecma_get_internal_property (obj_p,
-                                                                            ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-    ecma_collection_header_t *formal_parameters_p;
-    formal_parameters_p = ECMA_GET_POINTER (ecma_collection_header_t,
-                                            formal_parameters_prop_p->u.internal_property.value);
-    *len_p = ecma_uint32_to_number (formal_parameters_p != NULL ? formal_parameters_p->unit_number : 0);
+    ecma_property_t *formal_parameters_prop_p = ecma_find_internal_property (obj_p,
+                                                                             ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
+    if (formal_parameters_prop_p == NULL)
+    {
+      ecma_property_t *bytecode_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
+      ecma_property_t *code_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
+
+      uint32_t code_prop_value = code_prop_p->u.internal_property.value;
+
+      bool is_strict;
+      bool do_instantiate_args_obj;
+      bool is_arguments_moved_to_regs;
+      bool is_no_lex_env;
+
+/*
+      const bytecode_data_header_t *bytecode_header_p;
+      bytecode_header_p = MEM_CP_GET_POINTER (const bytecode_data_header_t, bytecode_prop_p->u.internal_property.value);
+
+      vm_instr_counter_t code_first_instr_pos = ecma_unpack_code_internal_property_value (code_prop_value,
+                                                                                          &is_strict,
+                                                                                          &do_instantiate_args_obj,
+                                                                                          &is_arguments_moved_to_regs,
+                                                                                          &is_no_lex_env);
+
+      *len_p = vm_get_scope_args_num (bytecode_header_p, code_first_instr_pos);
+*/
+    }
+    else
+    {
+      ecma_collection_header_t *formal_parameters_p;
+      formal_parameters_p = ECMA_GET_NON_NULL_POINTER (ecma_collection_header_t,
+                                                       formal_parameters_prop_p->u.internal_property.value);
+      *len_p = ecma_uint32_to_number (formal_parameters_p->unit_number);
+    }
 
     // 15
     ecma_property_t *length_prop_p = ecma_create_named_data_property (obj_p,
@@ -375,26 +512,15 @@ ecma_op_function_try_lazy_instantiate_property (ecma_object_t *obj_p, /**< the f
     ecma_object_t *proto_p = ecma_op_create_object_object_noarg ();
 
     // 17.
-    ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-    {
-      prop_desc.is_value_defined = true;
-      prop_desc.value = ecma_make_object_value (obj_p);
-
-      prop_desc.is_writable_defined = true;
-      prop_desc.is_writable = true;
-
-      prop_desc.is_enumerable_defined = true;
-      prop_desc.is_enumerable = false;
-
-      prop_desc.is_configurable_defined = true;
-      prop_desc.is_configurable = true;
-    }
-
     ecma_string_t *magic_string_constructor_p = ecma_get_magic_string (LIT_MAGIC_STRING_CONSTRUCTOR);
-    ecma_op_object_define_own_property (proto_p,
-                                        magic_string_constructor_p,
-                                        &prop_desc,
-                                        false);
+    ecma_builtin_helper_def_prop (proto_p,
+                                  magic_string_constructor_p,
+                                  ecma_make_object_value (obj_p),
+                                  true, /* Writable */
+                                  false, /* Enumerable */
+                                  true, /* Configurable */
+                                  false); /* Failure handling */
+
     ecma_deref_ecma_string (magic_string_constructor_p);
 
     // 18.
@@ -483,26 +609,15 @@ ecma_op_create_external_function_object (ecma_external_pointer_t code_p) /**< po
                                                            (ecma_external_pointer_t) code_p);
   JERRY_ASSERT (is_created);
 
-  ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
-  {
-    prop_desc.is_value_defined = true;
-    prop_desc.value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-
-    prop_desc.is_writable_defined = true;
-    prop_desc.is_writable = true;
-
-    prop_desc.is_enumerable_defined = true;
-    prop_desc.is_enumerable = false;
-
-    prop_desc.is_configurable_defined = true;
-    prop_desc.is_configurable = false;
-  }
-
   ecma_string_t *magic_string_prototype_p = ecma_get_magic_string (LIT_MAGIC_STRING_PROTOTYPE);
-  ecma_op_object_define_own_property (function_obj_p,
-                                      magic_string_prototype_p,
-                                      &prop_desc,
-                                      false);
+  ecma_builtin_helper_def_prop (function_obj_p,
+                                magic_string_prototype_p,
+                                ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED),
+                                true, /* Writable */
+                                false, /* Enumerable */
+                                false, /* Configurable */
+                                false); /* Failure handling */
+
   ecma_deref_ecma_string (magic_string_prototype_p);
 
   return function_obj_p;
@@ -527,14 +642,16 @@ ecma_function_call_setup_args_variables (ecma_object_t *func_obj_p, /**< Functio
                                                                                 *   Arguments object should be
                                                                                 *   instantiated */
 {
-  ecma_property_t *formal_parameters_prop_p = ecma_get_internal_property (func_obj_p,
-                                                                          ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-  ecma_collection_header_t *formal_parameters_p;
-  formal_parameters_p = ECMA_GET_POINTER (ecma_collection_header_t,
-                                          formal_parameters_prop_p->u.internal_property.value);
+  ecma_collection_header_t *formal_parameters_p = NULL;
 
-  if (formal_parameters_p != NULL)
+  ecma_property_t *formal_parameters_prop_p = ecma_find_internal_property (func_obj_p,
+                                                                           ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
+
+  if (formal_parameters_prop_p != NULL)
   {
+    formal_parameters_p = ECMA_GET_POINTER (ecma_collection_header_t,
+                                            formal_parameters_prop_p->u.internal_property.value);
+
     ecma_length_t formal_parameters_count = formal_parameters_p->unit_number;
 
     ecma_collection_iterator_t arguments_iterator, formal_params_iterator;
@@ -720,7 +837,8 @@ ecma_op_function_has_instance (ecma_object_t *func_obj_p, /**< Function object *
 
     ecma_deref_ecma_string (prototype_magic_string_p);
   }
-  else if (ecma_get_object_type (func_obj_p) == ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION)
+  else if (ecma_get_object_type (func_obj_p) == ECMA_OBJECT_TYPE_BUILT_IN_FUNCTION ||
+           ecma_get_object_type (func_obj_p) == ECMA_OBJECT_TYPE_EXTERNAL_FUNCTION)
   {
     ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
   }
@@ -822,11 +940,16 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       // 8.
       bool is_strict;
       bool do_instantiate_args_obj;
+      bool is_arguments_moved_to_regs;
+      bool is_no_lex_env;
+
       const cbc_compiled_code_t *bytecode_data_p;
       bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
       vm_instr_counter_t code_first_instr_pos = ecma_unpack_code_internal_property_value (code_prop_value,
                                                                                           &is_strict,
-                                                                                          &do_instantiate_args_obj);
+                                                                                          &do_instantiate_args_obj,
+                                                                                          &is_arguments_moved_to_regs,
+                                                                                          &is_no_lex_env);
 
       ecma_value_t this_binding;
       // 1.
@@ -850,36 +973,73 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       }
 
       // 5.
-      ecma_object_t *local_env_p = ecma_create_decl_lex_env (scope_p);
-
-      // 9.
-      ECMA_TRY_CATCH (args_var_declaration_ret,
-                      ecma_function_call_setup_args_variables (func_obj_p,
-                                                               local_env_p,
-                                                               arg_collection_p,
-                                                               is_strict,
-                                                               do_instantiate_args_obj),
-                      ret_value);
-
-      ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
-                                                            code_first_instr_pos,
-                                                            this_binding,
-                                                            local_env_p,
-                                                            is_strict,
-                                                            false);
-
-      if (ecma_is_completion_value_return (completion))
+      ecma_object_t *local_env_p;
+      if (is_no_lex_env)
       {
-        ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
+        local_env_p = scope_p;
       }
       else
       {
-        ret_value = completion;
+        local_env_p = ecma_create_decl_lex_env (scope_p);
       }
 
-      ECMA_FINALIZE (args_var_declaration_ret);
+      if (is_arguments_moved_to_regs)
+      {
+        ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
+                                                              code_first_instr_pos,
+                                                              this_binding,
+                                                              local_env_p,
+                                                              is_strict,
+                                                              false);
 
-      ecma_deref_object (local_env_p);
+        if (ecma_is_completion_value_return (completion))
+        {
+          ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
+        }
+        else
+        {
+          ret_value = completion;
+        }
+      }
+      else
+      {
+        // 9.
+        ECMA_TRY_CATCH (args_var_declaration_ret,
+                        ecma_function_call_setup_args_variables (func_obj_p,
+                                                                 local_env_p,
+                                                                 arg_collection_p,
+                                                                 is_strict,
+                                                                 do_instantiate_args_obj),
+                        ret_value);
+
+        ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
+                                                              code_first_instr_pos,
+                                                              this_binding,
+                                                              local_env_p,
+                                                              is_strict,
+                                                              false);
+
+        if (ecma_is_completion_value_return (completion))
+        {
+          ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
+        }
+        else
+        {
+          ret_value = completion;
+        }
+
+        ECMA_FINALIZE (args_var_declaration_ret);
+      }
+
+      if (is_no_lex_env)
+      {
+        /* do nothing */
+      }
+      else
+      {
+        ecma_deref_object (local_env_p);
+      }
+
       ecma_free_value (this_binding, true);
     }
   }
@@ -1111,18 +1271,15 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
                                                                                      *     be changed / used / freed
                                                                                      *     by caller after passing it
                                                                                      *     to the routine */
-                              bool is_strict, /**< flag indicating if function is declared in strict mode code */
-                              bool do_instantiate_arguments_object, /**< flag, indicating whether an Arguments object
-                                                                     *   should be instantiated for the function object
-                                                                     *   upon call */
+                              bool is_decl_in_strict_mode, /**< flag, indicating if function is
+                                                            *   declared in strict mode code */
                               bool is_configurable_bindings) /**< flag indicating whether function
                                                               *   is declared in eval code */
 {
   // b.
   ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
                                                               lex_env_p,
-                                                              is_strict,
-                                                              do_instantiate_arguments_object,
+                                                              is_decl_in_strict_mode,
                                                               bytecode_data_p);
 
   // c.
@@ -1148,25 +1305,15 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
 
     if (ecma_is_property_configurable (existing_prop_p))
     {
-      ecma_property_descriptor_t property_desc = ecma_make_empty_property_descriptor ();
-      {
-        property_desc.is_value_defined = true;
-        property_desc.value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+      ecma_completion_value_t completion;
+      completion = ecma_builtin_helper_def_prop (glob_obj_p,
+                                                 function_name_p,
+                                                 ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED),
+                                                 true, /* Writable */
+                                                 true, /* Enumerable */
+                                                 is_configurable_bindings, /* Configurable */
+                                                 true); /* Failure handling */
 
-        property_desc.is_writable_defined = true;
-        property_desc.is_writable = true;
-
-        property_desc.is_enumerable_defined = true;
-        property_desc.is_enumerable = true;
-
-        property_desc.is_configurable_defined = true;
-        property_desc.is_configurable = is_configurable_bindings;
-      }
-
-      ecma_completion_value_t completion = ecma_op_object_define_own_property (glob_obj_p,
-                                                                               function_name_p,
-                                                                               &property_desc,
-                                                                               true);
       JERRY_ASSERT (ecma_is_completion_value_normal_true (completion));
     }
     else if (existing_prop_p->type == ECMA_PROPERTY_NAMEDACCESSOR)
@@ -1193,7 +1340,7 @@ ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment
     ret_value = ecma_op_set_mutable_binding (lex_env_p,
                                              function_name_p,
                                              ecma_make_object_value (func_obj_p),
-                                             is_strict);
+                                             is_decl_in_strict_mode);
   }
   else
   {

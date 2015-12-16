@@ -54,25 +54,18 @@ typedef uint16_t mem_cpointer_t;
 #define MEM_CP_MASK ((1ull << MEM_CP_WIDTH) - 1)
 
 /**
- * Heap offset value mask
- */
-#define MEM_HEAP_OFFSET_MASK ((1ull << MEM_HEAP_OFFSET_LOG) - 1)
-
-/**
  * Severity of a 'try give memory back' request
  *
  * The request are posted sequentially beginning from
- * low to critical until enough memory is freed.
+ * low to high until enough memory is freed.
  *
- * If not enough memory is freed upon a critical request
+ * If not enough memory is freed upon a high request
  * then the engine is shut down with ERR_OUT_OF_MEMORY.
  */
 typedef enum
 {
   MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_LOW, /* 'low' severity */
-  MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_MEDIUM, /* 'medium' severity */
   MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_HIGH, /* 'high' severity */
-  MEM_TRY_GIVE_MEMORY_BACK_SEVERITY_CRITICAL /* 'critical' severity */
 } mem_try_give_memory_back_severity_t;
 
 /**

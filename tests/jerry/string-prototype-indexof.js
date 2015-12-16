@@ -43,12 +43,13 @@ assert("w2\uFFA2A".indexOf("A") === 3);
 
 assert("w2\u1D306A".indexOf("A") === 4);
 
-// check surrogate pairs
 assert("\uD834\uDF06".indexOf("\uDF06") === 1);
 
 assert("\uD834\uDF06w2\u1D306D".indexOf("D") === 6);
 
 assert("\ud800\dc00".indexOf("\dc00") === 1);
+
+assert("\u8000\u0700\u8000\u8000A".indexOf("A", 3) === 4);
 
 // check prefix search
 assert("aaaabaaa".indexOf("aaaba") === 1);
@@ -85,7 +86,7 @@ assert("Hello world, welcome to the universe.".indexOf("welcome", undefined_var)
 // check booleans
 assert("true".indexOf(true, false) === 0);
 
-// check this is undefined
+// check coercible - undefined
 try {
   String.prototype.indexOf.call(undefined);
   assert(false);
@@ -93,7 +94,7 @@ try {
   assert(e instanceof TypeError);
 }
 
-// check this is null
+// check coercible - null
 try {
   String.prototype.indexOf.call(null);
   assert(false);
@@ -101,24 +102,9 @@ try {
   assert(e instanceof TypeError);
 }
 
-// check coercible - undefined
-try {
-  assert(true.indexOf());
-  assert(false);
-} catch (e) {
-  assert(e instanceof TypeError);
-}
-
-// check coercible - null
-try {
-  assert(isNaN(String.prototype.indexOf.call(null, 0)));
-  assert(false);
-} catch (e) {
-  assert(e instanceof TypeError);
-}
-
 // check coercible - Boolean
 assert(String.prototype.indexOf.call(true, "e") === 3);
+assert(String.prototype.indexOf.call(false, "e") === 4);
 
 // check coercible - Object
 var test_object = {firstName:"John", lastName:"Doe"};
