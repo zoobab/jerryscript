@@ -72,11 +72,7 @@ void
 vm_init (const cbc_compiled_code_t *program_p, /**< pointer to byte-code data */
          bool dump_mem_stats) /** dump per-instruction memory usage change statistics */
 {
-#ifdef MEM_STATS
-  interp_mem_stats_enabled = dump_mem_stats;
-#else /* MEM_STATS */
   JERRY_ASSERT (!dump_mem_stats);
-#endif /* !MEM_STATS */
 
   JERRY_ASSERT (__program == NULL);
 
@@ -139,10 +135,6 @@ vm_run_global (void)
   jerry_completion_code_t ret_code;
 
   JERRY_ASSERT (__program != NULL);
-
-#ifdef MEM_STATS
-  interp_mem_stats_print_legend ();
-#endif /* MEM_STATS */
 
   bool is_strict = false;
   vm_instr_counter_t start_pos = 0;

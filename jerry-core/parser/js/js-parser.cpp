@@ -431,7 +431,7 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
     if (literal_p->type == LEXER_IDENT_LITERAL
         || literal_p->type == LEXER_STRING_LITERAL)
     {
-      literal_t lit = lit_create_literal_from_utf8_string (literal_p->u.char_p, literal_p->length);
+      literal_t lit = lit_find_or_create_literal_from_utf8_string (literal_p->u.char_p, literal_p->length);
 #ifdef PARSER_DEBUG
       if (literal_p->length > 0 && !context_p->is_show_opcodes)
       {
@@ -1740,7 +1740,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 #endif /* PARSER_DEBUG */
 
   parser_cbc_stream_free (&context_p->byte_code);
-//  parser_free_literals (&context_p->literal_pool);
+  parser_list_free (&context_p->literal_pool);
 
   /* Restore private part of the context. */
 
