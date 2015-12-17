@@ -363,7 +363,16 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           else
           {
             /* Object construction. */
-            JERRY_ASSERT (false);
+            ecma_collection_header_t *formal_params_collection_p = ecma_new_strings_collection (NULL, 0);
+            cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                         literal_start_p[literal_index]);
+
+            ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
+                                                                        frame_ctx_p->lex_env_p,
+                                                                        frame_ctx_p->is_strict,
+                                                                        bytecode_p);
+            left_value = ecma_make_object_value (func_obj_p);
+            free_values = VM_FREE_LEFT_VALUE;
           }
           break;
         }
@@ -417,7 +426,16 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
           else
           {
             /* Object construction. */
-            JERRY_ASSERT (false);
+            ecma_collection_header_t *formal_params_collection_p = ecma_new_strings_collection (NULL, 0);
+            cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                         literal_start_p[literal_index]);
+
+            ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
+                                                                        frame_ctx_p->lex_env_p,
+                                                                        frame_ctx_p->is_strict,
+                                                                        bytecode_p);
+            right_value = ecma_make_object_value (func_obj_p);
+            free_values = VM_FREE_RIGHT_VALUE;
           }
           break;
         }

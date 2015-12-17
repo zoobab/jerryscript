@@ -451,6 +451,10 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
 
       literal_pool_p[literal_p->index] = ecma_make_string_value (ecma_new_ecma_string_from_lit_cp (lit_cpointer_t::compress(lit)));
     }
+    else if (literal_p->type == LEXER_FUNCTION_LITERAL)
+    {
+       ECMA_SET_POINTER (literal_pool_p[literal_p->index], literal_p->u.function_p);
+    }
     else
     {
       literal_pool_p[literal_p->index] = literal_p->u.value;

@@ -31,7 +31,7 @@ extern bool ecma_is_constructor (ecma_value_t);
 
 extern ecma_object_t *
 ecma_op_create_function_object (ecma_collection_header_t *, ecma_object_t *,
-                                bool, bool, const cbc_compiled_code_t *);
+                                bool, const cbc_compiled_code_t *);
 
 extern void
 ecma_op_function_list_lazy_property_names (bool,

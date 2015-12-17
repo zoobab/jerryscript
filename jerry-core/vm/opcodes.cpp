@@ -26,6 +26,47 @@
 #include "vm-defines.h"
 
 /**
+ * 'Function declaration' opcode handler.
+ *
+ * @return completion value
+ *         returned value must be freed with ecma_free_completion_value.
+ */
+ecma_completion_value_t
+opfunc_func_decl_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
+                    ecma_string_t *func_name_str_p, /**< function name */
+                    const ecma_length_t args_num) /**< number of arguments */
+{
+  ecma_collection_header_t *formal_params_collection_p;
+
+  if (args_num != 0)
+  {
+    formal_params_collection_p = ecma_new_strings_collection (NULL, 0);
+
+    for (int i = 0; i < args_num; i++)
+    {
+      ecma_value_t arg_name_value = 0; // FIXME
+
+      ecma_append_to_values_collection (formal_params_collection_p, arg_name_value, false);
+    }
+  }
+  else
+  {
+    formal_params_collection_p = NULL;
+  }
+
+  const bool is_configurable_bindings = frame_ctx_p->is_eval_code;
+
+  ecma_completion_value_t ret_value = ecma_op_function_declaration (frame_ctx_p->lex_env_p,
+                                                                    func_name_str_p,
+                                                                    frame_ctx_p->bytecode_header_p,
+                                                                    formal_params_collection_p,
+                                                                    frame_ctx_p->is_strict,
+                                                                    is_configurable_bindings);
+
+  return ret_value;
+} /* opfunc_func_decl_n */
+
+/**
  * 'Function call' opcode handler.
  *
  * See also: ECMA-262 v5, 11.2.3
