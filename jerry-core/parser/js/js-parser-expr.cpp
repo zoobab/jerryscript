@@ -721,8 +721,7 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
         {
           PARSER_ASSERT (CBC_ARGS_EQ (opcode + CBC_BINARY_LVALUE_WITH_IDENT_LITERAL,
                                       CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2));
-          context_p->last_cbc.u.value = context_p->last_cbc.literal_index;
-          context_p->last_cbc.literal_index = parser_stack_pop_uint16 (context_p);
+          context_p->last_cbc.u.value = parser_stack_pop_uint16 (context_p);
           context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_BINARY_LVALUE_WITH_IDENT_LITERAL);
           continue;
         }
