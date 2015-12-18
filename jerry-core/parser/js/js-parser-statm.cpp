@@ -743,7 +743,7 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
         opcode = CBC_ASSIGN;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
       }
-      else if (opcode == CBC_PROP_STRING_GET)
+      else if (opcode == CBC_PROP_LITERAL_GET)
       {
         opcode = CBC_ASSIGN_PROP_STRING;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;

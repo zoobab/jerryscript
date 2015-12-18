@@ -21,6 +21,4 @@
 #include "vm-defines.h"
 
 bool vm_is_reg_variable (ecma_value_t);
-ecma_completion_value_t get_variable_value (vm_frame_ctx_t *, ecma_value_t, bool);
-ecma_completion_value_t set_variable_value (vm_frame_ctx_t *, ecma_string_t *var_name_str_p, ecma_value_t);
 #endif /* OPCODES_ECMA_SUPPORT_H */

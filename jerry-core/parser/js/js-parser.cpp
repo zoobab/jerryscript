@@ -797,7 +797,7 @@ parse_print_define_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled cod
 
   PARSER_READ_IDENTIFIER_INDEX (identifier_end);
 
-  printf(" from: %d to: %d\n", identifier_index, identifier_end);
+  printf (" from: %d to: %d\n", identifier_index, identifier_end);
 
   while (identifier_index <= identifier_end)
   {
@@ -828,7 +828,7 @@ parse_print_initialize_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled
   PARSER_READ_IDENTIFIER_INDEX (identifier_index);
   PARSER_READ_IDENTIFIER_INDEX (identifier_end);
 
-  printf(" from: %d to: %d\n", identifier_index, identifier_end);
+  printf (" from: %d to: %d\n", identifier_index, identifier_end);
 
   while (identifier_index <= identifier_end)
   {
@@ -883,7 +883,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
   {
     printf (",strict_mode");
   }
-  printf("]\n");
+  printf ("]\n");
 
   printf ("  Argument range end: %d\n",
           (int) compiled_code_p->argument_end);
@@ -1670,7 +1670,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
       }
 
       context_p->lit_object.literal_p->status_flags = LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED;
-      context_p->lit_object.literal_p->init_index = PARSE_ENCODE_FUNCTION_ARG(context_p->argument_count);
+      context_p->lit_object.literal_p->init_index = PARSE_ENCODE_FUNCTION_ARG (context_p->argument_count);
 
       /* Same as literal_count + 1 > PARSER_MAXIMUM_NUMBER_OF_REGISTERS. */
       context_p->argument_count++;

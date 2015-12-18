@@ -51,7 +51,6 @@ resolve_ident (ecma_value_t ident, vm_frame_ctx_t *frame_ctx_p)
 
   JERRY_ASSERT (ref_base_lex_env_p != NULL);
 
-  frame_ctx_p->ref_base_lex_env_p = ref_base_lex_env_p;
   return ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
                                          name_p,
                                          frame_ctx_p->is_strict);
@@ -129,7 +128,6 @@ vm_run_global (void)
   JERRY_ASSERT (__program != NULL);
 
   bool is_strict = false;
-  vm_instr_counter_t start_pos = 0;
 
   opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (__program);
 
@@ -141,12 +139,11 @@ vm_run_global (void)
   ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
   ecma_object_t *lex_env_p = ecma_get_global_environment ();
 
-  ecma_completion_value_t completion = vm_run_from_pos (__program,
-                                                        start_pos,
-                                                        ecma_make_object_value (glob_obj_p),
-                                                        lex_env_p,
-                                                        is_strict,
-                                                        false);
+  ecma_completion_value_t completion = vm_run (__program,
+                                               ecma_make_object_value (glob_obj_p),
+                                               lex_env_p,
+                                               is_strict,
+                                               false);
 
   if (ecma_is_completion_value_return (completion))
   {
@@ -178,7 +175,6 @@ ecma_completion_value_t
 vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data header */
              bool is_direct) /**< is eval called in direct mode? */
 {
-  vm_instr_counter_t first_instr_index = 0u;
   opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (bytecode_data_p);
   bool is_strict = ((scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT) != 0);
   //ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
@@ -206,12 +202,11 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
     lex_env_p = strict_lex_env_p;
   }
 
-  ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
-                                                        first_instr_index,
-                                                        this_binding,
-                                                        lex_env_p,
-                                                        is_strict,
-                                                        true);
+  ecma_completion_value_t completion = vm_run (bytecode_data_p,
+                                               this_binding,
+                                               lex_env_p,
+                                               is_strict,
+                                               true);
 
   if (ecma_is_completion_value_return (completion))
   {
@@ -234,25 +229,19 @@ enum
   VM_FREE_RIGHT_VALUE = 2u,
 };
 
+/**
+ * Run initializer byte codes.
+ *
+ * @return completion value
+ */
 ecma_completion_value_t
-vm_loop (vm_frame_ctx_t *frame_ctx_p)
+vm_init_loop (vm_frame_ctx_t *frame_ctx_p)
 {
-  // FIXME: Implement this
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
   const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
-  cbc_opcode_t opcode;
-  uint8_t *byte_code_start_p;
-  uint8_t *byte_code_p;
+  uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
   uint16_t encoding_limit;
   uint16_t encoding_delta;
-  ecma_value_t *literal_start_p;
-  size_t branch_offset = 0;
-  ecma_value_t left_value = 0;
-  ecma_value_t right_value = 0;
-  ecma_value_t result;
-  uint8_t byte_arg = 0u;
-  uint8_t free_values = 0u;
+  ecma_value_t *literal_start_p = VM_GET_LITERAL_START_P (bytecode_header_p);
 
   /* Prepare. */
   if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
@@ -266,53 +255,182 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
     encoding_delta = 0x8000;
   }
 
-  literal_start_p = (ecma_value_t *) (((uint8_t *) bytecode_header_p) + sizeof (cbc_compiled_code_t));
-  byte_code_p = byte_code_start_p = (uint8_t *) (literal_start_p + bytecode_header_p->literal_end);
+  while (true)
+  {
+    switch (*byte_code_p)
+    {
+      case CBC_DEFINE_VARS:
+      {
+        uint32_t literal_index_end;
+        uint32_t literal_index = frame_ctx_p->bytecode_header_p->register_end;
+
+        byte_code_p++;
+        literal_index_end = *byte_code_p++;
+        if (literal_index_end >= encoding_limit)
+        {
+          literal_index_end = ((literal_index_end << 8) | *byte_code_p++) - encoding_delta;
+        }
+
+        while (literal_index <= literal_index_end)
+        {
+          vm_var_decl (frame_ctx_p, literal_start_p[literal_index]);
+          literal_index++;
+        }
+        break;
+      }
+
+      case CBC_INITIALIZE_VAR:
+      {
+        uint32_t literal_index;
+        uint32_t value_index;
+
+        byte_code_p++;
+        literal_index = *byte_code_p++;
+        if (literal_index >= encoding_limit)
+        {
+          literal_index = ((literal_index << 8) | *byte_code_p++) - encoding_delta;
+        }
+
+        vm_var_decl (frame_ctx_p, literal_start_p[literal_index]);
+
+        value_index = *byte_code_p++;
+        if (value_index >= encoding_limit)
+        {
+          value_index = ((value_index << 8) | *byte_code_p++) - encoding_delta;
+        }
+        break;
+      }
+
+      case CBC_INITIALIZE_VARS:
+      {
+        uint32_t literal_index;
+        uint32_t literal_index_end;
+
+        byte_code_p++;
+        literal_index = *byte_code_p++;
+        if (literal_index >= encoding_limit)
+        {
+          literal_index = ((literal_index << 8) | *byte_code_p++) - encoding_delta;
+        }
+
+        literal_index_end = *byte_code_p++;
+        if (literal_index_end >= encoding_limit)
+        {
+          literal_index_end = ((literal_index_end << 8) | *byte_code_p++) - encoding_delta;
+        }
+
+        while (literal_index <= literal_index_end)
+        {
+          uint32_t value_index;
+
+          vm_var_decl (frame_ctx_p, literal_start_p[literal_index]);
+
+          value_index = *byte_code_p++;
+          if (literal_index >= encoding_limit)
+          {
+            value_index = ((value_index << 8) | *byte_code_p++) - encoding_delta;
+          }
+
+          literal_index++;
+        }
+        break;
+      }
+
+      default:
+      {
+        frame_ctx_p->byte_code_p = byte_code_p;
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+      }
+    }
+  }
+}
+
+/**
+ * Run generic byte code.
+ *
+ * @return completion value
+ */
+ecma_completion_value_t
+vm_loop (vm_frame_ctx_t *frame_ctx_p)
+{
+  // FIXME: Implement this
+  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
+  uint16_t encoding_limit;
+  uint16_t encoding_delta;
+  ecma_value_t *literal_start_p = VM_GET_LITERAL_START_P (bytecode_header_p);
+  int32_t branch_offset = 0;
+  uint8_t byte_arg = 0u;
+  ecma_value_t left_value = 0;
+  ecma_value_t right_value = 0;
+  ecma_value_t result;
+
+  /* Prepare. */
+  if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
+  {
+    encoding_limit = 255;
+    encoding_delta = 0xfe01;
+  }
+  else
+  {
+    encoding_limit = 128;
+    encoding_delta = 0x8000;
+  }
 
   /* Start execution. */
   while (true)
   {
+    uint8_t opcode = *byte_code_p;
     uint32_t decoded_opcode;
+    uint8_t *byte_code_start_p = byte_code_p;
+    uint8_t opcode_flags;
+    uint8_t flags;
+    uint8_t free_values = 0u;
 
-    opcode = (cbc_opcode_t) *byte_code_p;
     byte_code_p++;
 
     if (opcode == CBC_EXT_OPCODE) {
-      cbc_ext_opcode_t ext_opcode = (cbc_ext_opcode_t) *byte_code_p;
+      opcode = *byte_code_p;
       byte_code_p++;
-      decoded_opcode = vm_decode_table[ext_opcode];
+      opcode_flags = cbc_ext_flags[opcode];
+      decoded_opcode = vm_decode_table[opcode];
     } else {
+      flags = cbc_flags[opcode];
       decoded_opcode = vm_decode_table[opcode];
     }
 
-    if (decoded_opcode & (VM_OC_BRANCH_OPERAND_MASK << VM_OC_BRANCH_OPERAND_SHIFT))
+    if (flags & CBC_HAS_BRANCH_ARG)
     {
       branch_offset = 0;
-      switch (VM_OC_BRANCH_OPERAND (decoded_opcode))
+      switch (CBC_BRANCH_OFFSET_LENGTH (opcode))
       {
-        case VM_OC_BRANCH_3:
+        case 3:
         {
           branch_offset = *(byte_code_p++);
+          /* FALLTHRU */
         }
-        case VM_OC_BRANCH_2:
+        case 2:
         {
           branch_offset <<= 8;
           branch_offset |= *(byte_code_p++);
+          /* FALLTHRU */
         }
-        case VM_OC_BRANCH_1:
+        default:
         {
+          JERRY_ASSERT (CBC_BRANCH_OFFSET_LENGTH (opcode) > 0);
           branch_offset <<= 8;
           branch_offset |= *(byte_code_p++);
           break;
         }
-        default:
-        {
-          JERRY_UNREACHABLE ();
-        }
+      }
+      if (CBC_BRANCH_IS_BACKWARD (flags))
+      {
+        branch_offset = -branch_offset;
       }
     }
 
-    free_values = 0;
     if (decoded_opcode & (VM_OC_LEFT_OPERAND_MASK << VM_OC_LEFT_OPERAND_SHIFT))
     {
       switch (VM_OC_LEFT_OPERAND (decoded_opcode))
@@ -448,6 +566,11 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
     switch (VM_OC_GROUP (decoded_opcode))
     {
+      case VM_OC_GROUP_NONE:
+      {
+        JERRY_UNREACHABLE ();
+        break;
+      }
       case VM_OC_GROUP_ASSIGN:
       {
         break;
@@ -599,6 +722,31 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       {
         *(vm_stack_top_p++) = ecma_copy_value (left_value, true);
         *(vm_stack_top_p++) = ecma_copy_value (right_value, true);
+        break;
+      }
+      case VM_OC_GROUP_PUSH_UNDEFINED:
+      {
+        result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+        break;
+      }
+      case VM_OC_GROUP_PUSH_TRUE:
+      {
+        result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE);
+        break;
+      }
+      case VM_OC_GROUP_PUSH_FALSE:
+      {
+        result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_FALSE);
+        break;
+      }
+      case VM_OC_GROUP_PUSH_NULL:
+      {
+        result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_NULL);
+        break;
+      }
+      case VM_OC_GROUP_PUSH_THIS:
+      {
+        JERRY_UNREACHABLE ();
         break;
       }
       case VM_OC_GROUP_CALL:
@@ -926,57 +1074,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
         break;
       }
-      case VM_OC_GROUP_NONE:
-      {
-        switch (opcode)
-        {
-          case CBC_PUSH_TRUE:
-          {
-            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE);
-            break;
-          }
-          case CBC_PUSH_FALSE:
-          {
-            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_FALSE);
-            break;
-          }
-          case CBC_PUSH_UNDEFINED:
-          {
-            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-            break;
-          }
-          case CBC_DEFINE_VARS:
-          {
-            uint16_t literal_idx = *(byte_code_p++);
-
-            if (literal_idx >= encoding_limit)
-            {
-              literal_idx = ((literal_idx << 8) | *(byte_code_p++)) - encoding_delta;
-            }
-
-            opfunc_var_decl (frame_ctx_p, literal_start_p[literal_idx]);
-
-            break;
-          }
-          default:
-          {
-            JERRY_UNREACHABLE ();
-          }
-        }
-
-        break;
-      }
       case VM_OC_GROUP_JUMP:
       {
-        byte_code_p -= 1 + VM_OC_BRANCH_OPERAND (decoded_opcode);
-        if (CBC_BRANCH_IS_FORWARD (cbc_flags[*byte_code_p]))
-        {
-          byte_code_p += branch_offset;
-        }
-        else
-        {
-          byte_code_p -= branch_offset;
-        }
+        byte_code_p = byte_code_start_p + branch_offset;
         break;
       }
       case VM_OC_GROUP_BRANCH_IF_TRUE:
@@ -992,15 +1092,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
         PARSER_ASSERT (free_values == VM_FREE_LEFT_VALUE);
         if (value == ecma_make_simple_value ((base & 0x1) ? ECMA_SIMPLE_VALUE_FALSE : ECMA_SIMPLE_VALUE_TRUE))
         {
-          byte_code_p -= 1 + VM_OC_BRANCH_OPERAND (decoded_opcode);
-          if (CBC_BRANCH_IS_FORWARD (cbc_flags[*byte_code_p]))
-          {
-            byte_code_p += branch_offset;
-          }
-          else
-          {
-            byte_code_p -= branch_offset;
-          }
+          byte_code_p = byte_code_start_p + branch_offset;
           if (base & 0x2)
           {
             free_values = 0;
@@ -1028,15 +1120,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
 
         if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
         {
-          byte_code_p -= 1 + VM_OC_BRANCH_OPERAND (decoded_opcode);
-          if (CBC_BRANCH_IS_FORWARD (cbc_flags[*byte_code_p]))
-          {
-            byte_code_p += branch_offset;
-          }
-          else
-          {
-            byte_code_p -= branch_offset;
-          }
+          byte_code_p = byte_code_start_p + branch_offset;
           ecma_free_value (*--vm_stack_top_p, true);
         }
 
@@ -1055,48 +1139,52 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
       }
     }
 
-    switch (VM_OC_POST_PROCESS (decoded_opcode))
+    if (decoded_opcode & (VM_OC_POST_PROCESS_MASK << VM_OC_POST_PROCESS_SHIFT))
     {
-      case VM_OC_POST_NONE:
+      switch (VM_OC_POST_PROCESS (decoded_opcode))
       {
-        break;
-      }
-      case VM_OC_POST_PUSH_RESULT:
-      {
-        *(vm_stack_top_p++) = result;
-        break;
-      }
-      case VM_OC_POST_SET_IDENT:
-      {
-        uint16_t literal_index = *(byte_code_p++);
-        ecma_string_t *name_p;
-        ecma_object_t *ref_base_lex_env_p;
-
-        if (literal_index >= encoding_limit)
+        case VM_OC_POST_PUSH_RESULT:
         {
-          literal_index = (uint16_t) (((literal_index << 8) | *(byte_code_p++)) - encoding_delta);
+          *(vm_stack_top_p++) = result;
+          break;
         }
-
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-        name_p = ecma_get_string_from_value (literal_start_p[literal_index]);
-        ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, name_p);
-
-        JERRY_ASSERT (ref_base_lex_env_p != NULL);
-
-        frame_ctx_p->ref_base_lex_env_p = ref_base_lex_env_p;
-        ret_value = opfunc_assignment (frame_ctx_p, literal_start_p[literal_index], left_value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        case VM_OC_POST_SET_IDENT:
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+          uint16_t literal_index = *(byte_code_p++);
+          ecma_string_t *var_name_str_p;
+          ecma_object_t *ref_base_lex_env_p;
+
+          if (literal_index >= encoding_limit)
+          {
+            literal_index = (uint16_t) (((literal_index << 8) | *(byte_code_p++)) - encoding_delta);
+          }
+
+          var_name_str_p = ecma_get_string_from_value (literal_start_p[literal_index]);
+          ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, var_name_str_p);
+
+          if (ref_base_lex_env_p == NULL)
+          {
+            ref_base_lex_env_p = frame_ctx_p->ref_base_lex_env_p;
+          }
+
+          ret_value = ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
+                                                      var_name_str_p,
+                                                      frame_ctx_p->is_strict,
+                                                      left_value);
+
+          if (ecma_is_completion_value_throw (ret_value))
+          {
+            // FIXME: Early exit may cause memory leak.
+            return ret_value;
+          }
+          break;
         }
-        break;
-      }
-      default:
-      {
-        JERRY_UNREACHABLE ();
+        default:
+        {
+          JERRY_UNREACHABLE ();
+          break;
+        }
       }
     }
 
@@ -1128,20 +1216,22 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p)
  * Run the code, starting from specified instruction position
  */
 ecma_completion_value_t
-vm_run_from_pos (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
-                 vm_instr_counter_t start_pos, /**< position of starting instruction */
-                 ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
-                 ecma_object_t *lex_env_p, /**< lexical environment to use */
-                 bool is_strict, /**< is the code is strict mode code (ECMA-262 v5, 10.1.1) */
-                 bool is_eval_code) /**< is the code is eval code (ECMA-262 v5, 10.1) */
+vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
+        ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
+        ecma_object_t *lex_env_p, /**< lexical environment to use */
+        bool is_strict, /**< is the code is strict mode code (ECMA-262 v5, 10.1.1) */
+        bool is_eval_code) /**< is the code is eval code (ECMA-262 v5, 10.1) */
 {
   ecma_completion_value_t completion = ecma_make_empty_completion_value ();
-
+  ecma_value_t *literal_start_p = VM_GET_LITERAL_START_P (bytecode_header_p);
   vm_frame_ctx_t frame_ctx;
+
   frame_ctx.bytecode_header_p = bytecode_header_p;
+  frame_ctx.byte_code_p = (uint8_t *) (literal_start_p + bytecode_header_p->literal_end);
   frame_ctx.lex_env_p = lex_env_p;
   frame_ctx.is_eval_code = is_eval_code;
   frame_ctx.is_call_in_direct_eval_form = false;
+  frame_ctx.ref_base_lex_env_p = lex_env_p;
 
 //  vm_stack_add_frame (&frame_ctx.stack_frame, regs, regs_num, local_var_regs_num, arg_regs_num, arg_collection_p);
 //  vm_stack_frame_set_reg_value (&frame_ctx.stack_frame,
@@ -1150,6 +1240,8 @@ vm_run_from_pos (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code da
 
   vm_frame_ctx_t *prev_context_p = vm_top_context_p;
   vm_top_context_p = &frame_ctx;
+
+  vm_init_loop (&frame_ctx);
 
   completion = vm_loop (&frame_ctx);
 

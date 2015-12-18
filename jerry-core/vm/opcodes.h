@@ -34,13 +34,10 @@ typedef enum : uint8_t
 } opcode_call_flags_t;
 
 ecma_completion_value_t
+vm_var_decl (vm_frame_ctx_t *, ecma_value_t);
+
+ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *, ecma_value_t, uint8_t, ecma_value_t **);
-
-ecma_completion_value_t
-opfunc_var_decl (vm_frame_ctx_t *, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_assignment (vm_frame_ctx_t *, ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
 opfunc_equal_value (ecma_value_t, ecma_value_t);

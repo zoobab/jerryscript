@@ -985,12 +985,11 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
 
       if (is_arguments_moved_to_regs)
       {
-        ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
-                                                              code_first_instr_pos,
-                                                              this_binding,
-                                                              local_env_p,
-                                                              is_strict,
-                                                              false);
+        ecma_completion_value_t completion = vm_run (bytecode_data_p,
+                                                     this_binding,
+                                                     local_env_p,
+                                                     is_strict,
+                                                     false);
 
         if (ecma_is_completion_value_return (completion))
         {
@@ -1012,12 +1011,11 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                                  do_instantiate_args_obj),
                         ret_value);
 
-        ecma_completion_value_t completion = vm_run_from_pos (bytecode_data_p,
-                                                              code_first_instr_pos,
-                                                              this_binding,
-                                                              local_env_p,
-                                                              is_strict,
-                                                              false);
+        ecma_completion_value_t completion = vm_run (bytecode_data_p,
+                                                     this_binding,
+                                                     local_env_p,
+                                                     is_strict,
+                                                     false);
 
         if (ecma_is_completion_value_return (completion))
         {

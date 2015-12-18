@@ -21,18 +21,6 @@
 #include "jrt.h"
 #include "vm-defines.h"
 
-#define VM_OC_BRANCH_OPERAND_SHIFT 30
-#define VM_OC_BRANCH_OPERAND_MASK 0x3
-#define VM_OC_BRANCH_OPERAND_VALUE(V) (((V) & VM_OC_BRANCH_OPERAND_MASK) << VM_OC_BRANCH_OPERAND_SHIFT)
-#define VM_OC_BRANCH_OPERAND(O) (((O) >> VM_OC_BRANCH_OPERAND_SHIFT) & VM_OC_BRANCH_OPERAND_MASK)
-
-enum {
-  VM_OC_BRANCH_NONE,
-  VM_OC_BRANCH_1,
-  VM_OC_BRANCH_2,
-  VM_OC_BRANCH_3,
-};
-
 #define VM_OC_LEFT_OPERAND_SHIFT 28
 #define VM_OC_LEFT_OPERAND_MASK 0x3
 #define VM_OC_LEFT_OPERAND_VALUE(V) (((V) & VM_OC_LEFT_OPERAND_MASK) << VM_OC_LEFT_OPERAND_SHIFT)
@@ -61,6 +49,11 @@ enum {
   VM_OC_GROUP_POP,
   VM_OC_GROUP_PUSH,
   VM_OC_GROUP_PUSH_TWO,
+  VM_OC_GROUP_PUSH_UNDEFINED,
+  VM_OC_GROUP_PUSH_TRUE,
+  VM_OC_GROUP_PUSH_FALSE,
+  VM_OC_GROUP_PUSH_NULL,
+  VM_OC_GROUP_PUSH_THIS,
   VM_OC_GROUP_RET,
   VM_OC_GROUP_CALL,
 
@@ -121,12 +114,11 @@ extern jerry_completion_code_t vm_run_global (void);
 extern ecma_completion_value_t vm_run_eval (const cbc_compiled_code_t *, bool);
 
 extern ecma_completion_value_t vm_loop (vm_frame_ctx_t *);
-extern ecma_completion_value_t vm_run_from_pos (const cbc_compiled_code_t *,
-                                                vm_instr_counter_t,
-                                                ecma_value_t,
-                                                ecma_object_t *,
-                                                bool,
-                                                bool);
+extern ecma_completion_value_t vm_run (const cbc_compiled_code_t *,
+                                       ecma_value_t,
+                                       ecma_object_t *,
+                                       bool,
+                                       bool);
 
 extern opcode_scope_code_flags_t vm_get_scope_flags (const cbc_compiled_code_t *);
 

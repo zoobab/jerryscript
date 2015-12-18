@@ -156,7 +156,7 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         However, ecma_free_completion_value may be called for it, but it is a no-op.
  */
 ecma_completion_value_t
-opfunc_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
+vm_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                  ecma_value_t var_name_value) /**< variable name */
 {
   ecma_string_t *var_name_str_p = ecma_get_string_from_value (var_name_value);
@@ -181,31 +181,4 @@ opfunc_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   }
 
   return ecma_make_empty_completion_value ();
-} /* opfunc_var_decl */
-
-/**
- * 'Assignment' opcode handler.
- *
- * Note:
- *      This handler implements case of assignment of a literal's or a variable's
- *      value to a variable. Assignment to an object's property is not implemented
- *      by this opcode.
- *
- * See also: ECMA-262 v5, 11.13.1
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-ecma_completion_value_t
-opfunc_assignment (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                   ecma_value_t var_name_value, /**< variable identifier */
-                   ecma_value_t right_value) /**< variable new value */
-{
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ecma_string_t *var_name_str_p = ecma_get_string_from_value (var_name_value);
-
-  ret_value = set_variable_value (frame_ctx_p, var_name_str_p, right_value);
-
-  return ret_value;
-} /* opfunc_assignment */
+} /* vm_var_decl */
