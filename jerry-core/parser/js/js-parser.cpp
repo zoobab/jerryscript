@@ -943,12 +943,6 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
       byte_code_p += 2;
     }
 
-    if (flags & CBC_HAS_BYTE_ARG)
-    {
-      printf (" byte_arg:%d", *byte_code_p);
-      byte_code_p++;
-    }
-
     if (flags & CBC_HAS_LITERAL_ARG)
     {
       uint16_t literal_index;
@@ -963,6 +957,12 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
 
       PARSER_READ_IDENTIFIER_INDEX (literal_index);
       parse_print_literal (compiled_code_p, literal_index, literal_pool_p);
+    }
+
+    if (flags & CBC_HAS_BYTE_ARG)
+    {
+      printf (" byte_arg:%d", *byte_code_p);
+      byte_code_p++;
     }
 
     if (flags & CBC_HAS_BRANCH_ARG)
@@ -1101,13 +1101,6 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       length++;
     }
 
-    if (flags & CBC_HAS_BYTE_ARG)
-    {
-      /* This argument will be copied without modification. */
-      PARSER_NEXT_BYTE (page_p, offset);
-      length++;
-    }
-
     /* Second literal arg can only be present if first literal arg is present as well. */
     PARSER_ASSERT (!(flags & CBC_HAS_LITERAL_ARG2) || (flags & CBC_HAS_LITERAL_ARG));
 
@@ -1154,6 +1147,13 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       {
         break;
       }
+    }
+
+    if (flags & CBC_HAS_BYTE_ARG)
+    {
+      /* This argument will be copied without modification. */
+      PARSER_NEXT_BYTE (page_p, offset);
+      length++;
     }
 
     if (flags & CBC_HAS_BRANCH_ARG)
@@ -1315,14 +1315,6 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     PARSER_ASSERT (!(flags & CBC_HAS_BRANCH_ARG)
                    || !(flags & (CBC_HAS_BYTE_ARG | CBC_HAS_LITERAL_ARG)));
 
-    if (flags & CBC_HAS_BYTE_ARG)
-    {
-      /* This argument will be copied without modification. */
-      *dst_p++ = page_p->bytes[offset];
-      real_offset++;
-      PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
-    }
-
     while (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
     {
       uint8_t first_byte = page_p->bytes[offset];
@@ -1346,6 +1338,14 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       {
         break;
       }
+    }
+
+    if (flags & CBC_HAS_BYTE_ARG)
+    {
+      /* This argument will be copied without modification. */
+      *dst_p++ = page_p->bytes[offset];
+      real_offset++;
+      PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
     }
 
     if (flags & CBC_HAS_BRANCH_ARG)

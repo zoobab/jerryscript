@@ -182,7 +182,7 @@ typedef enum
    ((((token_type) - LEXER_BIT_OR) * 3) + CBC_BIT_OR)
 
 #define LEXER_BINARY_LVALUE_OP_TOKEN_TO_OPCODE(token_type) \
-   ((((token_type) - LEXER_ASSIGN) * 4) + CBC_ASSIGN)
+   ((((token_type) - LEXER_ASSIGN_ADD) * 2) + CBC_ASSIGN_ADD)
 
 #define LEXER_TO_ASCII_LOWERCASE(character) ((character) | 0x20)
 

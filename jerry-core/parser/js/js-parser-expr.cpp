@@ -30,7 +30,7 @@ static const uint8_t parser_binary_precedence_table[36] =
 static PARSER_INLINE void
 parser_push_result (parser_context_t *context_p) /**< context */
 {
-  if (CBC_NO_RESULT_BINARY_OPERATION (context_p->last_cbc_opcode))
+  if (CBC_NO_RESULT_COMPOUND_ASSIGMENT (context_p->last_cbc_opcode))
   {
     context_p->last_cbc_opcode = (uint16_t) PARSER_TO_BINARY_OPERATION_WITH_RESULT (context_p->last_cbc_opcode);
     parser_flush_cbc (context_p);
@@ -81,8 +81,8 @@ parser_emit_unary_lvalue_opcode (parser_context_t *context_p, /**< context */
   }
   else if (context_p->last_cbc_opcode == CBC_PROP_LITERAL_GET)
   {
-    PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_LITERAL_GET, opcode + CBC_UNARY_LVALUE_WITH_PROP_STRING));
-    context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_UNARY_LVALUE_WITH_PROP_STRING);
+    PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_LITERAL_GET, opcode + CBC_UNARY_LVALUE_WITH_PROP_LITERAL));
+    context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_UNARY_LVALUE_WITH_PROP_LITERAL);
   }
   else
   {
@@ -491,7 +491,7 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
           else if (context_p->last_cbc_opcode == CBC_PROP_LITERAL_GET)
           {
             context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
-            opcode = CBC_CALL_PROP_STRING;
+            opcode = CBC_CALL_PROP_LITERAL;
           }
           else
           {
@@ -612,17 +612,15 @@ parser_append_binary_token (parser_context_t *context_p) /**< context */
 
   parser_push_result (context_p);
 
-  if (LEXER_IS_BINARY_LVALUE_TOKEN (context_p->token.type))
+  if (context_p->token.type == LEXER_ASSIGN)
   {
     /* Unlike other tokens, the whole byte code is saved for binary
      * lvalue operators, since they have multiple forms depending
      * on the previos instruction. */
 
-    cbc_opcode_t opcode = LEXER_BINARY_LVALUE_OP_TOKEN_TO_OPCODE (context_p->token.type);
-
     if (context_p->last_cbc_opcode == CBC_PUSH_IDENT)
     {
-      PARSER_ASSERT (CBC_SAME_ARGS (CBC_PUSH_IDENT, opcode + CBC_BINARY_LVALUE_WITH_IDENT));
+      PARSER_ASSERT (CBC_SAME_ARGS (CBC_PUSH_IDENT, CBC_ASSIGN_IDENT));
 
       if ((context_p->status_flags & PARSER_IS_STRICT)
           && context_p->last_cbc.u.literal_type[1] != lexer_literal_object_any)
@@ -642,27 +640,73 @@ parser_append_binary_token (parser_context_t *context_p) /**< context */
       }
 
       parser_stack_push_uint16 (context_p, context_p->last_cbc.literal_index);
-      parser_stack_push_uint8 (context_p, (uint8_t) (opcode + CBC_BINARY_LVALUE_WITH_IDENT));
+      parser_stack_push_uint8 (context_p, CBC_ASSIGN_IDENT);
       context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
     }
     else if (context_p->last_cbc_opcode == CBC_PROP_GET)
     {
-      PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_GET, opcode));
-      parser_stack_push_uint8 (context_p, opcode);
+      PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_GET, CBC_ASSIGN));
+      parser_stack_push_uint8 (context_p, CBC_ASSIGN);
       context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
     }
     else if (context_p->last_cbc_opcode == CBC_PROP_LITERAL_GET)
     {
-      PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_LITERAL_GET, opcode + CBC_BINARY_LVALUE_WITH_PROP_STRING));
-      parser_stack_push_uint16 (context_p, context_p->last_cbc.literal_index);
-      parser_stack_push_uint8 (context_p, (uint8_t) (opcode + CBC_BINARY_LVALUE_WITH_PROP_STRING));
-      context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
+      if (context_p->last_cbc.u.literal_type[0] != LEXER_IDENT_LITERAL)
+      {
+        PARSER_ASSERT (CBC_SAME_ARGS (CBC_PROP_LITERAL_GET, CBC_ASSIGN_PROP_LITERAL));
+        parser_stack_push_uint16 (context_p, context_p->last_cbc.literal_index);
+        parser_stack_push_uint8 (context_p, CBC_ASSIGN_PROP_LITERAL);
+        context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
+      }
+      else
+      {
+        context_p->last_cbc_opcode = CBC_PUSH_LITERAL;
+        parser_stack_push_uint8 (context_p, CBC_ASSIGN);
+      }
     }
     else
     {
       /* A runtime error will happen. */
       parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
-      parser_stack_push_uint8 (context_p, opcode);
+      parser_stack_push_uint8 (context_p, CBC_ASSIGN);
+    }
+  }
+  else if (LEXER_IS_BINARY_LVALUE_TOKEN (context_p->token.type))
+  {
+    if (context_p->last_cbc_opcode == CBC_PUSH_IDENT)
+    {
+      if ((context_p->status_flags & PARSER_IS_STRICT)
+          && context_p->last_cbc.u.literal_type[1] != lexer_literal_object_any)
+      {
+        parser_error_t error;
+
+        if (context_p->last_cbc.u.literal_type[1] == lexer_literal_object_eval)
+        {
+          error = PARSER_ERR_EVAL_CANNOT_ASSIGNED;
+        }
+        else
+        {
+          PARSER_ASSERT (context_p->last_cbc.u.literal_type[1] == lexer_literal_object_arguments);
+          error = PARSER_ERR_ARGUMENTS_CANNOT_ASSIGNED;
+        }
+        parser_raise_error (context_p, error);
+      }
+
+      context_p->last_cbc_opcode = CBC_ASSIGN_RESOLVE_LITERAL;
+    }
+    else if (context_p->last_cbc_opcode == CBC_PROP_GET)
+    {
+      context_p->last_cbc_opcode = CBC_ASSIGN_PROP_GET;
+    }
+    else if (context_p->last_cbc_opcode == CBC_PROP_LITERAL_GET)
+    {
+      context_p->last_cbc_opcode = CBC_ASSIGN_PROP_LITERAL_GET;
+    }
+    else
+    {
+      /* A runtime error will happen. */
+      parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
+      parser_emit_cbc (context_p, CBC_ASSIGN_PROP_GET);
     }
   }
   else if (context_p->token.type == LEXER_LOGICAL_OR
@@ -710,19 +754,19 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
     parser_push_result (context_p);
     parser_stack_pop_uint8 (context_p);
 
-    if (LEXER_IS_BINARY_LVALUE_TOKEN (token))
+    if (token == LEXER_ASSIGN)
     {
       opcode = context_p->stack_top_uint8;
       parser_stack_pop_uint8 (context_p);
 
-      if (CBC_IS_BINARY_IDENT_LVALUE_OPERATION (opcode))
+      if (opcode == CBC_ASSIGN_IDENT)
       {
         if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode))
         {
-          PARSER_ASSERT (CBC_ARGS_EQ (opcode + CBC_BINARY_LVALUE_WITH_IDENT_LITERAL,
+          PARSER_ASSERT (CBC_ARGS_EQ (CBC_ASSIGN_LITERAL_IDENT,
                                       CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2));
           context_p->last_cbc.u.value = parser_stack_pop_uint16 (context_p);
-          context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_BINARY_LVALUE_WITH_IDENT_LITERAL);
+          context_p->last_cbc_opcode = CBC_ASSIGN_LITERAL_IDENT;
           continue;
         }
       }
@@ -731,6 +775,18 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
       {
         uint16_t index = parser_stack_pop_uint16 (context_p);
         parser_emit_cbc_literal (context_p, opcode, index);
+        continue;
+      }
+    }
+    else if (LEXER_IS_BINARY_LVALUE_TOKEN (token))
+    {
+      opcode = LEXER_BINARY_LVALUE_OP_TOKEN_TO_OPCODE (token);
+
+      if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode))
+      {
+        PARSER_ASSERT (CBC_ARGS_EQ (opcode + CBC_BINARY_LVALUE_WITH_LITERAL,
+                                    CBC_HAS_LITERAL_ARG));
+        context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_BINARY_LVALUE_WITH_LITERAL);
         continue;
       }
     }
@@ -904,9 +960,15 @@ parser_parse_expression (parser_context_t *context_p, /**< context */
   }
   else if (options & PARSE_EXPR_BLOCK)
   {
-    if (CBC_NO_RESULT_BINARY_OPERATION (context_p->last_cbc_opcode))
+    if (CBC_NO_RESULT_COMPOUND_ASSIGMENT (context_p->last_cbc_opcode))
     {
       context_p->last_cbc_opcode = PARSER_TO_BINARY_OPERATION_WITH_BLOCK (context_p->last_cbc_opcode);
+      parser_flush_cbc (context_p);
+    }
+    else if (CBC_NO_RESULT_ASSIGNMENT (context_p->last_cbc_opcode))
+    {
+      PARSER_ASSERT (CBC_SAME_ARGS (context_p->last_cbc_opcode, context_p->last_cbc_opcode + 2));
+      PARSER_PLUS_EQUAL_U16 (context_p->last_cbc_opcode, 2);
       parser_flush_cbc (context_p);
     }
     else

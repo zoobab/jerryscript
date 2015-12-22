@@ -100,22 +100,6 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-  if (flags & CBC_HAS_BYTE_ARG)
-  {
-    uint8_t byte_argument = (uint8_t) context_p->last_cbc.u.value;
-
-    PARSER_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
-
-    if (flags & CBC_POP_STACK_BYTE_ARG)
-    {
-      PARSER_ASSERT (context_p->stack_depth >= byte_argument);
-      PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, byte_argument);
-    }
-
-    PARSER_APPEND_TO_BYTE_CODE (context_p, byte_argument);
-    context_p->byte_code_size++;
-  }
-
   if (flags & CBC_HAS_LITERAL_ARG)
   {
     uint16_t literal_index = context_p->last_cbc.literal_index;
@@ -134,6 +118,22 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
                            (uint8_t) (literal_index & 0xff),
                            (uint8_t) (literal_index >> 8));
     context_p->byte_code_size += 2;
+  }
+
+  if (flags & CBC_HAS_BYTE_ARG)
+  {
+    uint8_t byte_argument = (uint8_t) context_p->last_cbc.u.value;
+
+    PARSER_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
+
+    if (flags & CBC_POP_STACK_BYTE_ARG)
+    {
+      PARSER_ASSERT (context_p->stack_depth >= byte_argument);
+      PARSER_MINUS_EQUAL_U16 (context_p->stack_depth, byte_argument);
+    }
+
+    PARSER_APPEND_TO_BYTE_CODE (context_p, byte_argument);
+    context_p->byte_code_size++;
   }
 
 #ifdef PARSER_DEBUG
