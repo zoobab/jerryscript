@@ -78,7 +78,7 @@ ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                ecma_value_t func_value,
                uint8_t args_num,
-               ecma_value_t **stack_p)
+               ecma_value_t *stack_p)
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -87,22 +87,9 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   uint8_t call_flags;
   ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
 
-  ecma_value_t *sp = *stack_p;
-
   for (int i = 0; i < args_num; i++)
   {
-    if (*(--sp))
-    {
-      (*stack_p)--;
-      ecma_append_to_values_collection (arg_collection_p, *sp, true);
-      ecma_free_value (*sp, true);
-    }
-    else
-    {
-      ecma_append_to_values_collection (arg_collection_p,
-                                        ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED),
-                                        true);
-    }
+    ecma_append_to_values_collection (arg_collection_p, stack_p[i], true);
   }
 
   if (!ecma_op_is_callable (func_value))

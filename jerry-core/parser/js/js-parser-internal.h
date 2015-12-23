@@ -105,6 +105,9 @@ typedef struct
 #define PARSER_OPCODE_IS_PUSH_LITERAL(op) \
   ((op) == CBC_PUSH_IDENT || (op) == CBC_PUSH_LITERAL)
 
+#define PARSER_OPCODE_IS_RETURN(op) \
+  ((op) == CBC_RETURN || (op) == CBC_RETURN_WITH_UNDEFINED || (op) == CBC_RETURN_WITH_LITERAL)
+
 #define PARSER_ARGS_EQ(op, types) \
   ((PARSER_GET_FLAGS (op) & CBC_ARG_TYPES) == (types))
 

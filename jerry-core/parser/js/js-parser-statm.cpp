@@ -748,6 +748,11 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
         opcode = CBC_ASSIGN_PROP_LITERAL;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
       }
+      else if (opcode == CBC_PROP_LITERAL_LITERAL_GET)
+      {
+        opcode = CBC_ASSIGN;
+        context_p->last_cbc_opcode = CBC_PUSH_TWO_LITERALS;
+      }
       else
       {
         /* A runtime error will happen. */
@@ -1752,7 +1757,14 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         }
 
         parser_parse_expression (context_p, PARSE_EXPR);
-        parser_emit_cbc (context_p, CBC_RETURN);
+        if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode))
+        {
+          context_p->last_cbc_opcode = CBC_RETURN_WITH_LITERAL;
+        }
+        else
+        {
+          parser_emit_cbc (context_p, CBC_RETURN);
+        }
         break;
       }
 

@@ -683,6 +683,23 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p /**< frame context */)
       }
       case VM_OC_PROP_GET:
       {
+        if (opcode == CBC_ASSIGN_PROP_GET)
+        {
+          left_value = vm_stack_top_p[-2];
+          right_value = vm_stack_top_p[-1];
+        }
+        else if (opcode == CBC_ASSIGN_PROP_LITERAL_GET)
+        {
+          *vm_stack_top_p++ = ecma_copy_value (left_value, true);
+          right_value = left_value;
+          left_value = vm_stack_top_p[-2];
+        }
+        else if (opcode == CBC_ASSIGN_PROP_LITERAL_LITERAL_GET)
+        {
+          *vm_stack_top_p++ = ecma_copy_value (left_value, true);
+          *vm_stack_top_p++ = ecma_copy_value (right_value, true);
+        }
+
         last_completion_value = vm_op_get_value (left_value, right_value, frame_ctx_p->is_strict);
 
         if (ecma_is_completion_value_throw (last_completion_value))
@@ -690,6 +707,42 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p /**< frame context */)
           goto error;
         }
         result = ecma_get_completion_value_value (last_completion_value);
+        break;
+      }
+      case VM_OC_ASSIGN_IDENT:
+      {
+        uint16_t literal_index;
+        READ_LITERAL_INDEX (literal_index);
+
+        JERRY_ASSERT (literal_index < ident_end);
+
+        if ((literal_index) < register_end)
+        {
+          JERRY_ASSERT (false);
+        }
+        else
+        {
+          ecma_value_t name = literal_start_p[literal_index];
+          ecma_string_t *name_p = ecma_get_string_from_value (name);
+          ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p,
+                                                                              name_p);
+                                                                              JERRY_ASSERT (ref_base_lex_env_p != NULL);
+
+          last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
+                                                                  name_p,
+                                                                  frame_ctx_p->is_strict);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          ecma_ref_object (ref_base_lex_env_p);
+          *vm_stack_top_p++ = ecma_make_object_value (ref_base_lex_env_p);
+          *vm_stack_top_p++ = ecma_make_string_value (ecma_copy_or_ref_ecma_string (name_p));
+
+          result = ecma_get_completion_value_value (last_completion_value);
+        }
         break;
       }
       case VM_OC_ASSIGN:
@@ -705,31 +758,38 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p /**< frame context */)
       }
       case VM_OC_RET:
       {
-        JERRY_ASSERT (opcode == CBC_RETURN || opcode == CBC_RETURN_WITH_UNDEFINED);
-        if (opcode == CBC_RETURN)
+        JERRY_ASSERT (opcode == CBC_RETURN
+                      || opcode == CBC_RETURN_WITH_UNDEFINED
+                      || opcode == CBC_RETURN_WITH_LITERAL);
+
+        if (opcode == CBC_RETURN_WITH_UNDEFINED)
         {
-          result = left_value;
-        }
-        else
-        {
-          result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+          left_value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
         }
 
-        last_completion_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_RETURN,
-                                                            ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED));
+        last_completion_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_RETURN, left_value);
         goto error;
       }
       case VM_OC_CALL:
       {
         last_completion_value = ecma_make_empty_completion_value ();
 
+        vm_stack_top_p -= right_value;
+
         ECMA_TRY_CATCH (value,
-                        opfunc_call_n (frame_ctx_p, left_value, right_value, &vm_stack_top_p),
+                        opfunc_call_n (frame_ctx_p, vm_stack_top_p[-1], right_value, vm_stack_top_p),
                         last_completion_value);
 
+        // FIXME: check push result
         result = ecma_copy_value (value, true);
 
         ECMA_FINALIZE (value);
+
+        for (uint32_t i = 0; i < right_value; i++)
+        {
+          ecma_free_value (vm_stack_top_p[i], true);
+        }
+        ecma_free_value (*(--vm_stack_top_p), true);
 
         if (ecma_is_completion_value_throw (last_completion_value))
         {

@@ -1209,7 +1209,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   }
 
   if (!(context_p->status_flags & PARSER_NO_END_LABEL)
-      || (last_opcode != CBC_RETURN && last_opcode != CBC_RETURN_WITH_UNDEFINED))
+      || !(PARSER_OPCODE_IS_RETURN (last_opcode)))
   {
     context_p->status_flags &= ~PARSER_NO_END_LABEL;
     length++;
@@ -1474,7 +1474,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 
   parser_cbc_stream_init (&context.byte_code);
   context.byte_code_size = 0;
-  parser_list_init (&context.literal_pool, sizeof (lexer_literal_t), 15);
+  parser_list_init (&context.literal_pool, sizeof (lexer_literal_t), 10);
   parser_stack_init (&context);
 
 #ifdef PARSER_DEBUG
