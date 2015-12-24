@@ -21,6 +21,7 @@
 #include "lexer.h"
 #include "lit-literal.h"
 #include "opcodes.h"
+#include "rcs-records.h"
 #include "scopes-tree.h"
 
 /**
@@ -165,9 +166,9 @@ public:
 #ifndef JERRY_NDEBUG
     literal_t lit = lit_get_literal_by_cp (lit_id);
 
-    JERRY_ASSERT (lit->get_type () == LIT_STR_T
-                  || lit->get_type () == LIT_MAGIC_STR_T
-                  || lit->get_type () == LIT_MAGIC_STR_EX_T);
+    JERRY_ASSERT (RCS_RECORD_IS_CHARSET (lit)
+                  || RCS_RECORD_IS_MAGIC_STR (lit)
+                  || RCS_RECORD_IS_MAGIC_STR_EX (lit));
 #endif /* !JERRY_NDEBUG */
 
     jsp_operand_t ret;
@@ -191,9 +192,9 @@ public:
 #ifndef JERRY_NDEBUG
     literal_t lit = lit_get_literal_by_cp (lit_id);
 
-    JERRY_ASSERT (lit->get_type () == LIT_STR_T
-                  || lit->get_type () == LIT_MAGIC_STR_T
-                  || lit->get_type () == LIT_MAGIC_STR_EX_T);
+    JERRY_ASSERT (RCS_RECORD_IS_CHARSET (lit)
+                  || RCS_RECORD_IS_MAGIC_STR (lit)
+                  || RCS_RECORD_IS_MAGIC_STR_EX (lit));
 #endif /* !JERRY_NDEBUG */
 
     jsp_operand_t ret;
@@ -217,7 +218,7 @@ public:
 #ifndef JERRY_NDEBUG
     literal_t lit = lit_get_literal_by_cp (lit_id);
 
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (RCS_RECORD_IS_NUMBER (lit));
 #endif /* !JERRY_NDEBUG */
 
     jsp_operand_t ret;

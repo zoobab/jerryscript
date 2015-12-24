@@ -16,8 +16,10 @@
 
 #include "bytecode-data.h"
 #include "jrt.h"
+#include "jrt-bit-fields.h"
 #include "opcodes.h"
 #include "opcodes-ecma-support.h"
+#include "rcs-records.h"
 
 /**
  * Note:
@@ -113,7 +115,7 @@ opfunc_assignment (vm_instr_t instr, /**< instruction */
                                                       frame_ctx_p->bytecode_header_p,
                                                       frame_ctx_p->pos);
     literal_t lit = lit_get_literal_by_cp (lit_cp);
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (RCS_RECORD_IS_NUMBER (lit));
 
     *num_p = lit_charset_literal_get_number (lit);
 
@@ -130,7 +132,7 @@ opfunc_assignment (vm_instr_t instr, /**< instruction */
                                                       frame_ctx_p->bytecode_header_p,
                                                       frame_ctx_p->pos);
     literal_t lit = lit_get_literal_by_cp (lit_cp);
-    JERRY_ASSERT (lit->get_type () == LIT_NUMBER_T);
+    JERRY_ASSERT (RCS_RECORD_IS_NUMBER (lit));
 
     *num_p = lit_charset_literal_get_number (lit);
 

@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-#ifndef LIT_LITERAL_STORAGE_H
-#define LIT_LITERAL_STORAGE_H
+#ifndef RCS_ALLOCATOR_H
+#define RCS_ALLOCATOR_H
 
+#include "rcs-chunked-list.h"
 #include "rcs-globals.h"
-#include "ecma-globals.h"
 
-extern record_set_t rcs_lit_storage;
+extern void rcs_check_record_alignment (record_t *);
+extern void rcs_free_record (record_set_t *, record_t *);
 
-record_type_t *create_charset_record (record_set_t *, const lit_utf8_byte_t *, lit_utf8_size_t);
-record_type_t *create_magic_record (record_set_t *, lit_magic_string_id_t);
-record_type_t *create_magic_record_ex (record_set_t *, lit_magic_string_ex_id_t);
-record_type_t *create_number_record (record_set_t *, ecma_number_t);
+extern record_t *rcs_record_get_first (record_set_t *);
+extern record_t *rcs_record_get_next (record_set_t *, record_t *);
 
-uint32_t lit_count_literals (record_set_t *);
-void lit_dump_literals (record_set_t *);
+extern size_t rcs_get_node_data_space_size (void);
+extern uint8_t *rcs_get_node_data_space (record_set_t *, rcs_chunked_list_t::node_t *);
+
+extern record_t *rcs_alloc_record (record_set_t *, record_type_t, size_t);
 
 #endif

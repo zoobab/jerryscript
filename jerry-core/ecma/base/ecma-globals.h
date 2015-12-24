@@ -28,7 +28,8 @@
 #include "lit-globals.h"
 #include "lit-magic-strings.h"
 #include "mem-allocator.h"
-#include "rcs-recordset.h"
+#include "rcs-globals.h"
+#include "rcs-cpointer.h"
 
 /** \addtogroup compressedpointer Compressed pointer
  * @{
@@ -792,10 +793,10 @@ FIXME (Move to library that should define the type (literal.h /* ? */))
 /**
  * Literal and compressed pointer to literal
  */
-typedef rcs_record_t *literal_t;
-typedef rcs_cpointer_t lit_cpointer_t;
+typedef record_t *literal_t;
+typedef cpointer_t lit_cpointer_t;
 
-#define NOT_A_LITERAL (lit_cpointer_t::null_cp ())
+#define NOT_A_LITERAL (rcs_cpointer_null_cp ())
 
 /**
  * ECMA string-value descriptor

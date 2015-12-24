@@ -22,6 +22,7 @@
 #include "lit-magic-strings.h"
 #include "lit-strings.h"
 #include "jsp-early-error.h"
+#include "rcs-records.h"
 
 static token saved_token, prev_token, sent_token, empty_token;
 
@@ -125,7 +126,7 @@ create_token_from_lit (jsp_token_type_t type, literal_t lit)
 
   ret.type = type;
   ret.loc = current_locus ();
-  ret.uid = lit_cpointer_t::compress (lit).packed_value;
+  ret.uid = rcs_cpointer_compress (lit).packed_value;
 
   return ret;
 }
@@ -206,9 +207,11 @@ lexer_create_token_for_charset (jsp_token_type_t tt, /**< token type */
     return create_token_from_lit (tt, lit);
   }
   lit = lit_create_literal_from_utf8_string (converted_str_p, new_length);
-  JERRY_ASSERT (lit->get_type () == LIT_STR_T
-                || lit->get_type () == LIT_MAGIC_STR_T
-                || lit->get_type () == LIT_MAGIC_STR_EX_T);
+  record_type_t type = rcs_record_get_type (lit);
+
+  JERRY_ASSERT (RCS_RECORD_TYPE_IS_CHARSET (type)
+                || RCS_RECORD_TYPE_IS_MAGIC_STR (type)
+                || RCS_RECORD_TYPE_IS_MAGIC_STR_EX (type));
 
   if (unlikely (should_convert))
   {

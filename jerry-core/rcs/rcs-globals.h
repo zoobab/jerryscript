@@ -14,20 +14,35 @@
  * limitations under the License.
  */
 
-#ifndef LIT_LITERAL_STORAGE_H
-#define LIT_LITERAL_STORAGE_H
+#ifndef RCS_GLOBALS_H
+#define RCS_GLOBALS_H
 
-#include "rcs-globals.h"
-#include "ecma-globals.h"
+typedef unsigned char uint8_t;
+class rcs_chunked_list_t;
 
-extern record_set_t rcs_lit_storage;
+/**
+ * Type of record
+ */
+typedef uint8_t record_type_t;
 
-record_type_t *create_charset_record (record_set_t *, const lit_utf8_byte_t *, lit_utf8_size_t);
-record_type_t *create_magic_record (record_set_t *, lit_magic_string_id_t);
-record_type_t *create_magic_record_ex (record_set_t *, lit_magic_string_ex_id_t);
-record_type_t *create_number_record (record_set_t *, ecma_number_t);
+/**
+ * Record type
+ */
+typedef uint8_t record_t;
 
-uint32_t lit_count_literals (record_set_t *);
-void lit_dump_literals (record_set_t *);
+/**
+ * Recordset type
+ */
+typedef rcs_chunked_list_t record_set_t;
+
+/**
+ * Logarithm of a dynamic storage unit alignment
+ */
+#define RCS_DYN_STORAGE_LENGTH_UNIT_LOG (2u)
+
+/**
+ * Unit of length
+ */
+#define RCS_DYN_STORAGE_LENGTH_UNIT ((size_t) (1ull << RCS_DYN_STORAGE_LENGTH_UNIT_LOG))
 
 #endif

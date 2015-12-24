@@ -20,6 +20,7 @@
 #include "jrt-libc-includes.h"
 #include "ecma-helpers.h"
 #include "lit-magic-strings.h"
+#include "rcs-records.h"
 
 /**
  * Early error longjmp label, used to finish parse upon an early error occurence

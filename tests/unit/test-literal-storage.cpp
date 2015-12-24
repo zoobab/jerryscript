@@ -15,7 +15,7 @@
 
 #include "ecma-helpers.h"
 #include "lit-literal.h"
-#include "lit-magic-strings.h"
+#include "lit-literal-storage.h"
 #include "test-common.h"
 
 // Iterations count
@@ -67,7 +67,6 @@ main (int __attr_unused___ argc,
 
   mem_init ();
   lit_init ();
-
 
   for (uint32_t i = 0; i < test_iters; i++)
   {
@@ -133,8 +132,7 @@ main (int __attr_unused___ argc,
     // Check empty string exists
     JERRY_ASSERT (lit_find_literal_by_utf8_string (NULL, 0));
 
-    lit_storage.cleanup ();
-    JERRY_ASSERT (lit_storage.get_first () == NULL);
+    lit_cleanup ();
   }
 
   lit_finalize ();

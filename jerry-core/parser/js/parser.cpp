@@ -16,6 +16,7 @@
 
 #include "bytecode-data.h"
 #include "ecma-helpers.h"
+#include "jrt-bit-fields.h"
 #include "jrt-libc-includes.h"
 #include "jsp-mm.h"
 #include "opcodes.h"
@@ -27,6 +28,7 @@
 #include "jsp-early-error.h"
 #include "jsp-internal.h"
 #include "vm.h"
+#include "rcs-records.h"
 
 /**
  * Flag, indicating whether result of expression
@@ -977,7 +979,7 @@ parse_property_name (void)
     const char *s = lexer_token_type_to_string (lexer_get_token_type (tok));
     literal_t lit = lit_find_or_create_literal_from_utf8_string ((const lit_utf8_byte_t *) s,
                                                                  (lit_utf8_size_t)strlen (s));
-    return jsp_operand_t::make_string_lit_operand (lit_cpointer_t::compress (lit));
+    return jsp_operand_t::make_string_lit_operand (rcs_cpointer_compress (lit));
   }
   else
   {
@@ -996,7 +998,7 @@ parse_property_name (void)
         if (lexer_get_token_type (tok) == TOK_NUMBER)
         {
           literal_t num_lit = lit_get_literal_by_cp (token_data_as_lit_cp ());
-          JERRY_ASSERT (num_lit->get_type () == LIT_NUMBER_T);
+          JERRY_ASSERT (RCS_RECORD_IS_NUMBER (num_lit));
           num = lit_charset_literal_get_number (num_lit);
         }
         else
@@ -1009,7 +1011,7 @@ parse_property_name (void)
         JERRY_ASSERT (sz <= ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER);
 
         literal_t str_lit = lit_find_or_create_literal_from_utf8_string (buff, sz);
-        return jsp_operand_t::make_string_lit_operand (lit_cpointer_t::compress (str_lit));
+        return jsp_operand_t::make_string_lit_operand (rcs_cpointer_compress (str_lit));
       }
       case TOK_NULL:
       case TOK_BOOL:
@@ -1019,7 +1021,7 @@ parse_property_name (void)
                                     : (tok.uid ? LIT_MAGIC_STRING_TRUE : LIT_MAGIC_STRING_FALSE));
         literal_t lit = lit_find_or_create_literal_from_utf8_string (lit_get_magic_string_utf8 (id),
                                                                      lit_get_magic_string_size (id));
-        return jsp_operand_t::make_string_lit_operand (lit_cpointer_t::compress (lit));
+        return jsp_operand_t::make_string_lit_operand (rcs_cpointer_compress (lit));
       }
       default:
       {
@@ -2317,7 +2319,7 @@ jsp_get_prop_name_after_dot (void)
       EMIT_ERROR (JSP_EARLY_ERROR_SYNTAX, "Expected identifier");
     }
 
-    return lit_cpointer_t::compress (lit);
+    return rcs_cpointer_compress (lit);
   }
   else if (token_is (TOK_BOOL) || token_is (TOK_NULL))
   {
@@ -2327,7 +2329,7 @@ jsp_get_prop_name_after_dot (void)
     literal_t lit = lit_find_or_create_literal_from_utf8_string (lit_get_magic_string_utf8 (id),
                                                                  lit_get_magic_string_size (id));
 
-    return lit_cpointer_t::compress (lit);
+    return rcs_cpointer_compress (lit);
   }
   else
   {
