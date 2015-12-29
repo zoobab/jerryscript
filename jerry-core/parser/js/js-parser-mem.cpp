@@ -341,6 +341,9 @@ parser_stack_push_uint8 (parser_context_t *context_p, /**< context */
 {
   parser_mem_page_t *page_p = context_p->stack.first_p;
 
+  /* This assert might trigger false positive valgrind errors, when
+   * parser_stack_push() pushes not fully initialized structures.
+   * More precisely when the last byte of the structure is uninitialized. */
   PARSER_ASSERT (page_p == NULL
                  || context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 

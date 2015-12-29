@@ -133,7 +133,7 @@ util_get_utf8_length (uint16_t chr) /**< EcmaScript character */
  * Initializes a function literal from the argument.
  */
 void
-util_set_function_literal (lexer_literal_t *literal_p, /* literal */
+util_set_function_literal (lexer_literal_t *literal_p, /**< literal */
                            void *function_p) /* function */
 {
   literal_p->u.function_p = function_p;
@@ -143,14 +143,14 @@ util_set_function_literal (lexer_literal_t *literal_p, /* literal */
  * Free literal.
  */
 void
-util_free_literal (lexer_literal_t *literal_p) /* literal */
+util_free_literal (lexer_literal_t *literal_p) /**< literal */
 {
   if (literal_p->type == LEXER_IDENT_LITERAL
       || literal_p->type == LEXER_STRING_LITERAL)
   {
-    if (literal_p->length > 0)
+    if (!(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
     {
-      PARSER_FREE (literal_p->u.char_p);
+      PARSER_FREE ((uint8_t *) literal_p->u.char_p);
     }
   }
   else if (literal_p->type == LEXER_FUNCTION_LITERAL)
@@ -159,64 +159,16 @@ util_free_literal (lexer_literal_t *literal_p) /* literal */
   }
   else
   {
-    ecma_free_value (literal_p->u.value, true);
+    // FIXME free literals
   }
 } /* util_free_literal */
 
-#ifdef PARSER_DEBUG
-/**
- * Print literal.
- */
-void
-util_print_literal (lexer_literal_t *literal_p) /* literal */
-{
-  if (literal_p->type == LEXER_IDENT_LITERAL)
-  {
-    if (literal_p->status_flags & LEXER_FLAG_VAR)
-    {
-      printf ("var_ident(");
-    }
-    else
-    {
-      printf ("ident(");
-    }
-    util_print_chars (literal_p->u.char_p, literal_p->length);
-  }
-  else if (literal_p->type == LEXER_FUNCTION_LITERAL)
-  {
-    printf ("function");
-    return;
-  }
-  else if (literal_p->type == LEXER_STRING_LITERAL)
-  {
-    printf ("string(");
-    util_print_chars (literal_p->u.char_p, literal_p->length);
-  }
-  else if (literal_p->type == LEXER_NUMBER_LITERAL)
-  {
-    printf ("number(");
-    util_print_number (ecma_get_number_from_value (literal_p->u.value));
-  }
-  else if (literal_p->type == LEXER_REGEXP_LITERAL)
-  {
-    printf ("regexp(");
-    util_print_string (ecma_get_string_from_value (literal_p->u.value));
-  }
-  else
-  {
-    printf ("unknown");
-    return;
-  }
+#ifdef PARSER_DUMP_BYTE_CODE
 
-  printf (")");
-} /* util_print_literal */
-#endif
-
-#ifdef PARSER_DEBUG
 /**
  * Debug utility to print a character sequence.
  */
-void
+static void
 util_print_chars (const uint8_t *char_p, /**< character pointer */
                   size_t size) /**< size */
 {
@@ -228,28 +180,64 @@ util_print_chars (const uint8_t *char_p, /**< character pointer */
 }
 
 /**
- * Debug utility to print a character sequence.
+ * Debug utility to print a number.
  */
-void
-util_print_string (ecma_string_t *str_p) /**< String pointer */
-{
-  lit_utf8_size_t str_size = ecma_string_get_size (str_p);
-  MEM_DEFINE_LOCAL_ARRAY (utf8_str_p, str_size + 1, lit_utf8_byte_t);
-
-  ssize_t sz = ecma_string_to_utf8_string (str_p, utf8_str_p, (ssize_t) str_size);
-  JERRY_ASSERT (sz >= 0);
-  utf8_str_p[sz] = 0;
-  printf ("%s", utf8_str_p);
-
-  MEM_FINALIZE_LOCAL_ARRAY (utf8_str_p);
-}
-
-void
-util_print_number (ecma_number_t *num_p)
+static void
+util_print_number (ecma_number_t num_p)
 {
   lit_utf8_byte_t str_buf[ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER];
-  lit_utf8_size_t str_size = ecma_number_to_utf8_string (*num_p, str_buf, sizeof (str_buf));
+  lit_utf8_size_t str_size = ecma_number_to_utf8_string (num_p, str_buf, sizeof (str_buf));
   str_buf[str_size] = 0;
   printf ("%s", str_buf);
 }
-#endif
+
+/**
+ * Print literal.
+ */
+void
+util_print_literal (lexer_literal_t *literal_p) /**< literal */
+{
+  if (literal_p->type == LEXER_IDENT_LITERAL)
+  {
+    if (literal_p->status_flags & LEXER_FLAG_VAR)
+    {
+      printf ("var_ident(");
+    }
+    else
+    {
+      printf ("ident(");
+    }
+    util_print_chars (literal_p->u.char_p, literal_p->prop.length);
+  }
+  else if (literal_p->type == LEXER_FUNCTION_LITERAL)
+  {
+    printf ("function");
+    return;
+  }
+  else if (literal_p->type == LEXER_STRING_LITERAL)
+  {
+    printf ("string(");
+    util_print_chars (literal_p->u.char_p, literal_p->prop.length);
+  }
+  else if (literal_p->type == LEXER_NUMBER_LITERAL)
+  {
+    literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
+    printf ("number(");
+    util_print_number (lit_charset_literal_get_number (literal));
+  }
+  else if (literal_p->type == LEXER_REGEXP_LITERAL)
+  {
+    literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
+    printf ("regexp(");
+    util_print_chars (lit_literal_to_str_internal_buf (literal), literal_p->prop.length);
+  }
+  else
+  {
+    printf ("unknown");
+    return;
+  }
+
+  printf (")");
+} /* util_print_literal */
+
+#endif /* PARSER_DUMP_BYTE_CODE */

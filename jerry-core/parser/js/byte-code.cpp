@@ -31,7 +31,7 @@ const uint8_t cbc_ext_flags[] =
 
 #undef CBC_OPCODE
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
 
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) #arg1,
 
@@ -47,4 +47,4 @@ const char *cbc_ext_names[] =
 
 #undef CBC_OPCODE
 
-#endif
+#endif /* PARSER_DUMP_BYTE_CODE */

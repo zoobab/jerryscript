@@ -144,10 +144,8 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  */
 ecma_completion_value_t
 vm_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                 ecma_value_t var_name_value) /**< variable name */
+             ecma_string_t *var_name_str_p) /**< variable name */
 {
-  ecma_string_t *var_name_str_p = ecma_get_string_from_value (var_name_value);
-
   if (!ecma_op_has_binding (frame_ctx_p->lex_env_p, var_name_str_p))
   {
     const bool is_configurable_bindings = frame_ctx_p->is_eval_code;
@@ -166,6 +164,5 @@ vm_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                                                                                            true),
                                                                 ECMA_SIMPLE_VALUE_UNDEFINED));
   }
-
   return ecma_make_empty_completion_value ();
 } /* vm_var_decl */

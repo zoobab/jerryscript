@@ -37,9 +37,6 @@ typedef enum : uint8_t
                                                                      *   'eval' identifier */
 } opcode_scope_code_flags_t;
 
-#define VM_GET_LITERAL_START_P(bytecode_header_p) \
-  (ecma_value_t *) (((uint8_t *) (bytecode_header_p)) + sizeof (cbc_compiled_code_t));
-
 /**
  * Context of interpreter, related to a JS stack frame
  */
@@ -47,6 +44,7 @@ typedef struct
 {
   const cbc_compiled_code_t *bytecode_header_p; /**< currently executed byte-code data */
   uint8_t *byte_code_p; /**< current byte code pointer */
+  lit_cpointer_t *literal_start_p; /**< literal list start pointer */
   ecma_object_t *lex_env_p; /**< current lexical environment */
   ecma_object_t *ref_base_lex_env_p; /**< current lexical environment */
   bool is_strict; /**< is current code execution mode strict? */

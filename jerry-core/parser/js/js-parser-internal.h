@@ -44,11 +44,6 @@
 #define PARSE_EXPR_NO_COMMA                   0x04
 #define PARSE_EXPR_HAS_LITERAL                0x08
 
-/* Special literal indicies. */
-#define PARSE_FUNCTION_NAME                   0xd000u
-#define PARSE_ENCODE_FUNCTION_ARG(value)      ((uint16_t) (0xd001u + (value)))
-#define PARSE_DECODE_FUNCTION_ARG(value)      ((uint16_t) ((value) - 0xd001u))
-
 /* The maximum of PARSER_CBC_STREAM_PAGE_SIZE is 127. */
 #define PARSER_CBC_STREAM_PAGE_SIZE \
   ((uint32_t) (64 - sizeof (void*)))
@@ -60,8 +55,6 @@
 #define PARSER_PLUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) + (value))
 #define PARSER_MINUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) - (value))
 #define PARSER_PLUS_EQUAL_LC(base, value) (base) = (parser_line_counter_t) ((base) + (value))
-
-#define PARSER_ANONYMOUS_FUNCTION 0xffffu
 
 /**
  * Parser boolean type.
@@ -261,9 +254,12 @@ typedef struct
 #ifdef PARSER_DEBUG
   /* Variables for debugging / logging. */
   uint16_t context_stack_depth;               /**< current context stack depth */
-  uint32_t total_byte_code_size;              /**< total byte code size */
+#endif /* PARSER_DEBUG */
+
+#ifdef PARSER_DUMP_BYTE_CODE
   int is_show_opcodes;                        /**< show opcodes */
-#endif
+  uint32_t total_byte_code_size;              /**< total byte code size */
+#endif /* PARSER_DUMP_BYTE_CODE */
 } parser_context_t;
 
 /* Memory management.
@@ -311,6 +307,7 @@ void parser_emit_cbc (parser_context_t *, uint16_t);
 void parser_emit_cbc_literal (parser_context_t *, uint16_t, uint16_t);
 void parser_emit_cbc_literal_from_token (parser_context_t *, uint16_t);
 void parser_emit_cbc_call (parser_context_t *, uint16_t, size_t);
+void parser_emit_cbc_push_number (parser_context_t *, int);
 void parser_emit_cbc_forward_branch (parser_context_t *, uint16_t, parser_branch_t *);
 parser_branch_node_t *parser_emit_cbc_forward_branch_item (parser_context_t *, uint16_t, parser_branch_node_t *);
 void parser_emit_cbc_backward_branch (parser_context_t *, uint16_t, uint32_t);
@@ -337,8 +334,8 @@ void lexer_expect_identifier (parser_context_t *, uint8_t);
 void lexer_scan_identifier (parser_context_t *, int);
 void lexer_expect_object_literal_id (parser_context_t *, int);
 void lexer_construct_literal_object (parser_context_t *, lexer_lit_location_t *, uint8_t);
-void lexer_construct_number_object (parser_context_t *);
-void lexer_construct_function_object (parser_context_t *, uint16_t, uint32_t);
+int lexer_construct_number_object (parser_context_t *, int, int);
+void lexer_construct_function_object (parser_context_t *, uint32_t);
 void lexer_construct_regexp_object (parser_context_t *, int);
 int lexer_same_identifiers (lexer_lit_location_t *, lexer_lit_location_t *);
 

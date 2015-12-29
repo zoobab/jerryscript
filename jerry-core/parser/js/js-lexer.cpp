@@ -1004,7 +1004,8 @@ static void
 lexer_process_char_literal (parser_context_t *context_p, /**< context */
                             const uint8_t *char_p, /**< characters */
                             size_t length, /**< length of string */
-                            uint8_t literal_type) /**< final literal type */
+                            uint8_t literal_type, /**< final literal type */
+                            uint8_t has_escape) /**< has escape sequences */
 {
   parser_list_iterator_t literal_iterator;
   lexer_literal_t *literal_p;
@@ -1021,7 +1022,7 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
   while ((literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator)) != NULL)
   {
     if (literal_p->type == literal_type
-        && literal_p->length == length
+        && literal_p->prop.length == length
         && memcmp(literal_p->u.char_p, char_p, length) == 0)
     {
       context_p->lit_object.literal_p = literal_p;
@@ -1040,12 +1041,19 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
   }
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
-  literal_p->length = (uint16_t) length;
+  literal_p->prop.length = (uint16_t) length;
   literal_p->type = literal_type;
-  literal_p->status_flags = 0;
+  literal_p->status_flags = has_escape ? 0 : LEXER_FLAG_SOURCE_PTR;
 
-  literal_p->u.char_p = PARSER_MALLOC (length);
-  memcpy(literal_p->u.char_p, char_p, length);
+  if (has_escape)
+  {
+    literal_p->u.char_p = PARSER_MALLOC (length);
+    memcpy (literal_p->u.char_p, char_p, length);
+  }
+  else
+  {
+    literal_p->u.char_p = char_p;
+  }
 
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = (uint16_t) literal_index;
@@ -1231,13 +1239,15 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
   lexer_process_char_literal (context_p,
                               source_p,
                               literal_p->length,
-                              literal_type);
+                              literal_type,
+                              literal_p->has_escape);
 
   context_p->lit_object.type = lexer_literal_object_any;
 
   if (literal_p->type == LEXER_IDENT_LITERAL)
   {
-    if (context_p->status_flags & PARSER_INSIDE_WITH)
+    if ((context_p->status_flags & PARSER_INSIDE_WITH)
+        && context_p->lit_object.literal_p->type == LEXER_IDENT_LITERAL)
     {
       context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
     }
@@ -1274,12 +1284,40 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
 
 /**
  * Construct a number object.
+ *
+ * @return PARSER_TRUE if number is small number
  */
-void
-lexer_construct_number_object (parser_context_t *context_p) /**< context */
+int
+lexer_construct_number_object (parser_context_t *context_p, /**< context */
+                               int push_number_allowed, /**< push number support is allowed */
+                               int is_negative_number) /**< sign is negative */
 {
   lexer_literal_t *literal_p;
+  ecma_number_t num;
   uint16_t literal_count = context_p->literal_count;
+
+  num = ecma_utf8_string_to_number (context_p->token.lit_location.char_p,
+                                    context_p->token.lit_location.length);
+
+  if (push_number_allowed)
+  {
+    int32_t int_num = (int32_t) num;
+
+    if (int_num == num)
+    {
+      if (int_num < CBC_PUSH_NUMBER_2_RANGE_END
+          && (int_num != 0 || !is_negative_number))
+      {
+        context_p->lit_object.index = (uint16_t) int_num;
+        return PARSER_TRUE;
+      }
+    }
+  }
+
+  if (is_negative_number)
+  {
+    num = -num;
+  }
 
   if (literal_count >= PARSER_MAXIMUM_NUMBER_OF_LITERALS)
   {
@@ -1287,27 +1325,20 @@ lexer_construct_number_object (parser_context_t *context_p) /**< context */
   }
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
-  literal_p->length = context_p->token.lit_location.length;
-  literal_p->type = LEXER_UNKNOWN_LITERAL;
+  literal_p->prop.length = context_p->token.lit_location.length;
+  literal_p->type = LEXER_UNUSED_LITERAL;
   literal_p->status_flags = 0;
 
-  context_p->literal_count = (uint16_t) (literal_count + 1);
+  context_p->literal_count++;
 
-  ecma_number_t *num_p = ecma_alloc_number ();
-  *num_p = ecma_utf8_string_to_number (context_p->token.lit_location.char_p,
-                                       context_p->token.lit_location.length);
-
-  if (!num_p)
-  {
-    parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
-  }
-
-  literal_p->u.value = ecma_make_number_value (num_p);
+  literal_p->u.value = lit_cpointer_t::compress (lit_find_or_create_literal_from_num (num));
   literal_p->type = LEXER_NUMBER_LITERAL;
 
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = literal_count;
   context_p->lit_object.type = lexer_literal_object_any;
+
+  return PARSER_FALSE;
 } /* lexer_construct_number_object */
 
 /**
@@ -1315,7 +1346,6 @@ lexer_construct_number_object (parser_context_t *context_p) /**< context */
  */
 void
 lexer_construct_function_object (parser_context_t *context_p, /**< context */
-                                 uint16_t literal_index,  /**< index */
                                  uint32_t extra_status_flags) /**< extra status flags */
 {
   cbc_compiled_code_t *compiled_code_p;
@@ -1327,8 +1357,7 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
   }
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
-  literal_p->init_index = literal_index;
-  literal_p->type = LEXER_UNKNOWN_LITERAL;
+  literal_p->type = LEXER_UNUSED_LITERAL;
   literal_p->status_flags = 0;
 
   context_p->literal_count++;
@@ -1491,20 +1520,14 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   }
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
-  literal_p->length = (uint16_t) length;
-  literal_p->type = LEXER_UNKNOWN_LITERAL;
+  literal_p->prop.length = (uint16_t) length;
+  literal_p->type = LEXER_UNUSED_LITERAL;
   literal_p->status_flags = 0;
 
   context_p->literal_count++;
 
-  ecma_string_t *str_p = ecma_new_ecma_string_from_utf8 (regex_start_p, length);
-
-  if (!str_p)
-  {
-    parser_raise_error (context_p, PARSER_ERR_INVALID_REGEXP);
-  }
-
-  literal_p->u.value = ecma_make_string_value (str_p);
+  literal_t lit = lit_find_or_create_literal_from_utf8_string (regex_start_p, length);
+  literal_p->u.value = lit_cpointer_t::compress (lit);
 
   literal_p->type = LEXER_REGEXP_LITERAL;
 
@@ -1649,7 +1672,7 @@ lexer_expect_object_literal_id (parser_context_t *context_p, /**< context */
           && char_p[0] <= '9')
       {
         lexer_parse_number (context_p);
-        lexer_construct_number_object (context_p);
+        lexer_construct_number_object (context_p, PARSER_FALSE, PARSER_FALSE);
         return;
       }
     }

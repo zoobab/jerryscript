@@ -27,6 +27,8 @@
 #define PARSER_DEBUG
 #endif
 
+#define PARSER_DUMP_BYTE_CODE
+
 #include "ecma-globals.h"
 #include "lit-literal.h"
 #include "mem-heap.h"
@@ -66,8 +68,8 @@ size_t util_get_utf8_length (uint16_t);
 /**
  * Literal types.
  *
- * The LEXER_UNKNOWN_LITERAL type is internal and
- * used for several purposes.
+ * The LEXER_UNUSED_LITERAL type is internal and
+ * used for various purposes.
  */
 typedef enum
 {
@@ -76,7 +78,7 @@ typedef enum
   LEXER_NUMBER_LITERAL = 2,         /**< number literal */
   LEXER_FUNCTION_LITERAL = 3,       /**< function literal */
   LEXER_REGEXP_LITERAL = 4,         /**< regexp literal */
-  LEXER_UNKNOWN_LITERAL = 5,        /**< unknown literal, can only be
+  LEXER_UNUSED_LITERAL = 5,         /**< unused literal, can only be
                                          used by the byte code generator. */
 } lexer_literal_type_t;
 
@@ -88,6 +90,12 @@ typedef enum
 #define LEXER_FLAG_NO_REG_STORE 0x02
 /* This local identifier is initialized with a value. */
 #define LEXER_FLAG_INITIALIZED 0x04
+/* This local identifier has a reference to the function itself. */
+#define LEXER_FLAG_FUNCTION_NAME 0x08
+/* This local identifier is a function argument. */
+#define LEXER_FLAG_FUNCTION_ARGUMENT 0x10
+/* No space is allocated for this character literal. */
+#define LEXER_FLAG_SOURCE_PTR 0x20
 
 /**
  * Literal data.
@@ -96,13 +104,21 @@ typedef struct
 {
   union
   {
-    ecma_value_t value;      /**< literal value (not used by the parser) */
-    uint8_t *char_p;         /**< character value */
+    lit_cpointer_t value;    /**< literal value (not processed by the parser) */
+    const uint8_t *char_p;   /**< character value */
     void *function_p;        /**< compiled function pointer */
   } u;
-  uint16_t length;           /**< length of ident / string literal */
-  uint16_t index;            /**< real index during post processing */
-  uint16_t init_index;       /**< initialized index during post processing */
+
+#ifdef PARSER_DUMP_BYTE_CODE
+  struct
+#else
+  union
+#endif
+  {
+    uint16_t length;         /**< length of ident / string literal */
+    uint16_t index;          /**< real index during post processing */
+  } prop;
+
   uint8_t type;              /**< type of the literal */
   uint8_t status_flags;      /**< status flags */
 } lexer_literal_t;
@@ -110,9 +126,9 @@ typedef struct
 void util_set_function_literal (lexer_literal_t *, void *);
 void util_free_literal (lexer_literal_t *);
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
 void util_print_literal (lexer_literal_t *);
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
 
 /* Assertions */
 
@@ -161,11 +177,5 @@ void util_print_literal (lexer_literal_t *);
 
 #define PARSER_INLINE inline
 #define PARSER_NOINLINE __attribute__ ((noinline))
-
-#ifdef PARSER_DEBUG
-void util_print_chars (const uint8_t *, size_t);
-void util_print_string (ecma_string_t *);
-void util_print_number (ecma_number_t *);
-#endif
 
 #endif /* COMMON_H */

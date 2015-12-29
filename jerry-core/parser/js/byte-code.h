@@ -205,6 +205,9 @@
   CBC_OPCODE (CBC_PUSH_FALSE, CBC_NO_FLAG, 1, VM_OC_PUSH_FALSE | VM_OC_PUT_STACK) \
   CBC_OPCODE (CBC_PUSH_NULL, CBC_NO_FLAG, 1, VM_OC_PUSH_NULL | VM_OC_PUT_STACK) \
   CBC_OPCODE (CBC_PUSH_THIS, CBC_NO_FLAG, 1, VM_OC_PUSH_THIS | VM_OC_PUT_STACK) \
+  CBC_OPCODE (CBC_PUSH_NUMBER_0, CBC_NO_FLAG, 1, VM_OC_PUSH_NUMBER | VM_OC_PUT_STACK) \
+  CBC_OPCODE (CBC_PUSH_NUMBER_1, CBC_HAS_BYTE_ARG, 1, VM_OC_PUSH_NUMBER | VM_OC_PUT_STACK) \
+  CBC_OPCODE (CBC_PUSH_NUMBER_2, CBC_HAS_BYTE_ARG, 1, VM_OC_PUSH_NUMBER | VM_OC_PUT_STACK) \
   CBC_OPCODE (CBC_PROP_GET, CBC_NO_FLAG, -1, VM_OC_PROP_GET | VM_OC_GET_STACK_STACK | VM_OC_PUT_STACK) \
   CBC_OPCODE (CBC_PROP_LITERAL_GET, CBC_HAS_LITERAL_ARG, 0, VM_OC_PROP_GET | VM_OC_GET_STACK_LITERAL | VM_OC_PUT_STACK) \
   CBC_OPCODE (CBC_PROP_LITERAL_LITERAL_GET, CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2, 1, VM_OC_PROP_GET | VM_OC_GET_LITERAL_LITERAL | VM_OC_PUT_STACK) \
@@ -268,6 +271,12 @@
   CBC_OPCODE (CBC_CALL_PROP, CBC_HAS_POP_STACK_BYTE_ARG, -3, VM_OC_CALL | VM_OC_GET_BYTE) \
   CBC_OPCODE (CBC_CALL_PROP_PUSH_RESULT, CBC_HAS_POP_STACK_BYTE_ARG, -2, VM_OC_CALL | VM_OC_GET_BYTE) \
   CBC_OPCODE (CBC_CALL_PROP_BLOCK, CBC_HAS_POP_STACK_BYTE_ARG, -3, VM_OC_CALL | VM_OC_GET_BYTE) \
+  CBC_OPCODE (CBC_CALL0, CBC_NO_FLAG, -1, VM_OC_CALL) \
+  CBC_OPCODE (CBC_CALL0_PUSH_RESULT, CBC_NO_FLAG, 0, VM_OC_CALL) \
+  CBC_OPCODE (CBC_CALL0_BLOCK, CBC_NO_FLAG, -1, VM_OC_CALL) \
+  CBC_OPCODE (CBC_CALL0_PROP, CBC_NO_FLAG, -3, VM_OC_CALL) \
+  CBC_OPCODE (CBC_CALL0_PROP_PUSH_RESULT, CBC_NO_FLAG, -2, VM_OC_CALL) \
+  CBC_OPCODE (CBC_CALL0_PROP_BLOCK, CBC_NO_FLAG, -3, VM_OC_CALL) \
   \
   /* Binary assignment opcodes. */ \
   CBC_OPCODE (CBC_ASSIGN, CBC_NO_FLAG, -3, VM_OC_ASSIGN | VM_OC_GET_STACK | VM_OC_PUT_REFERENCE) \
@@ -347,6 +356,9 @@
 #define CBC_MAXIMUM_SMALL_VALUE 510
 #define CBC_MAXIMUM_FULL_VALUE 32767
 
+#define CBC_PUSH_NUMBER_1_RANGE_END 128
+#define CBC_PUSH_NUMBER_2_RANGE_END 32768
+
 #define CBC_HIGHEST_BIT_MASK 0x80
 #define CBC_LOWER_SEVEN_BIT_MASK 0x7f
 
@@ -365,19 +377,42 @@
  */
 typedef struct
 {
+  uint16_t status_flags;            /**< various status flags */
+} cbc_compiled_code_t;
+
+/**
+ * Compiled byte code arguments.
+ */
+typedef struct
+{
+  uint16_t status_flags;            /**< various status flags */
+  uint8_t stack_limit;              /**< maximum number of values stored on the stack */
+  uint8_t argument_end;             /**< number of arguments expected by the function */
+  uint8_t register_end;             /**< end position of the register group */
+  uint8_t ident_end;                /**< end position of the identifier group */
+  uint8_t const_literal_end;        /**< end position of the const literal group */
+  uint8_t literal_end;              /**< end position of the literal group */
+} cbc_uint8_arguments_t;
+
+/**
+ * Compiled byte code arguments.
+ */
+typedef struct
+{
+  uint16_t status_flags;            /**< various status flags */
   uint16_t stack_limit;             /**< maximum number of values stored on the stack */
   uint16_t argument_end;            /**< number of arguments expected by the function */
   uint16_t register_end;            /**< end position of the register group */
   uint16_t ident_end;               /**< end position of the identifier group */
   uint16_t const_literal_end;       /**< end position of the const literal group */
   uint16_t literal_end;             /**< end position of the literal group */
-  uint16_t status_flags;            /**< various status flags */
-} cbc_compiled_code_t;
+} cbc_uint16_arguments_t;
 
 /* When CBC_CODE_FLAGS_FULL_LITERAL_ENCODING
  * is not set the small encoding is used. */
-#define CBC_CODE_FLAGS_FULL_LITERAL_ENCODING 1
-#define CBC_CODE_FLAGS_STRICT_MODE 2
+#define CBC_CODE_FLAGS_FULL_LITERAL_ENCODING 0x01
+#define CBC_CODE_FLAGS_UINT16_ARGUMENTS 0x02
+#define CBC_CODE_FLAGS_STRICT_MODE 0x04
 
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) arg1,
 
@@ -405,7 +440,7 @@ typedef enum
 extern const uint8_t cbc_flags[];
 extern const uint8_t cbc_ext_flags[];
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
 
 /**
  * Opcode names for debugging.
@@ -413,6 +448,6 @@ extern const uint8_t cbc_ext_flags[];
 extern const char *cbc_names[];
 extern const char *cbc_ext_names[];
 
-#endif
+#endif /* PARSER_DUMP_BYTE_CODE */
 
 #endif /* BYTE_CODE_H */

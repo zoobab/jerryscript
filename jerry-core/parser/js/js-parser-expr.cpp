@@ -191,7 +191,7 @@ parser_parse_object_literal (parser_context_t *context_p) /**< context */
       literal_index = context_p->lit_object.index;
 
       parser_flush_cbc (context_p);
-      lexer_construct_function_object (context_p, PARSER_ANONYMOUS_FUNCTION, status_flags);
+      lexer_construct_function_object (context_p, status_flags);
 
       parser_emit_cbc_literal (context_p,
                                CBC_PUSH_LITERAL,
@@ -290,7 +290,31 @@ parser_parse_unary_expression (parser_context_t *context_p, /**< context */
       }
       else if (context_p->token.lit_location.type == LEXER_NUMBER_LITERAL)
       {
-        lexer_construct_number_object (context_p);
+        int is_negative_number = PARSER_FALSE;
+
+        while (context_p->stack_top_uint8 == LEXER_PLUS
+               || context_p->stack_top_uint8 == LEXER_NEGATE)
+        {
+          if (context_p->stack_top_uint8 == LEXER_NEGATE)
+          {
+            is_negative_number = !is_negative_number;
+          }
+          parser_stack_pop_uint8 (context_p);
+        }
+
+        if (lexer_construct_number_object (context_p, PARSER_TRUE, is_negative_number))
+        {
+          PARSER_ASSERT (context_p->lit_object.index < CBC_PUSH_NUMBER_2_RANGE_END);
+
+          if (context_p->lit_object.index == 0)
+          {
+            parser_emit_cbc (context_p, CBC_PUSH_NUMBER_0);
+            break;
+          }
+
+          parser_emit_cbc_push_number (context_p, is_negative_number);
+          break;
+        }
       }
 
       if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode)
@@ -312,7 +336,7 @@ parser_parse_unary_expression (parser_context_t *context_p, /**< context */
     }
     case LEXER_KEYW_FUNCTION:
     {
-      uint16_t prev_literal = PARSER_ANONYMOUS_FUNCTION;
+      uint16_t prev_literal = 0xffffu;
 
       if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode))
       {
@@ -325,12 +349,11 @@ parser_parse_unary_expression (parser_context_t *context_p, /**< context */
       }
 
       lexer_construct_function_object (context_p,
-                                       PARSER_ANONYMOUS_FUNCTION,
                                        PARSER_IS_FUNCTION | PARSER_IS_FUNC_EXPRESSION | PARSER_IS_CLOSURE);
 
       PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
 
-      if (prev_literal != PARSER_ANONYMOUS_FUNCTION)
+      if (prev_literal != 0xffffu)
       {
         context_p->last_cbc_opcode = CBC_PUSH_TWO_LITERALS;
         context_p->last_cbc.literal_index = prev_literal;
@@ -471,7 +494,6 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
       case LEXER_LEFT_PAREN:
       {
         size_t call_arguments = 0;
-        cbc_argument_t argument = context_p->last_cbc;
         uint16_t opcode = CBC_CALL;
 
         parser_push_result (context_p);
@@ -532,12 +554,18 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
         }
 
         lexer_next_token (context_p);
-        parser_flush_cbc (context_p);
-
-        /* Pushing the next instruction manually. */
-        argument.u.value = (uint16_t) call_arguments;
-        context_p->last_cbc = argument;
-        context_p->last_cbc_opcode = opcode;
+        if (call_arguments == 0 && opcode == CBC_CALL)
+        {
+          parser_emit_cbc (context_p, CBC_CALL0);
+        }
+        else if (call_arguments == 0 && opcode == CBC_CALL_PROP)
+        {
+          parser_emit_cbc (context_p, CBC_CALL0_PROP);
+        }
+        else
+        {
+          parser_emit_cbc_call (context_p, opcode, call_arguments);
+        }
         continue;
         /* FALLTHRU */
       }

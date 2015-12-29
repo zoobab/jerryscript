@@ -332,6 +332,8 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
 {
   uint32_t status_flags;
   lexer_literal_t *name_p;
+  lexer_literal_t *literal_p;
+  uint8_t no_reg_store;
 
   PARSER_ASSERT (context_p->token.type == LEXER_KEYW_FUNCTION);
 
@@ -340,6 +342,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
                  && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
   name_p = context_p->lit_object.literal_p;
+  context_p->status_flags |= PARSER_NO_REG_STORE;
 
   status_flags = PARSER_IS_FUNCTION | PARSER_IS_CLOSURE;
   if (context_p->lit_object.type == lexer_literal_object_eval
@@ -348,34 +351,55 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
     status_flags |= PARSER_HAS_NON_STRICT_ARG;
   }
 
-  if ((name_p->status_flags & LEXER_FLAG_INITIALIZED)
-      && (name_p->init_index < PARSE_FUNCTION_NAME))
+  if (name_p->status_flags & LEXER_FLAG_INITIALIZED)
   {
-    cbc_compiled_code_t *compiled_code_p;
-    lexer_literal_t *literal_p = parser_list_get (&context_p->literal_pool, name_p->init_index);
+    if (!(name_p->status_flags & (LEXER_FLAG_FUNCTION_NAME | LEXER_FLAG_FUNCTION_ARGUMENT)))
+    {
+      /* Overwrite the previous initialization. */
+      cbc_compiled_code_t *compiled_code_p;
 
-    PARSER_ASSERT (name_p->status_flags & LEXER_FLAG_VAR);
-    PARSER_ASSERT (literal_p->init_index == context_p->lit_object.index);
+      literal_p = parser_list_get (&context_p->literal_pool, (size_t) (context_p->lit_object.index + 1));
 
-    compiled_code_p = parser_parse_function (context_p, status_flags);
-    util_free_literal (literal_p);
+      PARSER_ASSERT (literal_p->type == LEXER_FUNCTION_LITERAL
+                     && literal_p->status_flags == 0);
 
-    literal_p->type = LEXER_FUNCTION_LITERAL;
-    literal_p->status_flags = 0;
-    util_set_function_literal (literal_p, compiled_code_p);
+      compiled_code_p = parser_parse_function (context_p, status_flags);
+      util_free_literal (literal_p);
 
-    context_p->status_flags |= PARSER_NO_REG_STORE;
+      util_set_function_literal (literal_p, compiled_code_p);
+      lexer_next_token (context_p);
+      return;
+    }
   }
-  else
+  else if (context_p->lit_object.index + 1 == context_p->literal_count)
   {
-    lexer_construct_function_object (context_p,
-                                     context_p->lit_object.index,
-                                     status_flags);
-
+    /* The most common case: the literal is the last literal. */
     name_p->status_flags |= LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED;
-    name_p->init_index = (uint16_t) (context_p->literal_count - 1);
+    lexer_construct_function_object (context_p, status_flags);
+    lexer_next_token (context_p);
+    return;
   }
 
+  /* Clone the literal at the end. */
+  if (context_p->literal_count >= PARSER_MAXIMUM_NUMBER_OF_LITERALS)
+  {
+    parser_raise_error (context_p, PARSER_ERR_LITERAL_LIMIT_REACHED);
+  }
+
+  literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
+  *literal_p = *name_p;
+  no_reg_store = name_p->status_flags & (LEXER_FLAG_NO_REG_STORE | LEXER_FLAG_SOURCE_PTR);
+  literal_p->status_flags = LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED | no_reg_store;
+
+  name_p->type = LEXER_UNUSED_LITERAL;
+  name_p->status_flags &= LEXER_FLAG_FUNCTION_ARGUMENT;
+  /* Byte code references to this literal are
+   * redirected to the newly allocated literal. */
+  name_p->prop.index = context_p->literal_count;
+
+  context_p->literal_count++;
+
+  lexer_construct_function_object (context_p, status_flags);
   lexer_next_token (context_p);
 } /* parser_parse_function_statement */
 
@@ -1548,12 +1572,12 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         parser_raise_error (context_p, PARSER_ERR_STRICT_IDENT_NOT_ALLOWED);
       }
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
       if (context_p->is_show_opcodes)
       {
         printf ("  Note: switch to strict mode\n\n");
       }
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
     }
 
     if (context_p->token.type == LEXER_SEMICOLON)

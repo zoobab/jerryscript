@@ -136,21 +136,21 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     context_p->byte_code_size++;
   }
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
   if (context_p->is_show_opcodes)
   {
-    const char *name;
+    const char *name_p;
 
     if (PARSER_IS_BASIC_OPCODE (context_p->last_cbc_opcode))
     {
-      name = cbc_names[context_p->last_cbc_opcode];
+      name_p = cbc_names[context_p->last_cbc_opcode];
     }
     else
     {
-      name = cbc_ext_names[PARSER_GET_EXT_OPCODE (context_p->last_cbc_opcode)];
+      name_p = cbc_ext_names[PARSER_GET_EXT_OPCODE (context_p->last_cbc_opcode)];
     }
 
-    printf ("  [%3d] %s", (int) context_p->stack_depth, name);
+    printf ("  [%3d] %s", (int) context_p->stack_depth, name_p);
 
     if (flags & CBC_HAS_LITERAL_ARG)
     {
@@ -175,7 +175,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
 
     printf ("\n");
   }
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
 
   if (context_p->stack_depth > context_p->stack_limit)
   {
@@ -223,7 +223,7 @@ parser_emit_cbc_literal (parser_context_t *context_p, /**< context */
 
   context_p->last_cbc_opcode = opcode;
   context_p->last_cbc.literal_index = literal_index;
-  context_p->last_cbc.u.literal_type[0] = LEXER_UNKNOWN_LITERAL;
+  context_p->last_cbc.u.literal_type[0] = LEXER_UNUSED_LITERAL;
   context_p->last_cbc.u.literal_type[1] = lexer_literal_object_any;
 } /* parser_emit_cbc_literal */
 
@@ -268,6 +268,84 @@ parser_emit_cbc_call (parser_context_t *context_p, /**< context */
 } /* parser_emit_cbc_call */
 
 /**
+ * Append a push number 1/2 byte code
+ */
+void
+parser_emit_cbc_push_number (parser_context_t *context_p, /**< context */
+                             int is_negative_number) /**< sign is negative */
+{
+  uint16_t value = context_p->lit_object.index;
+
+  if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
+  {
+    parser_flush_cbc (context_p);
+  }
+
+  PARSER_ASSERT (value < CBC_PUSH_NUMBER_2_RANGE_END);
+  PARSER_ASSERT (CBC_STACK_ADJUST_VALUE (cbc_flags[CBC_PUSH_NUMBER_1]) == 1
+                 && CBC_STACK_ADJUST_VALUE (cbc_flags[CBC_PUSH_NUMBER_2]) == 1);
+
+  context_p->stack_depth++;
+
+#ifdef PARSER_DUMP_BYTE_CODE
+  if (context_p->is_show_opcodes)
+  {
+    int real_value = value;
+    const char *name_p = cbc_names[CBC_PUSH_NUMBER_2];
+
+    if (is_negative_number)
+    {
+      real_value = -real_value;
+    }
+
+    if (value < CBC_PUSH_NUMBER_1_RANGE_END)
+    {
+      name_p = cbc_names[CBC_PUSH_NUMBER_1];
+    }
+
+    printf ("  [%3d] %s number:%d\n", (int) context_p->stack_depth, name_p, real_value);
+  }
+#endif /* PARSER_DUMP_BYTE_CODE */
+
+  if (value < CBC_PUSH_NUMBER_1_RANGE_END)
+  {
+    if (is_negative_number)
+    {
+      PARSER_PLUS_EQUAL_U16 (value, CBC_PUSH_NUMBER_1_RANGE_END);
+    }
+
+    parser_emit_two_bytes (context_p,
+                           CBC_PUSH_NUMBER_1,
+                           (uint8_t) value);
+
+    context_p->byte_code_size += 2;
+  }
+  else
+  {
+    if (is_negative_number)
+    {
+      PARSER_PLUS_EQUAL_U16 (value, CBC_PUSH_NUMBER_2_RANGE_END);
+    }
+
+    PARSER_APPEND_TO_BYTE_CODE (context_p, CBC_PUSH_NUMBER_2);
+    parser_emit_two_bytes (context_p,
+                           (uint8_t) (value & 0xff),
+                           (uint8_t) (value >> 8));
+
+    context_p->byte_code_size += 3;
+  }
+
+  if (context_p->stack_depth > context_p->stack_limit)
+  {
+    context_p->stack_limit = context_p->stack_depth;
+    if (context_p->stack_limit > PARSER_MAXIMUM_STACK_LIMIT)
+    {
+      parser_raise_error (context_p, PARSER_ERR_STACK_LIMIT_REACHED);
+    }
+  }
+} /* parser_emit_cbc_number_2 */
+
+/**
  * Append a byte code with a branch argument
  */
 void
@@ -308,7 +386,7 @@ parser_emit_cbc_forward_branch (parser_context_t *context_p, /**< context */
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
   if (context_p->is_show_opcodes)
   {
     if (extra_byte_code_increase == 0)
@@ -320,7 +398,7 @@ parser_emit_cbc_forward_branch (parser_context_t *context_p, /**< context */
       printf ("  [%3d] %s\n", (int) context_p->stack_depth, cbc_ext_names[opcode]);
     }
   }
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
 
 #if PARSER_MAXIMUM_CODE_SIZE <= 65535
   opcode++;
@@ -382,9 +460,9 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
                                  uint32_t offset) /**< destination offset */
 {
   uint8_t flags;
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
   const char *name;
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
 
   if (context_p->last_cbc_opcode != PARSER_CBC_UNAVAILABLE)
   {
@@ -398,9 +476,9 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
   {
     flags = cbc_flags[opcode];
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
     name = cbc_names[opcode];
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
   }
   else
   {
@@ -410,9 +488,9 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
     flags = cbc_ext_flags[opcode];
     context_p->byte_code_size++;
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
     name = cbc_ext_names[opcode];
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
   }
 
   PARSER_ASSERT (flags & CBC_HAS_BRANCH_ARG);
@@ -425,12 +503,12 @@ parser_emit_cbc_backward_branch (parser_context_t *context_p, /**< context */
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-#ifdef PARSER_DEBUG
+#ifdef PARSER_DUMP_BYTE_CODE
   if (context_p->is_show_opcodes)
   {
     printf ("  [%3d] %s\n", (int) context_p->stack_depth, name);
   }
-#endif /* PARSER_DEBUG */
+#endif /* PARSER_DUMP_BYTE_CODE */
 
   context_p->byte_code_size += 2;
 #if PARSER_MAXIMUM_CODE_SIZE <= 65535
