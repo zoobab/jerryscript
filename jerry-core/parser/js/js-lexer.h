@@ -176,7 +176,7 @@ typedef enum
    ((((token_type) - LEXER_PLUS) * 2) + CBC_PLUS)
 
 #define LEXER_UNARY_LVALUE_OP_TOKEN_TO_OPCODE(token_type) \
-   ((((token_type) - LEXER_KEYW_DELETE) * 8) + CBC_DELETE)
+   ((((token_type) - LEXER_KEYW_DELETE) * 6) + CBC_DELETE)
 
 #define LEXER_BINARY_OP_TOKEN_TO_OPCODE(token_type) \
    ((((token_type) - LEXER_BIT_OR) * 3) + CBC_BIT_OR)
@@ -191,9 +191,9 @@ typedef enum
  */
 typedef enum
 {
-  lexer_literal_object_any,
-  lexer_literal_object_eval,
-  lexer_literal_object_arguments,
+  LEXER_LITERAL_OBJECT_ANY,                 /**< unspecified object type */
+  LEXER_LITERAL_OBJECT_EVAL,                /**< reference is equal to eval */
+  LEXER_LITERAL_OBJECT_ARGUMENTS,           /**< reference is equal to arguments */
 } lexer_literal_object_type_t;
 
 /* EcmaScript character */

@@ -100,7 +100,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
                  || (CBC_STACK_ADJUST_BASE - (flags >> CBC_STACK_ADJUST_SHIFT)) <= context_p->stack_depth);
   PARSER_PLUS_EQUAL_U16 (context_p->stack_depth, CBC_STACK_ADJUST_VALUE (flags));
 
-  if (flags & CBC_HAS_LITERAL_ARG)
+  if (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
   {
     uint16_t literal_index = context_p->last_cbc.literal_index;
 
@@ -112,19 +112,29 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
 
   if (flags & CBC_HAS_LITERAL_ARG2)
   {
-    uint16_t literal_index = context_p->last_cbc.u.value;
+    uint16_t literal_index = context_p->last_cbc.value;
 
     parser_emit_two_bytes (context_p,
                            (uint8_t) (literal_index & 0xff),
                            (uint8_t) (literal_index >> 8));
     context_p->byte_code_size += 2;
+
+    if (!(flags & CBC_HAS_LITERAL_ARG))
+    {
+      literal_index = context_p->last_cbc.third_literal_index;
+
+      parser_emit_two_bytes (context_p,
+                             (uint8_t) (literal_index & 0xff),
+                             (uint8_t) (literal_index >> 8));
+      context_p->byte_code_size += 2;
+    }
   }
 
   if (flags & CBC_HAS_BYTE_ARG)
   {
-    uint8_t byte_argument = (uint8_t) context_p->last_cbc.u.value;
+    uint8_t byte_argument = (uint8_t) context_p->last_cbc.value;
 
-    PARSER_ASSERT (context_p->last_cbc.u.value <= CBC_MAXIMUM_BYTE_VALUE);
+    PARSER_ASSERT (context_p->last_cbc.value <= CBC_MAXIMUM_BYTE_VALUE);
 
     if (flags & CBC_POP_STACK_BYTE_ARG)
     {
@@ -152,7 +162,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
 
     printf ("  [%3d] %s", (int) context_p->stack_depth, name_p);
 
-    if (flags & CBC_HAS_LITERAL_ARG)
+    if (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
     {
       uint16_t literal_index = context_p->last_cbc.literal_index;
       lexer_literal_t *literal_p = parser_list_get (&context_p->literal_pool, literal_index);
@@ -162,15 +172,24 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
 
     if (flags & CBC_HAS_LITERAL_ARG2)
     {
-      uint16_t literal_index = context_p->last_cbc.u.value;
+      uint16_t literal_index = context_p->last_cbc.value;
       lexer_literal_t *literal_p = parser_list_get (&context_p->literal_pool, literal_index);
       printf (" idx:%d->", literal_index);
       util_print_literal (literal_p);
+
+      if (!(flags & CBC_HAS_LITERAL_ARG))
+      {
+        literal_index = context_p->last_cbc.third_literal_index;
+
+        lexer_literal_t *literal_p = parser_list_get (&context_p->literal_pool, literal_index);
+        printf (" idx:%d->", literal_index);
+        util_print_literal (literal_p);
+      }
     }
 
     if (flags & CBC_HAS_BYTE_ARG)
     {
-      printf (" byte_arg:%d", (int) context_p->last_cbc.u.value);
+      printf (" byte_arg:%d", (int) context_p->last_cbc.value);
     }
 
     printf ("\n");
@@ -223,8 +242,8 @@ parser_emit_cbc_literal (parser_context_t *context_p, /**< context */
 
   context_p->last_cbc_opcode = opcode;
   context_p->last_cbc.literal_index = literal_index;
-  context_p->last_cbc.u.literal_type[0] = LEXER_UNUSED_LITERAL;
-  context_p->last_cbc.u.literal_type[1] = lexer_literal_object_any;
+  context_p->last_cbc.literal_type = LEXER_UNUSED_LITERAL;
+  context_p->last_cbc.literal_object_type = LEXER_LITERAL_OBJECT_ANY;
 } /* parser_emit_cbc_literal */
 
 /**
@@ -243,8 +262,8 @@ parser_emit_cbc_literal_from_token (parser_context_t *context_p, /**< context */
 
   context_p->last_cbc_opcode = opcode;
   context_p->last_cbc.literal_index = context_p->lit_object.index;
-  context_p->last_cbc.u.literal_type[0] = context_p->token.lit_location.type;
-  context_p->last_cbc.u.literal_type[1] = context_p->lit_object.type;
+  context_p->last_cbc.literal_type = context_p->token.lit_location.type;
+  context_p->last_cbc.literal_object_type = context_p->lit_object.type;
 } /* parser_emit_cbc_literal_from_token */
 
 /**
@@ -264,7 +283,7 @@ parser_emit_cbc_call (parser_context_t *context_p, /**< context */
   }
 
   context_p->last_cbc_opcode = opcode;
-  context_p->last_cbc.u.value = (uint16_t) call_arguments;
+  context_p->last_cbc.value = (uint16_t) call_arguments;
 } /* parser_emit_cbc_call */
 
 /**
@@ -281,9 +300,8 @@ parser_emit_cbc_push_number (parser_context_t *context_p, /**< context */
     parser_flush_cbc (context_p);
   }
 
-  PARSER_ASSERT (value < CBC_PUSH_NUMBER_2_RANGE_END);
-  PARSER_ASSERT (CBC_STACK_ADJUST_VALUE (cbc_flags[CBC_PUSH_NUMBER_1]) == 1
-                 && CBC_STACK_ADJUST_VALUE (cbc_flags[CBC_PUSH_NUMBER_2]) == 1);
+  PARSER_ASSERT (value < CBC_PUSH_NUMBER_1_RANGE_END);
+  PARSER_ASSERT (CBC_STACK_ADJUST_VALUE (cbc_flags[CBC_PUSH_NUMBER_1]) == 1);
 
   context_p->stack_depth++;
 
@@ -291,49 +309,26 @@ parser_emit_cbc_push_number (parser_context_t *context_p, /**< context */
   if (context_p->is_show_opcodes)
   {
     int real_value = value;
-    const char *name_p = cbc_names[CBC_PUSH_NUMBER_2];
 
     if (is_negative_number)
     {
       real_value = -real_value;
     }
 
-    if (value < CBC_PUSH_NUMBER_1_RANGE_END)
-    {
-      name_p = cbc_names[CBC_PUSH_NUMBER_1];
-    }
-
-    printf ("  [%3d] %s number:%d\n", (int) context_p->stack_depth, name_p, real_value);
+    printf ("  [%3d] %s number:%d\n", (int) context_p->stack_depth, cbc_names[CBC_PUSH_NUMBER_1], real_value);
   }
 #endif /* PARSER_DUMP_BYTE_CODE */
 
-  if (value < CBC_PUSH_NUMBER_1_RANGE_END)
+  if (is_negative_number)
   {
-    if (is_negative_number)
-    {
-      PARSER_PLUS_EQUAL_U16 (value, CBC_PUSH_NUMBER_1_RANGE_END);
-    }
-
-    parser_emit_two_bytes (context_p,
-                           CBC_PUSH_NUMBER_1,
-                           (uint8_t) value);
-
-    context_p->byte_code_size += 2;
+    PARSER_PLUS_EQUAL_U16 (value, CBC_PUSH_NUMBER_1_RANGE_END);
   }
-  else
-  {
-    if (is_negative_number)
-    {
-      PARSER_PLUS_EQUAL_U16 (value, CBC_PUSH_NUMBER_2_RANGE_END);
-    }
 
-    PARSER_APPEND_TO_BYTE_CODE (context_p, CBC_PUSH_NUMBER_2);
-    parser_emit_two_bytes (context_p,
-                           (uint8_t) (value & 0xff),
-                           (uint8_t) (value >> 8));
+  parser_emit_two_bytes (context_p,
+                         CBC_PUSH_NUMBER_1,
+                         (uint8_t) value);
 
-    context_p->byte_code_size += 3;
-  }
+  context_p->byte_code_size += 2;
 
   if (context_p->stack_depth > context_p->stack_limit)
   {

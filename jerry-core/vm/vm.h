@@ -38,6 +38,7 @@ enum {
   VM_OC_GET_STACK_LITERAL = VM_OC_GET_DATA_CREATE_ID(5),
   VM_OC_GET_LITERAL_BYTE = VM_OC_GET_DATA_CREATE_ID(6),
   VM_OC_GET_LITERAL_LITERAL = VM_OC_GET_DATA_CREATE_ID(7),
+  VM_OC_GET_THIS_LITERAL = VM_OC_GET_DATA_CREATE_ID(8),
 };
 
 #define VM_OC_GROUP_MASK 0xff
@@ -47,8 +48,10 @@ enum {
 enum {
   VM_OC_NONE,
   VM_OC_POP,
+  VM_OC_POP_BLOCK,
   VM_OC_PUSH,
   VM_OC_PUSH_TWO,
+  VM_OC_PUSH_THREE,
   VM_OC_PUSH_UNDEFINED,
   VM_OC_PUSH_TRUE,
   VM_OC_PUSH_FALSE,
@@ -57,14 +60,17 @@ enum {
   VM_OC_PUSH_NUMBER,
   VM_OC_PUSH_OBJECT,
   VM_OC_PUSH_ARRAY,
+  VM_OC_PUSH_UNDEFINED_BASE,
+  VM_OC_IDENT_REFERENCE,
+  VM_OC_PROP_REFERENCE,
   VM_OC_PROP_GET,
-  VM_OC_ASSIGN_IDENT,
 
   VM_OC_ASSIGN,
   VM_OC_ASSIGN_PROP,
 
   VM_OC_RET,
   VM_OC_CALL,
+  VM_OC_CALL_N,
 
   VM_OC_JUMP,
   VM_OC_BRANCH_IF_TRUE,
@@ -103,22 +109,37 @@ enum {
   VM_OC_LESS_EQUAL,
   VM_OC_GREATER_EQUAL,
   VM_OC_IN,
-  VM_OC_INSTANCEOF
+  VM_OC_INSTANCEOF,
+
+  VM_OC_TRY,
+  VM_OC_CATCH,
+  VM_OC_FINALLY,
+  VM_OC_CONTEXT_END,
 };
 
 #define VM_OC_PUT_DATA_SHIFT 12
 #define VM_OC_PUT_DATA_MASK 0xf
-#define VM_OC_PUT_DATA_CREATE_ID(V) \
+#define VM_OC_PUT_DATA_CREATE_FLAG(V) \
   (((V) & VM_OC_PUT_DATA_MASK) << VM_OC_PUT_DATA_SHIFT)
-#define VM_OC_PUT_DATA_GET_ID(O) \
-  (((O) >> VM_OC_PUT_DATA_SHIFT) & VM_OC_PUT_DATA_MASK)
 
 enum {
-  VM_OC_PUT_NONE = VM_OC_PUT_DATA_CREATE_ID (0),
-  VM_OC_PUT_STACK = VM_OC_PUT_DATA_CREATE_ID (1),
-  VM_OC_PUT_IDENT = VM_OC_PUT_DATA_CREATE_ID (2),
-  VM_OC_PUT_REFERENCE = VM_OC_PUT_DATA_CREATE_ID (3),
+  VM_OC_PUT_IDENT = VM_OC_PUT_DATA_CREATE_FLAG (0x1),
+  VM_OC_PUT_REFERENCE = VM_OC_PUT_DATA_CREATE_FLAG (0x2),
+  VM_OC_PUT_STACK = VM_OC_PUT_DATA_CREATE_FLAG (0x4),
+  VM_OC_PUT_BLOCK = VM_OC_PUT_DATA_CREATE_FLAG (0x8),
 };
+
+#define VM_SET_CONTEXT_DESCRIPTOR(type, end) ((type) | (end) << 4)
+#define VM_GET_CONTEXT_TYPE(value) ((value) & 0xf)
+
+enum {
+  VM_CONTEXT_TRY,                             /**< try context */
+  VM_CONTEXT_CATCH,                           /**< catch context */
+  VM_CONTEXT_FINALLY,                         /**< finally context */
+};
+
+#define VM_PLUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) + (value))
+#define VM_MINUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) - (value))
 
 extern void vm_init (const cbc_compiled_code_t *, bool);
 extern void vm_finalize (void);

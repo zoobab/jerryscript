@@ -301,7 +301,7 @@ parser_parse_var_statement (parser_context_t *context_p) /**< context */
 
     context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_VAR;
 
-    parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_IDENT);
+    parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_LITERAL);
 
     lexer_next_token (context_p);
 
@@ -312,7 +312,8 @@ parser_parse_var_statement (parser_context_t *context_p) /**< context */
     }
     else
     {
-      PARSER_ASSERT (context_p->last_cbc_opcode == CBC_PUSH_IDENT);
+      PARSER_ASSERT (context_p->last_cbc_opcode == CBC_PUSH_LITERAL
+                     && context_p->last_cbc.literal_type == LEXER_IDENT_LITERAL);
       /* We don't need to assign anything to this variable. */
       context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
     }
@@ -345,9 +346,10 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
   context_p->status_flags |= PARSER_NO_REG_STORE;
 
   status_flags = PARSER_IS_FUNCTION | PARSER_IS_CLOSURE;
-  if (context_p->lit_object.type == lexer_literal_object_eval
-      || context_p->lit_object.type == lexer_literal_object_arguments)
+  if (context_p->lit_object.type != LEXER_LITERAL_OBJECT_ANY)
   {
+    PARSER_ASSERT (context_p->lit_object.type == LEXER_LITERAL_OBJECT_EVAL
+                   || context_p->lit_object.type == LEXER_LITERAL_OBJECT_ARGUMENTS);
     status_flags |= PARSER_HAS_NON_STRICT_ARG;
   }
 
@@ -745,37 +747,45 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
       }
 
       parser_emit_cbc_ext (context_p, CBC_EXT_FOR_IN_GET_NEXT);
-      parser_emit_cbc_literal (context_p, CBC_ASSIGN_IDENT, literal_index);
+      parser_emit_cbc_literal (context_p, CBC_ASSIGN_SET_IDENT, literal_index);
     }
     else
     {
-      cbc_argument_t argument;
       uint16_t opcode;
 
       parser_parse_expression (context_p, PARSE_EXPR);
 
-      argument = context_p->last_cbc;
       opcode = context_p->last_cbc_opcode;
 
-      if (opcode == CBC_PUSH_IDENT)
+      /* The CBC_EXT_FOR_IN_CREATE_CONTEXT flushed the opcode combiner. */
+      PARSER_ASSERT (opcode != CBC_PUSH_TWO_LITERALS
+                     && opcode != CBC_PUSH_THREE_LITERALS);
+
+      if (opcode == CBC_PUSH_LITERAL
+          && context_p->last_cbc.literal_type == LEXER_IDENT_LITERAL)
       {
-        opcode = CBC_ASSIGN_IDENT;
+        opcode = CBC_ASSIGN_SET_IDENT;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
       }
-      else if (opcode == CBC_PROP_GET)
+      else if (opcode == CBC_PUSH_PROP)
       {
         opcode = CBC_ASSIGN;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
       }
-      else if (opcode == CBC_PROP_LITERAL_GET)
+      else if (opcode == CBC_PUSH_PROP_LITERAL)
       {
-        opcode = CBC_ASSIGN_PROP_LITERAL;
+        opcode = CBC_PUSH_PROP_LITERAL_REFERENCE;
         context_p->last_cbc_opcode = PARSER_CBC_UNAVAILABLE;
       }
-      else if (opcode == CBC_PROP_LITERAL_LITERAL_GET)
+      else if (opcode == CBC_PUSH_PROP_LITERAL_LITERAL)
       {
         opcode = CBC_ASSIGN;
         context_p->last_cbc_opcode = CBC_PUSH_TWO_LITERALS;
+      }
+      else if (opcode == CBC_PUSH_PROP_THIS_LITERAL)
+      {
+        opcode = CBC_ASSIGN;
+        context_p->last_cbc_opcode = CBC_PUSH_THIS_LITERAL;
       }
       else
       {
@@ -787,7 +797,6 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
       parser_emit_cbc_ext (context_p, CBC_EXT_FOR_IN_GET_NEXT);
       parser_flush_cbc (context_p);
 
-      context_p->last_cbc = argument;
       context_p->last_cbc_opcode = opcode;
     }
 
@@ -1175,7 +1184,7 @@ parser_parse_try_statement_end (parser_context_t *context_p) /**< context */
                                         CBC_EXT_CATCH,
                                         &try_statement.branch);
 
-    parser_emit_cbc_literal (context_p, CBC_ASSIGN_IDENT, literal_index);
+    parser_emit_cbc_literal (context_p, CBC_ASSIGN_SET_IDENT, literal_index);
     parser_flush_cbc (context_p);
   }
   else
@@ -1781,7 +1790,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         }
 
         parser_parse_expression (context_p, PARSE_EXPR);
-        if (PARSER_OPCODE_IS_PUSH_LITERAL (context_p->last_cbc_opcode))
+        if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
         {
           context_p->last_cbc_opcode = CBC_RETURN_WITH_LITERAL;
         }
@@ -1815,7 +1824,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
           }
 
           lexer_construct_literal_object (context_p, &lit_location, LEXER_IDENT_LITERAL);
-          parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_IDENT);
+          parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_LITERAL);
           /* The literal_is_reserved is reused for saving the token. */
           context_p->token.literal_is_reserved = context_p->token.type;
           context_p->token.type = LEXER_EXPRESSION_START;

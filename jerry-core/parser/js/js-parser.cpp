@@ -59,13 +59,32 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
         || literal_p->type == LEXER_STRING_LITERAL)
     {
       const uint8_t *char_p = literal_p->u.char_p;
-      literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
-                                                                   literal_p->prop.length);
-      literal_p->u.value = lit_cpointer_t::compress (lit);
 
-      if (!(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
+      if ((literal_p->status_flags & LEXER_FLAG_SOURCE_PTR)
+          && literal_p->prop.length < 0xfff)
       {
-        PARSER_FREE ((uint8_t *) char_p);
+        size_t bytes_to_end = context_p->source_end_p - char_p;
+
+        if (bytes_to_end < 0xfffff)
+        {
+          literal_p->u.source_data = ((uint32_t) bytes_to_end) | (((uint32_t) literal_p->prop.length) << 20);
+          literal_p->status_flags |= LEXER_FLAG_LATE_INIT;
+          status_flags |= PARSER_HAS_LATE_LIT_INIT;
+          context_p->status_flags = status_flags;
+          char_p = NULL;
+        }
+      }
+
+      if (char_p != NULL)
+      {
+        literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
+                                                                     literal_p->prop.length);
+        literal_p->u.value = lit_cpointer_t::compress (lit);
+
+        if (!(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
+        {
+          PARSER_FREE ((uint8_t *) char_p);
+        }
       }
     }
 #endif /* !PARSER_DUMP_BYTE_CODE */
@@ -207,7 +226,7 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
       if (literal_p->type == LEXER_STRING_LITERAL
           || literal_p->type == LEXER_NUMBER_LITERAL)
       {
-        PARSER_ASSERT ((literal_p->status_flags & ~LEXER_FLAG_SOURCE_PTR) == 0);
+        PARSER_ASSERT ((literal_p->status_flags & ~(LEXER_FLAG_SOURCE_PTR | LEXER_FLAG_LATE_INIT)) == 0);
         literal_p->prop.index = const_literal_index;
         const_literal_index++;
         continue;
@@ -1078,22 +1097,6 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
         printf (" number:%d\n", value);
         continue;
       }
-
-      if (opcode == CBC_PUSH_NUMBER_2)
-      {
-        int value = byte_code_p[0];
-
-        value |= ((int) byte_code_p[1] << 8);
-        byte_code_p += 2;
-
-        if (value >= CBC_PUSH_NUMBER_2_RANGE_END)
-        {
-          value = -(value - CBC_PUSH_NUMBER_2_RANGE_END);
-        }
-
-        printf (" number:%d\n", value);
-        continue;
-      }
     }
     else
     {
@@ -1103,7 +1106,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
       byte_code_p += 2;
     }
 
-    if (flags & CBC_HAS_LITERAL_ARG)
+    if (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
     {
       uint16_t literal_index;
 
@@ -1117,6 +1120,12 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
 
       PARSER_READ_IDENTIFIER_INDEX (literal_index);
       parse_print_literal (compiled_code_p, literal_index, literal_pool_p);
+
+      if (!(flags & CBC_HAS_LITERAL_ARG))
+      {
+        PARSER_READ_IDENTIFIER_INDEX (literal_index);
+        parse_print_literal (compiled_code_p, literal_index, literal_pool_p);
+      }
     }
 
     if (flags & CBC_HAS_BYTE_ARG)
@@ -1251,14 +1260,6 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     flags = cbc_flags[last_opcode];
     length++;
 
-    if (last_opcode == CBC_PUSH_NUMBER_2)
-    {
-      PARSER_NEXT_BYTE (page_p, offset);
-      PARSER_NEXT_BYTE (page_p, offset);
-      length += 2;
-      continue;
-    }
-
     if (last_opcode == CBC_EXT_OPCODE)
     {
       cbc_ext_opcode_t ext_opcode;
@@ -1269,9 +1270,6 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       PARSER_NEXT_BYTE (page_p, offset);
       length++;
     }
-
-    /* Second literal arg can only be present if first literal arg is present as well. */
-    PARSER_ASSERT (!(flags & CBC_HAS_LITERAL_ARG2) || (flags & CBC_HAS_LITERAL_ARG));
 
     while (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
     {
@@ -1318,9 +1316,16 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       }
       PARSER_NEXT_BYTE (page_p, offset);
 
-      if (flags & CBC_HAS_LITERAL_ARG)
+      if (flags & CBC_HAS_LITERAL_ARG2)
       {
-        flags = (uint8_t) (flags - CBC_HAS_LITERAL_ARG);
+        if (flags & CBC_HAS_LITERAL_ARG)
+        {
+          flags = CBC_HAS_LITERAL_ARG;
+        }
+        else
+        {
+          flags = CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2;
+        }
       }
       else
       {
@@ -1502,18 +1507,6 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
     flags = cbc_flags[opcode];
 
-    if (opcode == CBC_PUSH_NUMBER_2)
-    {
-      *dst_p++ = page_p->bytes[offset];
-      real_offset++;
-      PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
-
-      *dst_p++ = page_p->bytes[offset];
-      real_offset++;
-      PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
-      continue;
-    }
-
     if (opcode == CBC_EXT_OPCODE)
     {
       cbc_ext_opcode_t ext_opcode;
@@ -1553,9 +1546,16 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       }
       PARSER_NEXT_BYTE_UPDATE (page_p, offset, real_offset);
 
-      if (flags & CBC_HAS_LITERAL_ARG)
+      if (flags & CBC_HAS_LITERAL_ARG2)
       {
-        flags = (uint8_t) (flags - CBC_HAS_LITERAL_ARG);
+        if (flags & CBC_HAS_LITERAL_ARG)
+        {
+          flags = CBC_HAS_LITERAL_ARG;
+        }
+        else
+        {
+          flags = CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2;
+        }
       }
       else
       {
@@ -1611,6 +1611,8 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   parse_update_branches (context_p,
                          byte_code_p + initializers_length);
 
+  parser_cbc_stream_free (&context_p->byte_code);
+
 #ifdef PARSER_DUMP_BYTE_CODE
   if (context_p->is_show_opcodes)
   {
@@ -1628,6 +1630,25 @@ parser_post_processing (parser_context_t *context_p) /**< context */
           && !(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
       {
         PARSER_FREE (literal_p->u.char_p);
+      }
+    }
+  }
+#else
+  if (context_p->status_flags & PARSER_HAS_LATE_LIT_INIT)
+  {
+    parser_list_iterator_t literal_iterator;
+    lexer_literal_t *literal_p;
+
+    parser_list_iterator_init (&context_p->literal_pool, &literal_iterator);
+    while ((literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator)))
+    {
+      if (literal_p->status_flags & LEXER_FLAG_LATE_INIT)
+      {
+        uint32_t source_data = literal_p->u.source_data;
+        uint8_t *char_p = context_p->source_end_p - (source_data & 0xfffff);
+        literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
+                                                                     source_data >> 20);
+        literal_pool_p[literal_p->prop.index] = lit_cpointer_t::compress (lit);
       }
     }
   }
@@ -1772,6 +1793,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 
     compiled_code = NULL;
     parser_free_literals (&context.literal_pool);
+    parser_cbc_stream_free (&context.byte_code);
   }
   PARSER_TRY_END
 
@@ -1782,7 +1804,6 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
   }
 #endif /* PARSER_DUMP_BYTE_CODE */
 
-  parser_cbc_stream_free (&context.byte_code);
   parser_stack_free (&context);
 
   return compiled_code;
@@ -1895,7 +1916,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 
       if (literal_count == context_p->literal_count
           || context_p->token.literal_is_reserved
-          || context_p->lit_object.type != lexer_literal_object_any)
+          || context_p->lit_object.type != LEXER_LITERAL_OBJECT_ANY)
       {
         context_p->status_flags |= PARSER_HAS_NON_STRICT_ARG;
       }
@@ -1993,12 +2014,12 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 
     if (compiled_code_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
     {
-      literal_pool_start_p += sizeof(cbc_uint16_arguments_t);
+      literal_pool_start_p += sizeof (cbc_uint16_arguments_t);
       const_literal_end = ((cbc_uint16_arguments_t *) compiled_code_p)->const_literal_end;
     }
     else
     {
-      literal_pool_start_p += sizeof(cbc_uint8_arguments_t);
+      literal_pool_start_p += sizeof (cbc_uint8_arguments_t);
       const_literal_end = ((cbc_uint8_arguments_t *) compiled_code_p)->const_literal_end;
     }
 
@@ -2014,7 +2035,6 @@ parser_parse_function (parser_context_t *context_p, /**< context */
   }
 #endif /* PARSER_DUMP_BYTE_CODE */
 
-  parser_cbc_stream_free (&context_p->byte_code);
   parser_list_free (&context_p->literal_pool);
 
   /* Restore private part of the context. */

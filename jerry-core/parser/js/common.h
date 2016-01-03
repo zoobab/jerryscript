@@ -44,15 +44,6 @@
 #define PARSER_MALLOC_LOCAL(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_SHORT_TERM)
 #define PARSER_FREE_LOCAL(ptr) mem_heap_free_block (ptr)
 
-/* Stack consumption of opcodes with context. */
-
-/* PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION must be <= 5 */
-#define PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION 3
-/* PARSER_WITH_CONTEXT_STACK_ALLOCATION must be <= 5 */
-#define PARSER_WITH_CONTEXT_STACK_ALLOCATION 2
-/* PARSER_TRY_CONTEXT_STACK_ALLOCATION must be <= 4 */
-#define PARSER_TRY_CONTEXT_STACK_ALLOCATION 3
-
 /* UTF character management. Only ASCII characters are
  * supported for simplicity. */
 
@@ -96,6 +87,8 @@ typedef enum
 #define LEXER_FLAG_FUNCTION_ARGUMENT 0x10
 /* No space is allocated for this character literal. */
 #define LEXER_FLAG_SOURCE_PTR 0x20
+/* Initialize this variable after the byte code is freed. */
+#define LEXER_FLAG_LATE_INIT 0x40
 
 /**
  * Literal data.
@@ -107,6 +100,7 @@ typedef struct
     lit_cpointer_t value;    /**< literal value (not processed by the parser) */
     const uint8_t *char_p;   /**< character value */
     void *function_p;        /**< compiled function pointer */
+    uint32_t source_data;    /**< encoded source literal */
   } u;
 
 #ifdef PARSER_DUMP_BYTE_CODE

@@ -36,6 +36,7 @@
 #define PARSER_HAS_INITIALIZED_VARS           0x0200u
 #define PARSER_NO_END_LABEL                   0x0400u
 #define PARSER_NO_REG_STORE                   0x0800u
+#define PARSER_HAS_LATE_LIT_INIT              0x1000u
 
 /* Expression parsing flags. */
 #define PARSE_EXPR                            0x00
@@ -71,11 +72,10 @@ typedef enum
 typedef struct
 {
   uint16_t literal_index;                     /**< literal index argument */
-  union
-  {
-    uint8_t literal_type[2];                  /**< literal type and literal object type */
-    uint16_t value;                           /**< other argument. */
-  } u;
+  uint16_t value;                             /**< other argument (second literal or byte). */
+  uint16_t third_literal_index;               /**< literal index argument */
+  uint8_t literal_type;                       /**< last literal type */
+  uint8_t literal_object_type;                /**< last literal object type */
 } cbc_argument_t;
 
 /* Useful parser macros. */
@@ -85,6 +85,10 @@ typedef struct
 #define PARSER_TO_EXT_OPCODE(opcode) ((uint16_t) ((opcode) + 256))
 #define PARSER_GET_EXT_OPCODE(opcode) ((opcode) - 256)
 #define PARSER_IS_BASIC_OPCODE(opcode) ((opcode) < 256)
+#define PARSER_IS_PUSH_LITERAL(opcode) \
+  ((opcode) == CBC_PUSH_LITERAL \
+   || (opcode) == CBC_PUSH_TWO_LITERALS \
+   || (opcode) == CBC_PUSH_THREE_LITERALS)
 
 #define PARSER_TO_BINARY_OPERATION_WITH_RESULT(opcode) \
   (PARSER_TO_EXT_OPCODE(opcode) - CBC_ASSIGN_ADD + CBC_EXT_ASSIGN_ADD_PUSH_RESULT)
@@ -94,9 +98,6 @@ typedef struct
 
 #define PARSER_GET_FLAGS(op) \
   (PARSER_IS_BASIC_OPCODE (op) ? cbc_flags[(op)] : cbc_ext_flags[PARSER_GET_EXT_OPCODE (op)])
-
-#define PARSER_OPCODE_IS_PUSH_LITERAL(op) \
-  ((op) == CBC_PUSH_IDENT || (op) == CBC_PUSH_LITERAL)
 
 #define PARSER_OPCODE_IS_RETURN(op) \
   ((op) == CBC_RETURN || (op) == CBC_RETURN_WITH_UNDEFINED || (op) == CBC_RETURN_WITH_LITERAL)

@@ -1242,7 +1242,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
                               literal_type,
                               literal_p->has_escape);
 
-  context_p->lit_object.type = lexer_literal_object_any;
+  context_p->lit_object.type = LEXER_LITERAL_OBJECT_ANY;
 
   if (literal_p->type == LEXER_IDENT_LITERAL)
   {
@@ -1257,7 +1257,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         && source_p[3] == 'l'
         && memcmp (source_p + 1, "va", 2) == 0)
     {
-      context_p->lit_object.type = lexer_literal_object_eval;
+      context_p->lit_object.type = LEXER_LITERAL_OBJECT_EVAL;
     }
 
     if (literal_p->length == 9
@@ -1265,7 +1265,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         && source_p[8] == 's'
         && memcmp (source_p + 1, "rgument", 7) == 0)
     {
-      context_p->lit_object.type = lexer_literal_object_arguments;
+      context_p->lit_object.type = LEXER_LITERAL_OBJECT_ARGUMENTS;
     }
   }
 
@@ -1305,7 +1305,7 @@ lexer_construct_number_object (parser_context_t *context_p, /**< context */
 
     if (int_num == num)
     {
-      if (int_num < CBC_PUSH_NUMBER_2_RANGE_END
+      if (int_num < CBC_PUSH_NUMBER_1_RANGE_END
           && (int_num != 0 || !is_negative_number))
       {
         context_p->lit_object.index = (uint16_t) int_num;
@@ -1336,7 +1336,7 @@ lexer_construct_number_object (parser_context_t *context_p, /**< context */
 
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = literal_count;
-  context_p->lit_object.type = lexer_literal_object_any;
+  context_p->lit_object.type = LEXER_LITERAL_OBJECT_ANY;
 
   return PARSER_FALSE;
 } /* lexer_construct_number_object */
@@ -1537,7 +1537,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = (uint16_t) (context_p->literal_count - 1);
-  context_p->lit_object.type = lexer_literal_object_any;
+  context_p->lit_object.type = LEXER_LITERAL_OBJECT_ANY;
 } /* lexer_construct_regexp_object */
 
 /**
@@ -1567,17 +1567,17 @@ lexer_expect_identifier (parser_context_t *context_p, /**< context */
 
       if (literal_type == LEXER_IDENT_LITERAL
           && (context_p->status_flags & PARSER_IS_STRICT)
-          && context_p->lit_object.type != lexer_literal_object_any)
+          && context_p->lit_object.type != LEXER_LITERAL_OBJECT_ANY)
       {
         parser_error_t error;
 
-        if (context_p->lit_object.type == lexer_literal_object_eval)
+        if (context_p->lit_object.type == LEXER_LITERAL_OBJECT_EVAL)
         {
           error = PARSER_ERR_EVAL_NOT_ALLOWED;
         }
         else
         {
-          PARSER_ASSERT (context_p->lit_object.type == lexer_literal_object_arguments);
+          PARSER_ASSERT (context_p->lit_object.type == LEXER_LITERAL_OBJECT_ARGUMENTS);
           error = PARSER_ERR_ARGUMENTS_NOT_ALLOWED;
         }
 
