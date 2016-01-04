@@ -710,6 +710,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         break;
       }
       case VM_OC_PUSH_UNDEFINED:
+      case VM_OC_VOID:
       {
         result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
         break;
@@ -1026,7 +1027,20 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       }
       case VM_OC_NOT:
       {
-        JERRY_UNREACHABLE ();
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_logical_not (left_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
         break;
       }
       case VM_OC_BIT_NOT:
@@ -1047,14 +1061,22 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
         break;
       }
-      case VM_OC_VOID:
-      {
-        JERRY_UNREACHABLE ();
-        break;
-      }
       case VM_OC_TYPEOF:
       {
-        JERRY_UNREACHABLE ();
+        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+        ECMA_TRY_CATCH (value, opfunc_typeof (left_value), ret_value);
+
+        result = ecma_copy_value (value, true);
+
+        ECMA_FINALIZE (value);
+
+        if (ecma_is_completion_value_throw (ret_value))
+        {
+          // FIXME: Early exit may cause memory leak.
+          return ret_value;
+        }
+
         break;
       }
       case VM_OC_ADD:
@@ -1574,7 +1596,7 @@ error:
   }
 
   return last_completion_value;
-}
+} /* vm_loop */
 
 #undef READ_LITERAL
 #undef READ_LITERAL_INDEX
@@ -1639,7 +1661,7 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
 //  vm_stack_free_frame (&frame_ctx.stack_frame);
 
   return completion;
-}
+} /* vm_run */
 
 /**
  * Get scope code flags from instruction at specified position
@@ -1665,7 +1687,7 @@ vm_is_strict_mode (void)
 
   return vm_top_context_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE;
   //return __program->status_flags & CBC_CODE_FLAGS_STRICT_MODE;
-}
+} /* vm_is_strict_mode */
 
 /**
  * Check whether currently performed call (on top of call-stack) is performed in form,

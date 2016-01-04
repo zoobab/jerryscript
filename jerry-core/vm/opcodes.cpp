@@ -15,6 +15,7 @@
  */
 
 #include "ecma-builtins.h"
+#include "ecma-conversion.h"
 #include "ecma-exceptions.h"
 #include "ecma-function-object.h"
 #include "ecma-globals.h"
@@ -199,3 +200,83 @@ opfunc_context_end (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
   return vm_stack_top_p;
 } /* opfunc_context_end */
+
+/**
+ * 'Logical NOT Operator' opcode handler.
+ *
+ * See also: ECMA-262 v5, 11.4.9
+ *
+ * @return completion value
+ *         Returned value must be freed with ecma_free_completion_value
+ */
+ecma_completion_value_t
+opfunc_logical_not (ecma_value_t left_value) /**< left value */
+{
+  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+  ecma_simple_value_t old_value = ECMA_SIMPLE_VALUE_TRUE;
+  ecma_completion_value_t to_bool_value = ecma_op_to_boolean (left_value);
+
+  if (ecma_is_value_true (ecma_get_completion_value_value (to_bool_value)))
+  {
+    old_value = ECMA_SIMPLE_VALUE_FALSE;
+  }
+
+  ret_value = ecma_make_simple_completion_value (old_value);
+
+  return ret_value;
+} /* opfunc_logical_not */
+
+/**
+ * 'typeof' opcode handler.
+ *
+ * See also: ECMA-262 v5, 11.4.3
+ *
+ * @return completion value
+ *         Returned value must be freed with ecma_free_completion_value
+ */
+ecma_completion_value_t
+opfunc_typeof (ecma_value_t left_value) /**< left value */
+{
+  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+  ecma_string_t *type_str_p = NULL;
+
+  if (ecma_is_value_undefined (left_value))
+  {
+    type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_UNDEFINED);
+  }
+  else if (ecma_is_value_null (left_value))
+  {
+    type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_OBJECT);
+  }
+  else if (ecma_is_value_boolean (left_value))
+  {
+    type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_BOOLEAN);
+  }
+  else if (ecma_is_value_number (left_value))
+  {
+    type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_NUMBER);
+  }
+  else if (ecma_is_value_string (left_value))
+  {
+    type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_STRING);
+  }
+  else
+  {
+    JERRY_ASSERT (ecma_is_value_object (left_value));
+
+    if (ecma_op_is_callable (left_value))
+    {
+      type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_FUNCTION);
+    }
+    else
+    {
+      type_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_OBJECT);
+    }
+  }
+
+  ret_value = ecma_make_normal_completion_value (ecma_make_string_value (type_str_p));
+
+  return ret_value;
+} /* opfunc_typeof */

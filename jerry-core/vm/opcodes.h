@@ -114,4 +114,10 @@ opfunc_instanceof (ecma_value_t, ecma_value_t);
 ecma_value_t *
 opfunc_context_end (vm_frame_ctx_t *, ecma_value_t *);
 
+ecma_completion_value_t
+opfunc_logical_not (ecma_value_t);
+
+ecma_completion_value_t
+opfunc_typeof (ecma_value_t);
+
 #endif /* OPCODES_H */
