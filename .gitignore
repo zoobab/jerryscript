@@ -34,3 +34,6 @@ third-party/STM32F4-Discovery_FW_V1.1.0
 third-party/nuttx
 third-party/vera++
 third-party/cppcheck
+
+# Targets
+targets/rpi2/build
