@@ -23,6 +23,9 @@ JERRYHEAP  ?= 256
 LTO        ?= OFF
 VALGRIND   ?= OFF
 
+.PHONY: all clean
+
+
 all: jerry
 
 
