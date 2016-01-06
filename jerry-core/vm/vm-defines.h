@@ -18,6 +18,7 @@
 
 #include "byte-code.h"
 #include "ecma-globals.h"
+#include "vm-stack.h"
 
 /**
  * Instruction counter / position
@@ -53,6 +54,7 @@ typedef struct
   bool is_strict;                                     /**< strict mode flag */
   bool is_eval_code;                                  /**< eval mode flag */
   bool is_call_in_direct_eval_form;                   /**< direct eval call */
+  vm_stack_frame_t stack_frame;                       /**< stack frame associated with the context */
 } vm_frame_ctx_t;
 
 #endif /* VM_DEFINES_H */
