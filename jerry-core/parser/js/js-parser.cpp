@@ -542,6 +542,8 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
         PARSER_ASSERT (literal_p != NULL
                        && literal_p->type == LEXER_FUNCTION_LITERAL);
         init_index = literal_p->prop.index;
+        ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
+                                   literal_p->u.function_p);
       }
 
       *dst_p++ = CBC_INITIALIZE_VAR;

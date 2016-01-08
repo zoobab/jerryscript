@@ -77,9 +77,9 @@ opfunc_func_decl_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  */
 ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-               ecma_value_t func_value,
-               uint8_t args_num,
-               ecma_value_t *stack_p)
+               ecma_value_t func_value, /**< function object value */
+               uint8_t args_num, /**< number of arguments */
+               ecma_value_t *stack_p) /**< stack pointer */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -133,6 +133,54 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 
   return ret_value;
 } /* opfunc_call_n */
+
+/**
+ * 'Constructor call' opcode handler.
+ *
+ * See also: ECMA-262 v5, 11.2.2
+ *
+ * @return completion value
+ *         Returned value must be freed with ecma_free_completion_value.
+ */
+ecma_completion_value_t
+opfunc_construct_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
+                    ecma_value_t constructor_value, /**< constructor object value */
+                    uint8_t args_num, /**< number of arguments */
+                    ecma_value_t *stack_p) /**< stack pointer */
+{
+  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+  JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
+
+  ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
+
+  for (int i = 0; i < args_num; i++)
+  {
+    ecma_append_to_values_collection (arg_collection_p, stack_p[i], true);
+  }
+
+  if (!ecma_is_constructor (constructor_value))
+  {
+    ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
+  }
+  else
+  {
+    ecma_object_t *constructor_obj_p = ecma_get_object_from_value (constructor_value);
+
+    ECMA_TRY_CATCH (construction_ret_value,
+                    ecma_op_function_construct (constructor_obj_p,
+                                                arg_collection_p),
+                    ret_value);
+
+    ret_value = ecma_copy_completion_value (construction_ret_value);
+
+    ECMA_FINALIZE (construction_ret_value);
+  }
+
+  ecma_free_values_collection (arg_collection_p, true);
+
+  return ret_value;
+} /* opfunc_construct_n */
 
 /**
  * 'Variable declaration' opcode handler.

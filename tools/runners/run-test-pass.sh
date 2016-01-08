@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TIMEOUT=${TIMEOUT:=30}
+TIMEOUT=${TIMEOUT:=5}
 
 START_DIR=`pwd`
 

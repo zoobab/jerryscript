@@ -145,56 +145,6 @@ vm_init (const cbc_compiled_code_t *program_p, /**< pointer to byte-code data */
   __program = program_p;
 } /* vm_init */
 
-/**
- * Cleanup interpreter
- */
-void
-vm_finalize (void)
-{
-  if (__program)
-  {
-#if 0
-    // FIXME: delete literals
-    lit_cpointer_t *literal_start_p = NULL;
-    u_int16_t num_of_lit = 0;
-
-    if (__program->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-    {
-      uint8_t *byte_p = ((uint8_t *) __program + sizeof (cbc_uint16_arguments_t));
-      literal_start_p = (lit_cpointer_t *) byte_p;
-      num_of_lit= ((cbc_uint16_arguments_t *) __program)->literal_end;
-    }
-    else
-    {
-      uint8_t *byte_p = ((uint8_t *) __program + sizeof (cbc_uint8_arguments_t));
-      literal_start_p = (lit_cpointer_t *) byte_p;
-      num_of_lit= ((cbc_uint8_arguments_t *) __program)->literal_end;
-    }
-
-    for (int i = 0; i < num_of_lit; i++)
-    {
-      if (ecma_is_value_object (literal_start_p[i].value.base_cp))
-      {
-        if (ecma_op_is_callable (literal_start_p[i].value.base_cp))
-        {
-          cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
-                                                                       literal_start_p[i].value.base_cp);
-          mem_heap_free_block (bytecode_p);
-        }
-      }
-      else
-      {
-        ecma_free_value (literal_start_p[i].value.base_cp, true);
-      }
-    }
-#endif
-
-    mem_heap_free_block (__program);
-  }
-  __program = NULL;
-} /* vm_finalize */
-
-
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) arg4,
 
 uint32_t vm_decode_table[] =
@@ -330,6 +280,8 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
                                                               frame_ctx_p->is_strict,
                                                               bytecode_p);
 
+  ecma_free_values_collection (formal_params_collection_p, true);
+
   return ecma_make_object_value (func_obj_p);
 } /* vm_construct_literal_object */
 
@@ -350,108 +302,6 @@ enum
   } \
   while (0)
 
-/**
- * Run initializer byte codes.
- *
- * @return completion value
- */
-static ecma_completion_value_t
-vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
-{
-  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
-  uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
-  uint16_t encoding_limit;
-  uint16_t encoding_delta;
-  lit_cpointer_t *literal_start_p = frame_ctx_p->literal_start_p;
-
-  /* Prepare. */
-  if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
-  {
-    encoding_limit = 255;
-    encoding_delta = 0xfe01;
-  }
-  else
-  {
-    encoding_limit = 128;
-    encoding_delta = 0x8000;
-  }
-
-  while (true)
-  {
-    switch (*byte_code_p)
-    {
-      case CBC_DEFINE_VARS:
-      {
-        uint32_t literal_index_end;
-        uint32_t literal_index;
-
-        if (frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-        {
-          cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (frame_ctx_p->bytecode_header_p);
-          literal_index = args_p->register_end;
-        }
-        else
-        {
-          cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (frame_ctx_p->bytecode_header_p);
-          literal_index = args_p->register_end;
-        }
-
-        byte_code_p++;
-        READ_LITERAL_INDEX (literal_index_end);
-
-        while (literal_index <= literal_index_end)
-        {
-          ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
-          vm_var_decl (frame_ctx_p, name_p);
-          ecma_deref_ecma_string (name_p);
-          literal_index++;
-        }
-        break;
-      }
-
-      case CBC_INITIALIZE_VAR:
-      case CBC_INITIALIZE_VARS:
-      {
-        uint8_t type = *byte_code_p;
-        uint32_t literal_index;
-        uint32_t literal_index_end;
-
-        byte_code_p++;
-        READ_LITERAL_INDEX (literal_index);
-
-        if (type == CBC_INITIALIZE_VAR)
-        {
-          literal_index_end = literal_index;
-        }
-        else
-        {
-          READ_LITERAL_INDEX (literal_index_end);
-        }
-
-        while (literal_index <= literal_index_end)
-        {
-          uint32_t value_index;
-          ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
-
-          vm_var_decl (frame_ctx_p, name_p);
-
-          READ_LITERAL_INDEX (value_index);
-
-          ecma_deref_ecma_string (name_p);
-          literal_index++;
-        }
-        break;
-      }
-
-      default:
-      {
-        frame_ctx_p->byte_code_p = byte_code_p;
-        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-      }
-    }
-  }
-}
-
 /* FIXME: For performance reasons, we define this as a macro.
  * When we are able to construct a function with similar speed,
  * we can remove this macro. */
@@ -463,7 +313,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       if ((literal_index) < register_end) \
       { \
         /* Note: There should be no specialization for arguments. */ \
-        JERRY_ASSERT (false); \
+        (target_value) = frame_ctx_p->registers_p[literal_index];\
       } \
       else \
       { \
@@ -510,6 +360,210 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
     } \
   } \
   while (0)
+
+/**
+ * Cleanup compact bytecode
+ */
+void
+vm_cleanup_cbc (const cbc_compiled_code_t *bytecode_p) /**< Bytecode */
+{
+  // FIXME: delete literals
+
+#if 0
+  ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
+  lit_cpointer_t *literal_start_p = NULL;
+  uint16_t ident_end;
+
+  if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint16_arguments_t));
+    literal_start_p = (lit_cpointer_t *) byte_p;
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
+    ident_end = args_p->ident_end;
+  }
+  else
+  {
+    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint8_arguments_t));
+    literal_start_p = (lit_cpointer_t *) byte_p;
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
+    ident_end = args_p->ident_end;
+  }
+
+  for (int i = 0; i < ident_end; i++)
+  {
+    ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[i]);
+    ecma_object_t *lex_env_p = ecma_get_global_environment ();
+    ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (lex_env_p,
+                                                                        name_p);
+    JERRY_ASSERT (ref_base_lex_env_p != NULL);
+    last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
+                                                            name_p,
+                                                            false);
+
+    ecma_deref_ecma_string (name_p);
+    ecma_deref_object (lex_env_p);
+
+    ecma_value_t lit_value = ecma_get_completion_value_value (last_completion_value);
+
+    if (ecma_is_value_object (lit_value))
+    {
+      if (ecma_op_is_callable (lit_value))
+      {
+        cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                     literal_start_p[i].value.base_cp);
+        vm_cleanup_cbc (bytecode_p);
+//        mem_heap_free_block (bytecode_p);
+      }
+    }
+
+    ecma_free_value (lit_value, true);
+    ecma_free_value (ref_base_lex_env_p, true);
+  }
+
+#endif
+
+  mem_heap_free_block (bytecode_p);
+} /* vm_cleanup_cbc */
+
+/**
+ * Cleanup interpreter
+ */
+void
+vm_finalize (void)
+{
+  if (__program)
+  {
+    vm_cleanup_cbc (__program);
+  }
+
+  __program = NULL;
+} /* vm_finalize */
+
+/**
+ * Run initializer byte codes.
+ *
+ * @return completion value
+ */
+static ecma_completion_value_t
+vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
+{
+  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
+  ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
+  uint16_t encoding_limit;
+  uint16_t encoding_delta;
+  uint16_t register_end;
+  uint16_t ident_end;
+  uint16_t const_literal_end;
+  lit_cpointer_t *literal_start_p = frame_ctx_p->literal_start_p;
+
+  /* Prepare. */
+  if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
+  {
+    encoding_limit = 255;
+    encoding_delta = 0xfe01;
+  }
+  else
+  {
+    encoding_limit = 128;
+    encoding_delta = 0x8000;
+  }
+
+  while (true)
+  {
+    switch (*byte_code_p)
+    {
+      case CBC_DEFINE_VARS:
+      {
+        uint32_t literal_index_end;
+        uint32_t literal_index;
+
+        if (frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+        {
+          cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (frame_ctx_p->bytecode_header_p);
+          literal_index = args_p->register_end;
+          register_end = args_p->register_end;
+          ident_end = args_p->ident_end;
+          const_literal_end = args_p->const_literal_end;
+        }
+        else
+        {
+          cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (frame_ctx_p->bytecode_header_p);
+          literal_index = args_p->register_end;
+          register_end = args_p->register_end;
+          ident_end = args_p->ident_end;
+          const_literal_end = args_p->const_literal_end;
+        }
+
+        byte_code_p++;
+        READ_LITERAL_INDEX (literal_index_end);
+
+        while (literal_index <= literal_index_end)
+        {
+          ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
+          vm_var_decl (frame_ctx_p, name_p);
+          ecma_deref_ecma_string (name_p);
+          literal_index++;
+        }
+        break;
+      }
+
+      case CBC_INITIALIZE_VAR:
+      case CBC_INITIALIZE_VARS:
+      {
+        uint8_t type = *byte_code_p;
+        uint32_t literal_index;
+        uint32_t literal_index_end;
+
+        byte_code_p++;
+        READ_LITERAL_INDEX (literal_index);
+
+        if (type == CBC_INITIALIZE_VAR)
+        {
+          literal_index_end = literal_index;
+        }
+        else
+        {
+          READ_LITERAL_INDEX (literal_index_end);
+        }
+
+        while (literal_index <= literal_index_end)
+        {
+          uint32_t value_index;
+          uint8_t free_flags = 0;
+          ecma_value_t lit_value;
+          ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
+
+          vm_var_decl (frame_ctx_p, name_p);
+
+          READ_LITERAL_INDEX (value_index);
+          READ_LITERAL (value_index, lit_value, free_flags);
+
+          ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, name_p);
+
+          // FIXME: check the return value
+          ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
+                                          name_p,
+                                          frame_ctx_p->is_strict,
+                                          lit_value);
+
+          ecma_deref_ecma_string (name_p);
+          literal_index++;
+        }
+        break;
+      }
+
+      default:
+      {
+        frame_ctx_p->byte_code_p = byte_code_p;
+        return ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+      }
+    }
+  }
+
+error:
+  return last_completion_value;
+}
 
 /**
  * Run generic byte code.
@@ -862,7 +916,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         else
         {
-          PARSER_ASSERT (opcode == CBC_PUSH_PROP_LITERAL_LITERAL_REFERENCE
+          JERRY_ASSERT (opcode == CBC_PUSH_PROP_LITERAL_LITERAL_REFERENCE
                          || opcode == CBC_PUSH_PROP_THIS_LITERAL_REFERENCE);
           *vm_stack_top_p++ = ecma_copy_value (left_value, true);
           *vm_stack_top_p++ = ecma_copy_value (right_value, true);
@@ -923,27 +977,57 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         /* FALLTHRU */
       }
+      case VM_OC_NEW_N:
+      {
+        if (opcode == CBC_NEW1)
+        {
+          right_value = 1;
+        }
+        else if (opcode == CBC_NEW0)
+        {
+          right_value = 0;
+        }
+        /* FALLTHRU */
+      }
+      case VM_OC_NEW:
       case VM_OC_CALL:
       {
         last_completion_value = ecma_make_empty_completion_value ();
 
         vm_stack_top_p -= right_value;
 
-        ECMA_TRY_CATCH (returned_value,
-                        opfunc_call_n (frame_ctx_p, vm_stack_top_p[-1], right_value, vm_stack_top_p),
-                        last_completion_value);
-
-        if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
+        if (opcode >= CBC_CALL)
         {
-          result = ecma_copy_value (returned_value, true);
-        }
+          ECMA_TRY_CATCH (returned_value,
+                          opfunc_call_n (frame_ctx_p, vm_stack_top_p[-1], right_value, vm_stack_top_p),
+                          last_completion_value);
 
-        ECMA_FINALIZE (returned_value);
+          if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
+          {
+            result = ecma_copy_value (returned_value, true);
+          }
+
+          ECMA_FINALIZE (returned_value);
+        }
+        else
+        {
+          ECMA_TRY_CATCH (returned_value,
+                          opfunc_construct_n (frame_ctx_p, vm_stack_top_p[-1], right_value, vm_stack_top_p),
+                          last_completion_value);
+
+          if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
+          {
+            result = ecma_copy_value (returned_value, true);
+          }
+
+          ECMA_FINALIZE (returned_value);
+        }
 
         for (uint32_t i = 0; i < right_value; i++)
         {
           ecma_free_value (vm_stack_top_p[i], true);
         }
+
         ecma_free_value (*(--vm_stack_top_p), true);
 
         if (ecma_is_completion_value_throw (last_completion_value))
@@ -969,7 +1053,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                         ecma_op_to_boolean (left_value),
                         last_completion_value);
 
-        PARSER_ASSERT (free_flags & VM_FREE_LEFT_VALUE);
+        JERRY_ASSERT (free_flags & VM_FREE_LEFT_VALUE);
         if (value == ecma_make_simple_value ((base & 0x1) ? ECMA_SIMPLE_VALUE_FALSE : ECMA_SIMPLE_VALUE_TRUE))
         {
           byte_code_p = byte_code_start_p + branch_offset;
@@ -1485,7 +1569,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       {
         uint32_t end = byte_code_p - frame_ctx_p->byte_code_start_p + branch_offset;
 
-        PARSER_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
 
         VM_PLUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
         vm_stack_top_p += PARSER_TRY_CONTEXT_STACK_ALLOCATION;
@@ -1496,8 +1580,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       case VM_OC_CATCH:
       {
         /* Catches are ignored and turned to jumps. */
-        PARSER_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
-        PARSER_ASSERT (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_TRY);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+        JERRY_ASSERT (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_TRY);
 
         byte_code_p = byte_code_start_p + branch_offset;
         break;
@@ -1506,8 +1590,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       {
         uint32_t end = byte_code_p - frame_ctx_p->byte_code_start_p + branch_offset;
 
-        PARSER_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
-        PARSER_ASSERT (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_TRY);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+        JERRY_ASSERT (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_TRY);
 
         vm_stack_top_p[-1] = VM_SET_CONTEXT_DESCRIPTOR (VM_CONTEXT_FINALLY, end);
         vm_stack_top_p[-2] = 0;
@@ -1515,9 +1599,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       }
       case VM_OC_CONTEXT_END:
       {
-        PARSER_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
         vm_stack_top_p = opfunc_context_end (frame_ctx_p, vm_stack_top_p);
-        PARSER_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
         break;
       }
       default:
@@ -1655,11 +1739,6 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
   frame_ctx.is_eval_code = is_eval_code;
   frame_ctx.is_call_in_direct_eval_form = false;
 
-  vm_stack_add_frame (&frame_ctx.stack_frame, NULL, 0);
-//  vm_stack_frame_set_reg_value (&frame_ctx.stack_frame,
-//                                VM_REG_SPECIAL_THIS_BINDING,
-//                                ecma_copy_value (this_binding_value, false));
-
   vm_frame_ctx_t *prev_context_p = vm_top_context_p;
   vm_top_context_p = &frame_ctx;
 
@@ -1671,8 +1750,6 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
 //                || ecma_is_completion_value_return (completion));
 
   vm_top_context_p = prev_context_p;
-
-  vm_stack_free_frame (&frame_ctx.stack_frame);
 
   return completion;
 } /* vm_run */

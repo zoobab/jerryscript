@@ -71,6 +71,8 @@ enum {
   VM_OC_RET,
   VM_OC_CALL,
   VM_OC_CALL_N,
+  VM_OC_NEW,
+  VM_OC_NEW_N,
 
   VM_OC_JUMP,
   VM_OC_BRANCH_IF_TRUE,
