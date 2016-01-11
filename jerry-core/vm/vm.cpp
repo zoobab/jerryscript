@@ -845,6 +845,39 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
+      case VM_OC_PUSH_ELISON:
+      {
+        result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_ARRAY_HOLE);
+        break;
+      }
+      case VM_OC_APPEND_ARRAY:
+      {
+        vm_stack_top_p -= right_value;
+
+        ecma_object_t *array_obj_p = ecma_get_object_from_value (vm_stack_top_p[-1]);
+        ecma_string_t *magic_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_LENGTH);
+        ecma_property_t *length_prop_p = ecma_get_named_property (array_obj_p, magic_str_p);
+        ecma_number_t *length_num_p = ecma_get_number_from_value (length_prop_p->u.named_data_property.value);
+        ecma_deref_ecma_string (magic_str_p);
+
+        for (uint32_t i = 0; i < right_value; i++)
+        {
+          if (ecma_is_value_array_hole (vm_stack_top_p[i]))
+          {
+            (*length_num_p)++;
+          }
+          else
+          {
+            ecma_string_t *index_str_p = ecma_new_ecma_string_from_uint32 ((*length_num_p)++);
+            ecma_op_object_put (array_obj_p, index_str_p, vm_stack_top_p[i], true);
+            ecma_deref_ecma_string (index_str_p);
+
+            ecma_free_value (vm_stack_top_p[i], true);
+          }
+        }
+
+        break;
+      }
       case VM_OC_PUSH_UNDEFINED_BASE:
       {
         result = vm_stack_top_p[-1];
