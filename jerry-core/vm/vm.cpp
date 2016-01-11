@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "common.h"
+
 #include "ecma-alloc.h"
 #include "ecma-array-object.h"
 #include "ecma-builtins.h"
@@ -27,7 +29,6 @@
 #include "opcodes.h"
 #include "vm.h"
 
-#include "common.h"
 
 /**
  * Top (current) interpreter context
@@ -367,60 +368,33 @@ enum
 void
 vm_cleanup_cbc (const cbc_compiled_code_t *bytecode_p) /**< Bytecode */
 {
-  // FIXME: delete literals
-
-#if 0
-  ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
   lit_cpointer_t *literal_start_p = NULL;
-  uint16_t ident_end;
+  uint16_t literal_end;
+  uint16_t const_literal_end;
 
   if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
   {
     uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint16_arguments_t));
     literal_start_p = (lit_cpointer_t *) byte_p;
     cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
-    ident_end = args_p->ident_end;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
   }
   else
   {
     uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint8_arguments_t));
     literal_start_p = (lit_cpointer_t *) byte_p;
     cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
-    ident_end = args_p->ident_end;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
   }
 
-  for (int i = 0; i < ident_end; i++)
+  for (int i = const_literal_end; i < literal_end; i++)
   {
-    ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[i]);
-    ecma_object_t *lex_env_p = ecma_get_global_environment ();
-    ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (lex_env_p,
-                                                                        name_p);
-    JERRY_ASSERT (ref_base_lex_env_p != NULL);
-    last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
-                                                            name_p,
-                                                            false);
-
-    ecma_deref_ecma_string (name_p);
-    ecma_deref_object (lex_env_p);
-
-    ecma_value_t lit_value = ecma_get_completion_value_value (last_completion_value);
-
-    if (ecma_is_value_object (lit_value))
-    {
-      if (ecma_op_is_callable (lit_value))
-      {
-        cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
-                                                                     literal_start_p[i].value.base_cp);
-        vm_cleanup_cbc (bytecode_p);
-//        mem_heap_free_block (bytecode_p);
-      }
-    }
-
-    ecma_free_value (lit_value, true);
-    ecma_free_value (ref_base_lex_env_p, true);
+    cbc_compiled_code_t *func_bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                      literal_start_p[i].value.base_cp);
+    vm_cleanup_cbc (func_bytecode_p);
   }
-
-#endif
 
   mem_heap_free_block (bytecode_p);
 } /* vm_cleanup_cbc */
@@ -547,6 +521,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                                           frame_ctx_p->is_strict,
                                           lit_value);
 
+          ecma_free_value (lit_value, true);
           ecma_deref_ecma_string (name_p);
           literal_index++;
         }
@@ -626,16 +601,26 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
     opcode = *byte_code_p++;
 
+#ifndef JERRY_NDEBUG
+    char *opcode_name = NULL;
+#endif
+
     if (opcode == CBC_EXT_OPCODE)
     {
       opcode = *byte_code_p++;
       opcode_flags = cbc_ext_flags[opcode];
       opcode_data = vm_ext_decode_table[opcode];
+#ifndef JERRY_NDEBUG
+      opcode_name = cbc_ext_names[opcode];
+#endif
     }
     else
     {
       opcode_flags = cbc_flags[opcode];
       opcode_data = vm_decode_table[opcode];
+#ifndef JERRY_NDEBUG
+      opcode_name = cbc_names[opcode];
+#endif
     }
 
     if (opcode_flags & CBC_HAS_BRANCH_ARG)
@@ -745,6 +730,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
     {
       case VM_OC_NONE:
       {
+#ifndef JERRY_NDEBUG
+        fprintf (stderr, "Unimplemented opcode: %s\n", opcode_name);
+#endif /* JERRY_NDEBUG */
         JERRY_UNREACHABLE ();
         break;
       }
@@ -937,6 +925,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       case VM_OC_ASSIGN:
       {
         result = left_value;
+        free_flags = 0;
         break;
       }
       case VM_OC_ASSIGN_PROP:
@@ -962,6 +951,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         goto error;
       }
       case VM_OC_CALL_N:
+      case VM_OC_CALL_PROP_N:
       {
         if (opcode >= CBC_CALL2)
         {
@@ -991,6 +981,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       }
       case VM_OC_NEW:
       case VM_OC_CALL:
+      case VM_OC_CALL_PROP:
       {
         last_completion_value = ecma_make_empty_completion_value ();
 
@@ -1029,6 +1020,12 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
 
         ecma_free_value (*(--vm_stack_top_p), true);
+
+        if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP)
+        {
+          ecma_free_value (*(--vm_stack_top_p), true);
+          ecma_free_value (*(--vm_stack_top_p), true);
+        }
 
         if (ecma_is_completion_value_throw (last_completion_value))
         {
@@ -1619,7 +1616,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         uint16_t literal_index;
         ecma_string_t *var_name_str_p;
         ecma_object_t *ref_base_lex_env_p;
-        ecma_value_t value = result;
 
         READ_LITERAL_INDEX (literal_index);
 
@@ -1629,9 +1625,14 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         ret_value = ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
                                                     var_name_str_p,
                                                     frame_ctx_p->is_strict,
-                                                    value);
+                                                    result);
 
         ecma_deref_ecma_string (var_name_str_p);
+
+        if (!(opcode_data & (VM_OC_PUT_STACK | VM_OC_PUT_BLOCK)))
+        {
+          ecma_free_value (result, true);
+        }
 
         if (ecma_is_completion_value_throw (ret_value))
         {
@@ -1642,15 +1643,19 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       {
         ecma_value_t property = *(--vm_stack_top_p);
         ecma_value_t object = *(--vm_stack_top_p);
-        ecma_value_t value = result;
 
         last_completion_value = vm_op_set_value (object,
                                                  property,
-                                                 value,
+                                                 result,
                                                  frame_ctx_p->is_strict);
 
         ecma_free_value (object, true);
         ecma_free_value (property, true);
+
+        if (!(opcode_data & (VM_OC_PUT_STACK | VM_OC_PUT_BLOCK)))
+        {
+          ecma_free_value (result, true);
+        }
 
         if (ecma_is_completion_value_throw (last_completion_value))
         {
@@ -1681,7 +1686,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
   }
 error:
 
-//  ecma_free_value (block_result, true);
+  ecma_free_value (block_result, true);
 
   if (free_flags & VM_FREE_LEFT_VALUE)
   {
