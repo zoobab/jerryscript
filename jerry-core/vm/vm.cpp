@@ -25,10 +25,10 @@
 #include "ecma-helpers.h"
 #include "ecma-lex-env.h"
 #include "ecma-objects.h"
+#include "ecma-objects-general.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
 #include "vm.h"
-
 
 /**
  * Top (current) interpreter context
@@ -852,28 +852,54 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       }
       case VM_OC_APPEND_ARRAY:
       {
+        ecma_object_t *array_obj_p;
+        ecma_string_t *length_str_p;
+        ecma_property_t *length_prop_p;
+        ecma_number_t *length_num_p;
+        ecma_property_descriptor_t prop_desc = ecma_make_empty_property_descriptor ();
+
+        prop_desc.is_value_defined = true;
+
+        prop_desc.is_writable_defined = true;
+        prop_desc.is_writable = true;
+
+        prop_desc.is_enumerable_defined = true;
+        prop_desc.is_enumerable = true;
+
+        prop_desc.is_configurable_defined = true;
+        prop_desc.is_configurable = true;
+
         vm_stack_top_p -= right_value;
 
-        ecma_object_t *array_obj_p = ecma_get_object_from_value (vm_stack_top_p[-1]);
-        ecma_string_t *magic_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_LENGTH);
-        ecma_property_t *length_prop_p = ecma_get_named_property (array_obj_p, magic_str_p);
-        ecma_number_t *length_num_p = ecma_get_number_from_value (length_prop_p->u.named_data_property.value);
-        ecma_deref_ecma_string (magic_str_p);
+        array_obj_p = ecma_get_object_from_value (vm_stack_top_p[-1]);
+        length_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_LENGTH);
+        length_prop_p = ecma_get_named_property (array_obj_p, length_str_p);
+
+        PARSER_ASSERT (length_prop_p != NULL);
+
+        length_num_p = ecma_get_number_from_value (length_prop_p->u.named_data_property.value);
+
+        ecma_deref_ecma_string (length_str_p);
 
         for (uint32_t i = 0; i < right_value; i++)
         {
-          if (ecma_is_value_array_hole (vm_stack_top_p[i]))
+          if (!ecma_is_value_array_hole (vm_stack_top_p[i]))
           {
-            (*length_num_p)++;
-          }
-          else
-          {
-            ecma_string_t *index_str_p = ecma_new_ecma_string_from_uint32 ((*length_num_p)++);
-            ecma_op_object_put (array_obj_p, index_str_p, vm_stack_top_p[i], true);
+            ecma_string_t *index_str_p = ecma_new_ecma_string_from_uint32 (*length_num_p);
+
+            prop_desc.value = vm_stack_top_p[i];
+
+            ecma_op_general_object_define_own_property (array_obj_p,
+                                                        index_str_p,
+                                                        &prop_desc,
+                                                        false);
+
             ecma_deref_ecma_string (index_str_p);
 
             ecma_free_value (vm_stack_top_p[i], true);
           }
+
+          (*length_num_p)++;
         }
 
         break;
@@ -971,10 +997,10 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       case VM_OC_RET:
       {
         JERRY_ASSERT (opcode == CBC_RETURN
-                      || opcode == CBC_RETURN_WITH_UNDEFINED
+                      || opcode == CBC_RETURN_WITH_BLOCK
                       || opcode == CBC_RETURN_WITH_LITERAL);
 
-        if (opcode == CBC_RETURN_WITH_UNDEFINED)
+        if (opcode == CBC_RETURN_WITH_BLOCK)
         {
           left_value = block_result;
           block_result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
@@ -1105,494 +1131,334 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       }
       case VM_OC_BRANCH_STRICT_EQUAL:
       {
-        last_completion_value = ecma_make_empty_completion_value ();
-
         JERRY_ASSERT (vm_stack_top_p > vm_stack);
 
-        ECMA_TRY_CATCH (value,
-                        opfunc_equal_value_type (left_value, vm_stack_top_p[-1]),
-                        last_completion_value);
-
-        if (value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
-        {
-          byte_code_p = byte_code_start_p + branch_offset;
-          ecma_free_value (*--vm_stack_top_p, true);
-        }
-
-        ECMA_FINALIZE (value);
+        last_completion_value = opfunc_equal_value_type (left_value, vm_stack_top_p[-1]);
 
         if (ecma_is_completion_value_throw (last_completion_value))
         {
           goto error;
         }
+
+        result = ecma_get_completion_value_value (last_completion_value);
+
+        if (result == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
+        {
+          byte_code_p = byte_code_start_p + branch_offset;
+          ecma_free_value (*--vm_stack_top_p, true);
+        }
         break;
       }
       case VM_OC_PLUS:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_unary_plus (left_value);
 
-        ECMA_TRY_CATCH (value, opfunc_unary_plus (left_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_MINUS:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_unary_minus (left_value);
 
-        ECMA_TRY_CATCH (value, opfunc_unary_minus (left_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_NOT:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_logical_not (left_value);
 
-        ECMA_TRY_CATCH (value, opfunc_logical_not (left_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_BIT_NOT:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_not (left_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_not (left_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_TYPEOF:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_typeof (left_value);
 
-        ECMA_TRY_CATCH (value, opfunc_typeof (left_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_ADD:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_addition (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_addition (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_SUB:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_substraction (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_substraction (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_MUL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_multiplication (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_multiplication (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_DIV:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_division (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_division (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_MOD:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_remainder (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_remainder (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_equal_value (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_equal_value (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_NOT_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_not_equal_value (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_not_equal_value (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_STRICT_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_equal_value_type (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_equal_value_type (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_STRICT_NOT_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_not_equal_value_type (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_not_equal_value_type (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_BIT_OR:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_or (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_or (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_BIT_XOR:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_xor (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_xor (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_BIT_AND:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_and (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_and (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_LEFT_SHIFT:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_shift_left (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_left (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_RIGHT_SHIFT:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_shift_right (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_right (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_UNS_RIGHT_SHIFT:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_b_shift_uright (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_b_shift_uright (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_LESS:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_less_than (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_less_than (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_GREATER:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_greater_than (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_greater_than (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_LESS_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_less_or_equal_than (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_less_or_equal_than (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_GREATER_EQUAL:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_greater_or_equal_than (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_greater_or_equal_than (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_IN:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_in (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_in (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_INSTANCEOF:
       {
-        ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+        last_completion_value = opfunc_instanceof (left_value, right_value);
 
-        ECMA_TRY_CATCH (value, opfunc_instanceof (left_value, right_value), ret_value);
-
-        result = ecma_copy_value (value, true);
-
-        ECMA_FINALIZE (value);
-
-        if (ecma_is_completion_value_throw (ret_value))
+        if (ecma_is_completion_value_throw (last_completion_value))
         {
-          // FIXME: Early exit may cause memory leak.
-          return ret_value;
+          goto error;
         }
 
+        result = ecma_get_completion_value_value (last_completion_value);
         break;
       }
       case VM_OC_TRY:

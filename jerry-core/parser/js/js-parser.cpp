@@ -1606,7 +1606,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
 
   if (!(context_p->status_flags & PARSER_NO_END_LABEL))
   {
-    *dst_p++ = CBC_RETURN_WITH_UNDEFINED;
+    *dst_p++ = CBC_RETURN_WITH_BLOCK;
   }
   PARSER_ASSERT (dst_p == byte_code_p + length);
 

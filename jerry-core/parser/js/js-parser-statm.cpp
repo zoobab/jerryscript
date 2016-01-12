@@ -1785,7 +1785,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
             || context_p->token.type == LEXER_SEMICOLON
             || context_p->token.type == LEXER_RIGHT_BRACE)
         {
-          parser_emit_cbc (context_p, CBC_RETURN_WITH_UNDEFINED);
+          parser_emit_cbc (context_p, CBC_RETURN_WITH_BLOCK);
           break;
         }
 
