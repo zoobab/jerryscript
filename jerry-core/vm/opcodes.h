@@ -37,7 +37,7 @@ ecma_completion_value_t
 vm_var_decl (vm_frame_ctx_t *, ecma_string_t *);
 
 ecma_completion_value_t
-opfunc_call_n (vm_frame_ctx_t *, ecma_value_t, uint8_t, ecma_value_t *);
+opfunc_call_n (vm_frame_ctx_t *, ecma_value_t, ecma_value_t, uint8_t, ecma_value_t *);
 
 ecma_completion_value_t
 opfunc_construct_n (vm_frame_ctx_t *, ecma_value_t, uint8_t, ecma_value_t *);

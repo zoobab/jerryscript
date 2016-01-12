@@ -77,14 +77,29 @@ opfunc_func_decl_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  */
 ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
+               ecma_value_t this_value, /**< this object value */
                ecma_value_t func_value, /**< function object value */
                uint8_t args_num, /**< number of arguments */
                ecma_value_t *stack_p) /**< stack pointer */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
+  if (this_value == 0)
+  {
+    ecma_completion_value_t this_comp_value;
+    this_comp_value = ecma_op_implicit_this_value (frame_ctx_p->ref_base_lex_env_p);
+
+    if (ecma_is_completion_value_throw (this_comp_value))
+    {
+      return this_comp_value;
+    }
+
+    this_value = ecma_get_completion_value_value (this_comp_value);
+  }
+
   JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
 
+  // FIXME: Fix fucntion calls in eval!
   uint8_t call_flags;
   ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
 
@@ -105,9 +120,6 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
     }
 
     ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
-    ECMA_TRY_CATCH (this_value,
-                    ecma_op_implicit_this_value (frame_ctx_p->ref_base_lex_env_p),
-                    ret_value);
 
     ECMA_TRY_CATCH (call_ret_value,
                     ecma_op_function_call (func_obj_p,
@@ -115,8 +127,9 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                                            arg_collection_p),
                     ret_value);
 
+    ret_value = ecma_make_normal_completion_value (ecma_copy_value (call_ret_value, true));
+
     ECMA_FINALIZE (call_ret_value);
-    ECMA_FINALIZE (this_value);
 
     if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
     {
@@ -130,6 +143,7 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   }
 
   ecma_free_values_collection (arg_collection_p, true);
+  ecma_free_value (this_value, true);
 
   return ret_value;
 } /* opfunc_call_n */
@@ -172,7 +186,7 @@ opfunc_construct_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                                                 arg_collection_p),
                     ret_value);
 
-    ret_value = ecma_copy_completion_value (construction_ret_value);
+    ret_value = ecma_make_normal_completion_value (ecma_copy_value (construction_ret_value, true));
 
     ECMA_FINALIZE (construction_ret_value);
   }
