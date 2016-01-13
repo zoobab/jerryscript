@@ -20,6 +20,12 @@
 #include "ecma-globals.h"
 
 /**
+ * Helpers for updating uint16_t values.
+ */
+#define VM_PLUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) + (value))
+#define VM_MINUS_EQUAL_U16(base, value) (base) = (uint16_t) ((base) - (value))
+
+/**
  * Instruction counter / position
  */
 typedef const uint8_t *vm_instr_counter_t;

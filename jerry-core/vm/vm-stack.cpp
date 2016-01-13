@@ -15,6 +15,7 @@
  */
 
 #include "ecma-helpers.h"
+#include "vm-defines.h"
 #include "vm-stack.h"
 
 /** \addtogroup vm Virtual machine
@@ -25,65 +26,14 @@
  */
 
 /**
- * The top-most stack frame
- */
-vm_stack_frame_t* vm_stack_top_frame_p = NULL;
-
-/**
  * Get stack's top frame
- *
  * @return pointer to the top frame descriptor
  */
 vm_stack_frame_t*
 vm_stack_get_top_frame (void)
 {
-  return vm_stack_top_frame_p;
+  return NULL;
 } /* vm_stack_get_top_frame */
-
-/**
- * Add the frame to stack
- */
-void
-vm_stack_add_frame (vm_stack_frame_t *frame_p, /**< frame to initialize */
-                    ecma_value_t *regs_p, /**< array of register variables' values */
-                    uint32_t regs_num) /**< total number of register variables */
-{
-  frame_p->prev_frame_p = vm_stack_top_frame_p;
-  vm_stack_top_frame_p = frame_p;
-
-  frame_p->top_chunk_p = NULL;
-  frame_p->dynamically_allocated_value_slots_p = frame_p->inlined_values;
-  frame_p->current_slot_index = 0;
-  frame_p->regs_p = regs_p;
-  frame_p->regs_number = regs_num;
-} /* vm_stack_add_frame */
-
-/**
- * Free the stack frame
- *
- * Note:
- *      the frame should be the top-most frame
- */
-void
-vm_stack_free_frame (vm_stack_frame_t *frame_p) /**< frame to initialize */
-{
-  /* the frame should be the top-most frame */
-  JERRY_ASSERT (vm_stack_top_frame_p == frame_p);
-
-  vm_stack_top_frame_p = frame_p->prev_frame_p;
-
-  while (frame_p->top_chunk_p != NULL)
-  {
-    vm_stack_pop (frame_p);
-  }
-
-  for (uint32_t reg_index = 0;
-       reg_index < frame_p->regs_number;
-       reg_index++)
-  {
-    ecma_free_value (frame_p->regs_p[reg_index], false);
-  }
-} /* vm_stack_free_frame */
 
 /**
  * Get value of specified register variable
@@ -94,47 +44,187 @@ ecma_value_t
 vm_stack_frame_get_reg_value (vm_stack_frame_t *frame_p, /**< frame */
                               uint32_t reg_index) /**< index of register variable */
 {
-  return frame_p->regs_p[reg_index];
+  return ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
 } /* vm_stack_frame_get_reg_value */
 
 /**
- * Set value of specified register variable
+ * Abort (finalize) the current stack context, and remove it.
+ *
+ * @return new stack top
  */
-void
-vm_stack_frame_set_reg_value (vm_stack_frame_t *frame_p, /**< frame */
-                              uint32_t reg_index, /**< index of register variable */
-                              ecma_value_t value) /**< ecma-value */
+ecma_value_t *
+vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
+                        ecma_value_t *vm_stack_top_p) /**< current stack top */
 {
-  frame_p->regs_p[reg_index] = value;
-} /* vm_stack_frame_set_reg_value */
+  switch (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]))
+  {
+    case VM_CONTEXT_FINALLY_THROW:
+    case VM_CONTEXT_FINALLY_RETURN:
+    {
+      ecma_free_value (vm_stack_top_p[-2], true);
+
+      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+      vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+      break;
+    }
+    case VM_CONTEXT_FINALLY_JUMP:
+    case VM_CONTEXT_TRY:
+    {
+      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+      vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+      break;
+    }
+    default:
+    {
+      JERRY_UNREACHABLE ();
+      break;
+    }
+  }
+
+  return vm_stack_top_p;
+} /* opfunc_context_end */
 
 /**
- * Push ecma-value to stack
+ * Decode branch offset.
+ *
+ * @return branch offset
  */
-void
-vm_stack_push_value (vm_stack_frame_t *frame_p, /**< stack frame */
-                     ecma_value_t value) /**< ecma-value */
+static uint32_t
+vm_decode_branch_offset (uint8_t *branch_offset_p, /**< start offset of byte code */
+                         uint32_t length) /**< length of the branch */
 {
-// FIXME: Implement this
-} /* vm_stack_push_value */
+  uint32_t branch_offset = *branch_offset_p;
+
+  JERRY_ASSERT (length >= 1 && length <= 3);
+
+  switch (length)
+  {
+    case 3:
+    {
+      branch_offset <<= 8;
+      branch_offset |= *(branch_offset_p++);
+      /* FALLTHRU */
+    }
+    case 2:
+    {
+      branch_offset <<= 8;
+      branch_offset |= *(branch_offset_p++);
+      break;
+    }
+  }
+
+  return branch_offset;
+} /* vm_decode_branch_offset */
 
 /**
- * Get top value from stack
+ * Find a finally up to the end position.
+ *
+ * @return true if finally found
  */
-ecma_value_t __attr_always_inline___
-vm_stack_top_value (vm_stack_frame_t *frame_p) /**< stack frame */
+bool
+vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
+                       ecma_value_t **vm_stack_top_ref_p, /**< current stack top */
+                       vm_stack_context_type_t finally_type, /**< searching this finally */
+                       uint32_t search_limit) /**< search up-to this byte code */
 {
-// FIXME: Implement this
-} /* vm_stack_top_value */
+  ecma_value_t *vm_stack_top_p = *vm_stack_top_ref_p;
 
-/**
- * Pop top value from stack and free it
- */
-void
-vm_stack_pop (vm_stack_frame_t *frame_p) /**< stack frame */
-{
-// FIXME: Implement this
-} /* vm_stack_pop */
+  JERRY_ASSERT (finally_type >= VM_CONTEXT_FINALLY_JUMP
+                && finally_type <= VM_CONTEXT_FINALLY_RETURN);
+
+  if (finally_type != VM_CONTEXT_FINALLY_JUMP)
+  {
+    search_limit = 0xffffffffu;
+  }
+
+  while (frame_ctx_p->context_depth > 0)
+  {
+    vm_stack_context_type_t context_type;
+
+    if (search_limit < VM_GET_CONTEXT_END (vm_stack_top_p[-1]))
+    {
+      *vm_stack_top_ref_p = vm_stack_top_p;
+      return false;
+    }
+
+    context_type = VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]);
+    if (context_type == VM_CONTEXT_TRY || context_type == VM_CONTEXT_CATCH)
+    {
+      uint8_t *byte_code_p;
+      uint32_t branch_offset_length;
+      uint32_t branch_offset;
+
+      byte_code_p = frame_ctx_p->byte_code_start_p + VM_GET_CONTEXT_END (vm_stack_top_p[-1]);
+
+      if (context_type == VM_CONTEXT_TRY)
+      {
+        JERRY_ASSERT (byte_code_p[0] == CBC_EXT_OPCODE);
+
+        if (byte_code_p[1] >= CBC_EXT_CATCH
+            && byte_code_p[1] <= CBC_EXT_CATCH_3)
+        {
+          branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (byte_code_p[1]);
+          branch_offset = vm_decode_branch_offset (byte_code_p + 2,
+                                                   branch_offset_length);
+
+          if (finally_type == VM_CONTEXT_FINALLY_THROW)
+          {
+            branch_offset += (uint32_t) (byte_code_p - frame_ctx_p->byte_code_start_p);
+
+            vm_stack_top_p[-1] = VM_CREATE_CONTEXT (VM_CONTEXT_CATCH, branch_offset);
+
+            byte_code_p += 2 + branch_offset_length;
+            frame_ctx_p->byte_code_p = byte_code_p;
+
+            *vm_stack_top_ref_p = vm_stack_top_p;
+            return true;
+          }
+
+          byte_code_p += branch_offset;
+
+          if (*byte_code_p == CBC_CONTEXT_END)
+          {
+            VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+            vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+            continue;
+          }
+        }
+      }
+      else
+      {
+        if (byte_code_p[0] == CBC_CONTEXT_END)
+        {
+          VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+          vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+          continue;
+        }
+      }
+
+      JERRY_ASSERT (byte_code_p[0] == CBC_EXT_OPCODE);
+      JERRY_ASSERT (byte_code_p[1] >= CBC_EXT_FINALLY
+                    && byte_code_p[1] <= CBC_EXT_FINALLY_3);
+
+      branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (byte_code_p[1]);
+      branch_offset = vm_decode_branch_offset (byte_code_p + 2,
+                                               branch_offset_length);
+
+      branch_offset += (uint32_t) (byte_code_p - frame_ctx_p->byte_code_start_p);
+
+      vm_stack_top_p[-1] = VM_CREATE_CONTEXT (finally_type, branch_offset);
+
+      byte_code_p += 2 + branch_offset_length;
+      frame_ctx_p->byte_code_p = byte_code_p;
+
+      *vm_stack_top_ref_p = vm_stack_top_p;
+      return true;
+    }
+
+    vm_stack_top_p = vm_stack_context_abort (frame_ctx_p, vm_stack_top_p);
+  }
+
+  *vm_stack_top_ref_p = vm_stack_top_p;
+  return false;
+} /* vm_stack_find_finally */
 
 /**
  * @}

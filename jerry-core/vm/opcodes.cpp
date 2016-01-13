@@ -231,39 +231,6 @@ vm_var_decl (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 } /* vm_var_decl */
 
 /**
- * 'Context end' opcode handler.
- *
- * @return new stack top
- */
-ecma_value_t *
-opfunc_context_end (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
-                    ecma_value_t *vm_stack_top_p) /**< current stack top */
-{
-  switch (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]))
-  {
-    case VM_CONTEXT_TRY:
-    {
-      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
-      vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
-      break;
-    }
-    case VM_CONTEXT_FINALLY:
-    {
-      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
-      vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
-      break;
-    }
-    default:
-    {
-      JERRY_UNREACHABLE ();
-      break;
-    }
-  }
-
-  return vm_stack_top_p;
-} /* opfunc_context_end */
-
-/**
  * 'Logical NOT Operator' opcode handler.
  *
  * See also: ECMA-262 v5, 11.4.9
