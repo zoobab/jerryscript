@@ -1202,6 +1202,53 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           }
           break;
         }
+        case VM_OC_DELETE:
+        {
+          uint16_t literal_index;
+          ecma_string_t *var_name_str_p;
+          ecma_object_t *ref_base_lex_env_p;
+
+          READ_LITERAL_INDEX (literal_index);
+
+          var_name_str_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
+          ecma_reference_t ref = ecma_op_get_identifier_reference (frame_ctx_p->lex_env_p,
+                                                                   var_name_str_p,
+                                                                   frame_ctx_p->is_strict);
+
+          JERRY_ASSERT (!ref.is_strict);
+
+          if (ecma_is_value_undefined (ref.base))
+          {
+            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE);
+          }
+          else
+          {
+            last_completion_value = ecma_make_empty_completion_value ();
+
+            ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, var_name_str_p);
+            JERRY_ASSERT (ecma_is_lexical_environment (ref_base_lex_env_p));
+
+            ECMA_TRY_CATCH (delete_completion,
+                            ecma_op_delete_binding (ref_base_lex_env_p,
+                                                    ECMA_GET_NON_NULL_POINTER (ecma_string_t,
+                                                                               ref.referenced_name_cp)),
+                            last_completion_value);
+
+            result = delete_completion;
+
+            ECMA_FINALIZE (delete_completion);
+
+            if (ecma_is_completion_value_throw (last_completion_value))
+            {
+              goto error;
+            }
+          }
+
+          ecma_free_reference (ref);
+          ecma_deref_ecma_string (var_name_str_p);
+
+          break;
+        }
         case VM_OC_JUMP:
         {
           byte_code_p = byte_code_start_p + branch_offset;
