@@ -1005,6 +1005,10 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           /* FALLTHRU */
         }
         case VM_OC_PROP_GET:
+        case VM_OC_PROP_PRE_INCR:
+        case VM_OC_PROP_PRE_DECR:
+        case VM_OC_PROP_POST_INCR:
+        case VM_OC_PROP_POST_DECR:
         {
           last_completion_value = vm_op_get_value (left_value,
                                                    right_value,
@@ -1015,6 +1019,71 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
             goto error;
           }
           result = ecma_get_completion_value_value (last_completion_value);
+
+          if (opcode < CBC_PRE_INCR)
+          {
+            break;
+          }
+
+          vm_stack_top_p += 2;
+          left_value = result;
+          free_flags = VM_FREE_LEFT_VALUE;
+          /* FALLTHRU */
+        }
+        case VM_OC_PRE_INCR:
+        case VM_OC_PRE_DECR:
+        case VM_OC_POST_INCR:
+        case VM_OC_POST_DECR:
+        {
+          uint32_t base = VM_OC_GROUP_GET_INDEX (opcode_data) - VM_OC_PROP_PRE_INCR;
+          ecma_number_t increase = ECMA_NUMBER_ONE;
+          ecma_number_t *result_p;
+
+          last_completion_value = ecma_op_to_number (left_value);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          byte_code_p = byte_code_start_p + 1;
+          result = ecma_get_completion_value_value (last_completion_value);
+          result_p = ecma_get_number_from_value (result);
+
+          if (base & 0x2)
+          {
+            /* For decrement operators */
+            increase = -ECMA_NUMBER_ONE;
+          }
+
+          /* Post operators require the unmodifed number value. */
+          if (base & 0x4)
+          {
+            if (opcode_data & VM_OC_PUT_STACK)
+            {
+              if (base & 0x1)
+              {
+                *vm_stack_top_p++ = ecma_copy_value (result, true);
+              }
+              else
+              {
+                /* FIXME: update parser to increase max stack. */
+                vm_stack_top_p++;
+                vm_stack_top_p[-1] = vm_stack_top_p[-2];
+                vm_stack_top_p[-2] = vm_stack_top_p[-3];
+                vm_stack_top_p[-3] = ecma_copy_value (result, true);
+              }
+              opcode_data &= ~VM_OC_PUT_STACK;
+            }
+            else if (opcode_data & VM_OC_PUT_BLOCK)
+            {
+              ecma_free_value (block_result, true);
+              block_result = ecma_copy_value (result, true);
+              opcode_data &= ~VM_OC_PUT_BLOCK;
+            }
+          }
+
+          *result_p = ecma_number_add (*result_p, increase);
           break;
         }
         case VM_OC_ASSIGN:
