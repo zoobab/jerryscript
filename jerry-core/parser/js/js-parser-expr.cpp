@@ -38,6 +38,25 @@ parser_push_result (parser_context_t *context_p) /**< context */
   else if (CBC_NO_RESULT_OPERATION (context_p->last_cbc_opcode))
   {
     PARSER_ASSERT (CBC_SAME_ARGS (context_p->last_cbc_opcode, context_p->last_cbc_opcode + 1));
+
+    if (context_p->last_cbc_opcode == CBC_POST_INCR
+        || context_p->last_cbc_opcode == CBC_POST_DECR)
+    {
+      if (context_p->stack_depth >= context_p->stack_limit)
+      {
+        /* Stack limit is increased for CBC_POST_INCR_PUSH_RESULT
+         * and CBC_POST_DECR_PUSH_RESULT opcodes. Needed by vm.cpp. */
+        PARSER_ASSERT (context_p->stack_depth == context_p->stack_limit);
+
+        context_p->stack_limit++;
+
+        if (context_p->stack_limit > PARSER_MAXIMUM_STACK_LIMIT)
+        {
+          parser_raise_error (context_p, PARSER_ERR_STACK_LIMIT_REACHED);
+        }
+      }
+    }
+
     context_p->last_cbc_opcode++;
     parser_flush_cbc (context_p);
   }
@@ -55,21 +74,27 @@ parser_emit_unary_lvalue_opcode (parser_context_t *context_p, /**< context */
   {
     PARSER_ASSERT (CBC_SAME_ARGS (CBC_PUSH_LITERAL, opcode + CBC_UNARY_LVALUE_WITH_IDENT));
 
-    if ((context_p->status_flags & PARSER_IS_STRICT)
-        && context_p->last_cbc.literal_object_type != LEXER_LITERAL_OBJECT_ANY)
+    if (context_p->status_flags & PARSER_IS_STRICT)
     {
-      parser_error_t error;
+      if (context_p->last_cbc.literal_object_type != LEXER_LITERAL_OBJECT_ANY)
+      {
+        parser_error_t error;
 
-      if (context_p->last_cbc.literal_object_type == LEXER_LITERAL_OBJECT_EVAL)
-      {
-        error = PARSER_ERR_EVAL_CANNOT_ASSIGNED;
+        if (context_p->last_cbc.literal_object_type == LEXER_LITERAL_OBJECT_EVAL)
+        {
+          error = PARSER_ERR_EVAL_CANNOT_ASSIGNED;
+        }
+        else
+        {
+          PARSER_ASSERT (context_p->last_cbc.literal_object_type == LEXER_LITERAL_OBJECT_ARGUMENTS);
+          error = PARSER_ERR_ARGUMENTS_CANNOT_ASSIGNED;
+        }
+        parser_raise_error (context_p, error);
       }
-      else
+      if (opcode == CBC_DELETE)
       {
-        PARSER_ASSERT (context_p->last_cbc.literal_object_type == LEXER_LITERAL_OBJECT_ARGUMENTS);
-        error = PARSER_ERR_ARGUMENTS_CANNOT_ASSIGNED;
+        parser_raise_error (context_p, PARSER_ERR_DELETE_IDENT_NOT_ALLOWED);
       }
-      parser_raise_error (context_p, error);
     }
 
     if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)

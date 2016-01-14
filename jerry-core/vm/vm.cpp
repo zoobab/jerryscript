@@ -20,6 +20,7 @@
 #include "ecma-array-object.h"
 #include "ecma-builtins.h"
 #include "ecma-conversion.h"
+#include "ecma-exceptions.h"
 #include "ecma-function-object.h"
 #include "ecma-gc.h"
 #include "ecma-helpers.h"
@@ -326,10 +327,16 @@ enum
         ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]); \
         ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, \
                                                                             name_p); \
-        JERRY_ASSERT (ref_base_lex_env_p != NULL); \
-        last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p, \
-                                                                name_p, \
-                                                                frame_ctx_p->is_strict); \
+        if (ref_base_lex_env_p != NULL) \
+        { \
+          last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p, \
+                                                                  name_p, \
+                                                                  frame_ctx_p->is_strict); \
+        } \
+        else { \
+          ecma_object_t *error = ecma_new_standard_error (ECMA_ERROR_REFERENCE); \
+          last_completion_value = ecma_make_throw_obj_completion_value (error); \
+        } \
         \
         ecma_deref_ecma_string (name_p); \
         \
@@ -1063,11 +1070,19 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
             {
               if (base & 0x1)
               {
+                PARSER_ASSERT (opcode == CBC_POST_INCR_IDENT_PUSH_RESULT
+                               || opcode == CBC_POST_DECR_IDENT_PUSH_RESULT);
+
                 *vm_stack_top_p++ = ecma_copy_value (result, true);
               }
               else
               {
-                /* FIXME: update parser to increase max stack. */
+                /* The parser ensures there is enough space for the
+                 * extra value on the stack. See js-parser-expr.cpp. */
+
+                PARSER_ASSERT (opcode == CBC_POST_INCR_PUSH_RESULT
+                               || opcode == CBC_POST_DECR_PUSH_RESULT);
+
                 vm_stack_top_p++;
                 vm_stack_top_p[-1] = vm_stack_top_p[-2];
                 vm_stack_top_p[-2] = vm_stack_top_p[-3];
@@ -1620,6 +1635,41 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           result = ecma_get_completion_value_value (last_completion_value);
           break;
         }
+        case VM_OC_WITH:
+        {
+          ecma_value_t object;
+          ecma_object_t *object_p;
+          ecma_object_t *with_env_p;
+
+          branch_offset += (uint32_t) (byte_code_start_p - frame_ctx_p->byte_code_start_p);
+
+          JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+
+          last_completion_value = ecma_op_to_object (left_value);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          object = ecma_get_completion_value_value (last_completion_value);
+          object_p = ecma_get_object_from_value (object);
+
+          with_env_p = ecma_create_object_lex_env (frame_ctx_p->lex_env_p,
+                                                   object_p,
+                                                   true);
+
+          ecma_deref_object (object_p);
+
+          VM_PLUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_WITH_CONTEXT_STACK_ALLOCATION);
+          vm_stack_top_p += PARSER_WITH_CONTEXT_STACK_ALLOCATION;
+
+          vm_stack_top_p[-1] = VM_CREATE_CONTEXT (VM_CONTEXT_WITH, branch_offset);
+          vm_stack_top_p[-2] = ecma_make_object_value (frame_ctx_p->lex_env_p);
+
+          frame_ctx_p->lex_env_p = with_env_p;
+          break;
+        }
         case VM_OC_TRY:
         {
           /* Try opcode simply creates the try context. */
@@ -1647,8 +1697,15 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           branch_offset += (uint32_t) (byte_code_start_p - frame_ctx_p->byte_code_start_p);
 
           JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == vm_stack_top_p);
+
           JERRY_ASSERT (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_TRY
                         || VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_CATCH);
+
+          if (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_CATCH)
+          {
+            ecma_deref_object (frame_ctx_p->lex_env_p);
+            frame_ctx_p->lex_env_p = ecma_get_object_from_value (vm_stack_top_p[-2]);
+          }
 
           vm_stack_top_p[-1] = VM_CREATE_CONTEXT (VM_CONTEXT_FINALLY_JUMP, branch_offset);
           vm_stack_top_p[-2] = branch_offset;
@@ -1866,7 +1923,30 @@ error:
 
         if (VM_GET_CONTEXT_TYPE (vm_stack_top_p[-1]) == VM_CONTEXT_CATCH)
         {
+          uint32_t literal_index;
+          ecma_object_t *catch_env_p;
+          ecma_string_t *catch_name_p;
+
           *vm_stack_top_p++ = result;
+
+          JERRY_ASSERT (byte_code_p[0] == CBC_ASSIGN_SET_IDENT);
+
+          literal_index = byte_code_p[1];
+          if (literal_index >= encoding_limit)
+          {
+            literal_index = ((literal_index << 8) | byte_code_p[2]) - encoding_delta;
+          }
+
+          catch_env_p = ecma_create_decl_lex_env (frame_ctx_p->lex_env_p);
+
+          catch_name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
+
+          ecma_op_create_mutable_binding (catch_env_p, catch_name_p, false);
+
+          ecma_deref_ecma_string (catch_name_p);
+
+          vm_stack_top_p[-2 - 1] = ecma_make_object_value (frame_ctx_p->lex_env_p);
+          frame_ctx_p->lex_env_p = catch_env_p;
         }
         else
         {

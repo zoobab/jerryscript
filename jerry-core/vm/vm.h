@@ -68,6 +68,7 @@ typedef enum {
   VM_OC_PROP_REFERENCE,
   VM_OC_PROP_GET,
 
+  /* These eight opcodes must be in this order. */
   VM_OC_PROP_PRE_INCR,
   VM_OC_PRE_INCR,
   VM_OC_PROP_PRE_DECR,
@@ -132,6 +133,7 @@ typedef enum {
   VM_OC_IN,
   VM_OC_INSTANCEOF,
 
+  VM_OC_WITH,
   VM_OC_TRY,
   VM_OC_CATCH,
   VM_OC_FINALLY,

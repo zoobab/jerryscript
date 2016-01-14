@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "ecma-gc.h"
 #include "ecma-helpers.h"
 #include "vm-defines.h"
 #include "vm-stack.h"
@@ -70,6 +71,18 @@ vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
     case VM_CONTEXT_FINALLY_JUMP:
     case VM_CONTEXT_TRY:
     {
+      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
+      vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+      break;
+    }
+    case VM_CONTEXT_CATCH:
+    case VM_CONTEXT_WITH:
+    {
+      ecma_deref_object (frame_ctx_p->lex_env_p);
+      frame_ctx_p->lex_env_p = ecma_get_object_from_value (vm_stack_top_p[-2]);
+
+      JERRY_ASSERT (PARSER_TRY_CONTEXT_STACK_ALLOCATION == PARSER_WITH_CONTEXT_STACK_ALLOCATION);
+
       VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
       vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
       break;
@@ -140,8 +153,9 @@ vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
   while (frame_ctx_p->context_depth > 0)
   {
     vm_stack_context_type_t context_type;
+    uint32_t context_end = VM_GET_CONTEXT_END (vm_stack_top_p[-1]);
 
-    if (search_limit < VM_GET_CONTEXT_END (vm_stack_top_p[-1]))
+    if (search_limit < context_end)
     {
       *vm_stack_top_ref_p = vm_stack_top_p;
       return false;
@@ -153,6 +167,12 @@ vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
       uint8_t *byte_code_p;
       uint32_t branch_offset_length;
       uint32_t branch_offset;
+
+      if (search_limit == context_end)
+      {
+        *vm_stack_top_ref_p = vm_stack_top_p;
+        return false;
+      }
 
       byte_code_p = frame_ctx_p->byte_code_start_p + VM_GET_CONTEXT_END (vm_stack_top_p[-1]);
 
@@ -192,6 +212,9 @@ vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
       }
       else
       {
+        ecma_deref_object (frame_ctx_p->lex_env_p);
+        frame_ctx_p->lex_env_p = ecma_get_object_from_value (vm_stack_top_p[-2]);
+
         if (byte_code_p[0] == CBC_CONTEXT_END)
         {
           VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);

@@ -61,6 +61,7 @@ typedef enum {
   VM_CONTEXT_FINALLY_RETURN,                  /**< finally context with a return */
   VM_CONTEXT_TRY,                             /**< try context */
   VM_CONTEXT_CATCH,                           /**< catch context */
+  VM_CONTEXT_WITH,                            /**< with context */
 } vm_stack_context_type_t;
 
 extern ecma_value_t *vm_stack_context_abort (vm_frame_ctx_t *, ecma_value_t *);

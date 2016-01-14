@@ -751,6 +751,10 @@ parser_error_to_string (parser_error_t error) /**< error code */
     {
       return "Arguments is not allowed to use here in strict mode.";
     }
+    case PARSER_ERR_DELETE_IDENT_NOT_ALLOWED:
+    {
+      return "Deleting identifier is not allowed in strict mode.";
+    }
     case PARSER_ERR_EVAL_CANNOT_ASSIGNED:
     {
       return "Eval cannot assigned in strict mode.";
