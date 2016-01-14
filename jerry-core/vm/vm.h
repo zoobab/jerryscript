@@ -163,7 +163,8 @@ extern ecma_completion_value_t vm_run (const cbc_compiled_code_t *,
                                        ecma_value_t,
                                        ecma_object_t *,
                                        bool,
-                                       bool);
+                                       bool,
+                                       ecma_collection_header_t *);
 
 extern opcode_scope_code_flags_t vm_get_scope_flags (const cbc_compiled_code_t *);
 

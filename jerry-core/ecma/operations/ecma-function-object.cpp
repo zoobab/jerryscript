@@ -989,7 +989,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                      this_binding,
                                                      local_env_p,
                                                      is_strict,
-                                                     false);
+                                                     false,
+                                                     arg_collection_p);
 
         if (ecma_is_completion_value_return (completion))
         {
@@ -1015,7 +1016,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
                                                      this_binding,
                                                      local_env_p,
                                                      is_strict,
-                                                     false);
+                                                     false,
+                                                     arg_collection_p);
 
         if (ecma_is_completion_value_return (completion))
         {
