@@ -138,6 +138,107 @@ vm_op_set_value (ecma_value_t object, /**< base object */
 } /* vm_op_set_value */
 
 /**
+ * Deletes an object property.
+ *
+ * @return completion value
+ */
+static ecma_completion_value_t
+vm_op_delete_prop (ecma_value_t object, /**< base object */
+                   ecma_value_t property, /**< property name */
+                   bool is_strict) /**< strict mode */
+{
+  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
+
+  if (ecma_is_value_undefined (object))
+  {
+    JERRY_ASSERT (!is_strict);
+    completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
+  }
+  else
+  {
+    completion_value = ecma_make_empty_completion_value ();
+
+    ECMA_TRY_CATCH (check_coercible_ret,
+                    ecma_op_check_object_coercible (object),
+                    completion_value);
+    ECMA_TRY_CATCH (str_name_value,
+                    ecma_op_to_string (property),
+                    completion_value);
+
+    JERRY_ASSERT (ecma_is_value_string (str_name_value));
+    ecma_string_t *name_string_p = ecma_get_string_from_value (str_name_value);
+
+    ECMA_TRY_CATCH (obj_value, ecma_op_to_object (object), completion_value);
+
+    JERRY_ASSERT (ecma_is_value_object (obj_value));
+    ecma_object_t *obj_p = ecma_get_object_from_value (obj_value);
+    JERRY_ASSERT (!ecma_is_lexical_environment (obj_p));
+
+    ECMA_TRY_CATCH (delete_op_ret_val,
+                    ecma_op_object_delete (obj_p, name_string_p, is_strict),
+                    completion_value);
+
+    completion_value = ecma_make_normal_completion_value (delete_op_ret_val);
+
+    ECMA_FINALIZE (delete_op_ret_val);
+    ECMA_FINALIZE (obj_value);
+    ECMA_FINALIZE (str_name_value);
+    ECMA_FINALIZE (check_coercible_ret);
+  }
+
+  return completion_value;
+} /* vm_op_delete_prop */
+
+/**
+ * Deletes a variable.
+ *
+ * @return completion value
+ */
+static ecma_completion_value_t
+vm_op_delete_var (lit_cpointer_t name_literal, /**< name literal */
+                  ecma_object_t *lex_env_p, /**< lexical environment */
+                  bool is_strict) /**< strict mode */
+{
+  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
+
+  ecma_string_t *var_name_str_p;
+
+  var_name_str_p = ecma_new_ecma_string_from_lit_cp (name_literal);
+  ecma_reference_t ref = ecma_op_get_identifier_reference (lex_env_p,
+                                                           var_name_str_p,
+                                                           is_strict);
+
+  JERRY_ASSERT (!ref.is_strict);
+
+  if (ecma_is_value_undefined (ref.base))
+  {
+    completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
+  }
+  else
+  {
+    ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (lex_env_p, var_name_str_p);
+
+    JERRY_ASSERT (ecma_is_lexical_environment (ref_base_lex_env_p));
+
+    ECMA_TRY_CATCH (delete_op_ret_val,
+                    ecma_op_delete_binding (ref_base_lex_env_p,
+                                            ECMA_GET_NON_NULL_POINTER (ecma_string_t,
+                                                                       ref.referenced_name_cp)),
+                    completion_value);
+
+    completion_value = ecma_make_normal_completion_value (delete_op_ret_val);
+
+    ECMA_FINALIZE (delete_op_ret_val);
+
+  }
+
+  ecma_free_reference (ref);
+  ecma_deref_ecma_string (var_name_str_p);
+
+  return completion_value;
+} /* vm_op_delete_var */
+
+/**
  * Initialize interpreter.
  */
 void
@@ -1237,94 +1338,30 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_PROP_DELETE:
         {
-          if (ecma_is_value_undefined (left_value))
+          last_completion_value = vm_op_delete_prop (left_value, right_value, frame_ctx_p->is_strict);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
           {
-            JERRY_ASSERT (!frame_ctx_p->is_strict);
-            last_completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
+            goto error;
           }
-          else
-          {
-            last_completion_value = ecma_make_empty_completion_value ();
 
-            ECMA_TRY_CATCH (check_coercible_ret,
-                            ecma_op_check_object_coercible (left_value),
-                            last_completion_value);
-            ECMA_TRY_CATCH (str_name_value,
-                            ecma_op_to_string (right_value),
-                            last_completion_value);
-
-            JERRY_ASSERT (ecma_is_value_string (str_name_value));
-            ecma_string_t *name_string_p = ecma_get_string_from_value (str_name_value);
-
-            ECMA_TRY_CATCH (obj_value, ecma_op_to_object (left_value), last_completion_value);
-
-            JERRY_ASSERT (ecma_is_value_object (obj_value));
-            ecma_object_t *obj_p = ecma_get_object_from_value (obj_value);
-            JERRY_ASSERT (!ecma_is_lexical_environment (obj_p));
-
-            ECMA_TRY_CATCH (delete_op_ret_val,
-                            ecma_op_object_delete (obj_p, name_string_p, frame_ctx_p->is_strict),
-                            last_completion_value);
-
-            result = delete_op_ret_val;
-
-            ECMA_FINALIZE (delete_op_ret_val);
-            ECMA_FINALIZE (obj_value);
-            ECMA_FINALIZE (str_name_value);
-            ECMA_FINALIZE (check_coercible_ret);
-
-            if (ecma_is_completion_value_throw (last_completion_value))
-            {
-              goto error;
-            }
-          }
+          result = ecma_get_completion_value_value (last_completion_value);
           break;
         }
         case VM_OC_DELETE:
         {
           uint16_t literal_index;
-          ecma_string_t *var_name_str_p;
-          ecma_object_t *ref_base_lex_env_p;
 
           READ_LITERAL_INDEX (literal_index);
 
-          var_name_str_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
-          ecma_reference_t ref = ecma_op_get_identifier_reference (frame_ctx_p->lex_env_p,
-                                                                   var_name_str_p,
-                                                                   frame_ctx_p->is_strict);
+          last_completion_value = vm_op_delete_var (literal_start_p[literal_index], frame_ctx_p->lex_env_p, frame_ctx_p->is_strict);
 
-          JERRY_ASSERT (!ref.is_strict);
-
-          if (ecma_is_value_undefined (ref.base))
+          if (ecma_is_completion_value_throw (last_completion_value))
           {
-            result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE);
-          }
-          else
-          {
-            last_completion_value = ecma_make_empty_completion_value ();
-
-            ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, var_name_str_p);
-            JERRY_ASSERT (ecma_is_lexical_environment (ref_base_lex_env_p));
-
-            ECMA_TRY_CATCH (delete_completion,
-                            ecma_op_delete_binding (ref_base_lex_env_p,
-                                                    ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                                               ref.referenced_name_cp)),
-                            last_completion_value);
-
-            result = delete_completion;
-
-            ECMA_FINALIZE (delete_completion);
-
-            if (ecma_is_completion_value_throw (last_completion_value))
-            {
-              goto error;
-            }
+            goto error;
           }
 
-          ecma_free_reference (ref);
-          ecma_deref_ecma_string (var_name_str_p);
-
+          result = ecma_get_completion_value_value (last_completion_value);
           break;
         }
         case VM_OC_JUMP:
