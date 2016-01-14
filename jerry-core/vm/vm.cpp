@@ -871,6 +871,22 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           ecma_named_data_property_assign_value (object_p, new_property_p, left_value);
           break;
         }
+        case VM_OC_SET_GETTER:
+        {
+          ecma_object_t *object_p = ecma_get_object_from_value (frame_ctx_p->stack_top_p[-1]);
+          ecma_string_t *getter_name_p = ecma_get_string_from_value (left_value);
+          ecma_object_t *getter_func_p = ecma_get_object_from_value (right_value);
+          ecma_create_named_accessor_property (object_p, getter_name_p, getter_func_p, NULL, true, true);
+          break;
+        }
+        case VM_OC_SET_SETTER:
+        {
+          ecma_object_t *object_p = ecma_get_object_from_value (frame_ctx_p->stack_top_p[-1]);
+          ecma_string_t *setter_name_p = ecma_get_string_from_value (left_value);
+          ecma_object_t *setter_func_p = ecma_get_object_from_value (right_value);
+          ecma_create_named_accessor_property (object_p, setter_name_p, NULL, setter_func_p, true, true);
+          break;
+        }
         case VM_OC_PUSH_ARRAY:
         {
           last_completion_value = ecma_op_create_array_object (NULL, 0, false);
