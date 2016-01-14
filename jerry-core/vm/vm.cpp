@@ -1217,6 +1217,51 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           }
           break;
         }
+        case VM_OC_PROP_DELETE:
+        {
+          if (ecma_is_value_undefined (left_value))
+          {
+            JERRY_ASSERT (!frame_ctx_p->is_strict);
+            last_completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
+          }
+          else
+          {
+            last_completion_value = ecma_make_empty_completion_value ();
+
+            ECMA_TRY_CATCH (check_coercible_ret,
+                            ecma_op_check_object_coercible (left_value),
+                            last_completion_value);
+            ECMA_TRY_CATCH (str_name_value,
+                            ecma_op_to_string (right_value),
+                            last_completion_value);
+
+            JERRY_ASSERT (ecma_is_value_string (str_name_value));
+            ecma_string_t *name_string_p = ecma_get_string_from_value (str_name_value);
+
+            ECMA_TRY_CATCH (obj_value, ecma_op_to_object (left_value), last_completion_value);
+
+            JERRY_ASSERT (ecma_is_value_object (obj_value));
+            ecma_object_t *obj_p = ecma_get_object_from_value (obj_value);
+            JERRY_ASSERT (!ecma_is_lexical_environment (obj_p));
+
+            ECMA_TRY_CATCH (delete_op_ret_val,
+                            ecma_op_object_delete (obj_p, name_string_p, frame_ctx_p->is_strict),
+                            last_completion_value);
+
+            result = delete_op_ret_val;
+
+            ECMA_FINALIZE (delete_op_ret_val);
+            ECMA_FINALIZE (obj_value);
+            ECMA_FINALIZE (str_name_value);
+            ECMA_FINALIZE (check_coercible_ret);
+
+            if (ecma_is_completion_value_throw (last_completion_value))
+            {
+              goto error;
+            }
+          }
+          break;
+        }
         case VM_OC_DELETE:
         {
           uint16_t literal_index;
