@@ -60,6 +60,7 @@ typedef struct
   bool is_strict;                                     /**< strict mode flag */
   bool is_eval_code;                                  /**< eval mode flag */
   bool is_call_in_direct_eval_form;                   /**< direct eval call */
+  ecma_value_t this_binding;                          /**< this binding */
 } vm_frame_ctx_t;
 
 #endif /* VM_DEFINES_H */

@@ -85,6 +85,7 @@ typedef enum {
 
   VM_OC_ASSIGN,
   VM_OC_ASSIGN_PROP,
+  VM_OC_ASSIGN_PROP_THIS,
 
   VM_OC_RET,
   VM_OC_THROW,

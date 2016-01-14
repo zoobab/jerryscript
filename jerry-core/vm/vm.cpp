@@ -812,6 +812,13 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                             free_flags |= VM_FREE_RIGHT_VALUE);
               break;
             }
+            case VM_OC_GET_DATA_GET_ID (VM_OC_GET_THIS_LITERAL):
+            {
+              right_value = left_value;
+              free_flags = VM_FREE_RIGHT_VALUE;
+              left_value = frame_ctx_p->this_binding;
+              break;
+            }
             default:
             {
               JERRY_ASSERT (operands == VM_OC_GET_DATA_GET_ID (VM_OC_GET_LITERAL));
@@ -927,7 +934,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_PUSH_THIS:
         {
-          JERRY_UNREACHABLE ();
+          result = frame_ctx_p->this_binding;
           break;
         }
         case VM_OC_PUSH_NUMBER:
@@ -973,19 +980,21 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           break;
         }
         case VM_OC_SET_GETTER:
-        {
-          ecma_object_t *object_p = ecma_get_object_from_value (frame_ctx_p->stack_top_p[-1]);
-          ecma_string_t *getter_name_p = ecma_get_string_from_value (left_value);
-          ecma_object_t *getter_func_p = ecma_get_object_from_value (right_value);
-          ecma_create_named_accessor_property (object_p, getter_name_p, getter_func_p, NULL, true, true);
-          break;
-        }
         case VM_OC_SET_SETTER:
         {
           ecma_object_t *object_p = ecma_get_object_from_value (frame_ctx_p->stack_top_p[-1]);
-          ecma_string_t *setter_name_p = ecma_get_string_from_value (left_value);
-          ecma_object_t *setter_func_p = ecma_get_object_from_value (right_value);
-          ecma_create_named_accessor_property (object_p, setter_name_p, NULL, setter_func_p, true, true);
+          ecma_string_t *accessor_name_p = ecma_get_string_from_value (left_value);
+          ecma_object_t *accessor_func_p = ecma_get_object_from_value (right_value);
+
+          if (VM_OC_GROUP_GET_INDEX (opcode_data) == VM_OC_SET_GETTER)
+          {
+            ecma_create_named_accessor_property (object_p, accessor_name_p, accessor_func_p, NULL, true, true);
+          }
+          else
+          {
+            JERRY_ASSERT (VM_OC_GROUP_GET_INDEX (opcode_data) == VM_OC_SET_SETTER);
+            ecma_create_named_accessor_property (object_p, accessor_name_p, NULL, accessor_func_p, true, true);
+          }
           break;
         }
         case VM_OC_PUSH_ARRAY:
@@ -1230,6 +1239,14 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         {
           result = frame_ctx_p->stack_top_p[-1];
           frame_ctx_p->stack_top_p[-1] = left_value;
+          free_flags = 0;
+          break;
+        }
+        case VM_OC_ASSIGN_PROP_THIS:
+        {
+          result = frame_ctx_p->stack_top_p[-1];
+          frame_ctx_p->stack_top_p[-1] = ecma_copy_value (frame_ctx_p->this_binding, true);
+          *frame_ctx_p->stack_top_p++ = left_value;
           free_flags = 0;
           break;
         }
@@ -2131,6 +2148,7 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
   frame_ctx.is_strict = is_strict;
   frame_ctx.is_eval_code = is_eval_code;
   frame_ctx.is_call_in_direct_eval_form = false;
+  frame_ctx.this_binding = this_binding_value;
 
   if (vm_top_context_p == NULL)
   {
