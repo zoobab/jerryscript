@@ -52,7 +52,6 @@ typedef struct
   uint8_t *byte_code_p;                               /**< current byte code pointer */
   uint8_t *byte_code_start_p;                         /**< byte code start pointer */
   ecma_value_t *registers_p;                          /**< register start pointer */
-  ecma_value_t *stack_top_p;                          /**< stack pointer */
   lit_cpointer_t *literal_start_p;                    /**< literal list start pointer */
   ecma_object_t *lex_env_p;                           /**< current lexical environment */
   ecma_object_t *ref_base_lex_env_p;                  /**< current lexical environment */
