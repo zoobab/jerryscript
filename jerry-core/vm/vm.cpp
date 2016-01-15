@@ -560,6 +560,21 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
     encoding_delta = 0x8000;
   }
 
+  if (frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (frame_ctx_p->bytecode_header_p);
+    register_end = args_p->argument_end;
+    ident_end = args_p->ident_end;
+    const_literal_end = args_p->const_literal_end;
+  }
+  else
+  {
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (frame_ctx_p->bytecode_header_p);
+    register_end = args_p->argument_end;
+    ident_end = args_p->ident_end;
+    const_literal_end = args_p->const_literal_end;
+  }
+
   while (true)
   {
     switch (*byte_code_p)
@@ -567,26 +582,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       case CBC_DEFINE_VARS:
       {
         uint32_t literal_index_end;
-        uint32_t literal_index;
-
-        cbc_uint8_arguments_t *args_p = NULL;
-
-        if (frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-        {
-          cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (frame_ctx_p->bytecode_header_p);
-          literal_index = args_p->register_end;
-          register_end = args_p->argument_end;
-          ident_end = args_p->ident_end;
-          const_literal_end = args_p->const_literal_end;
-        }
-        else
-        {
-          cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (frame_ctx_p->bytecode_header_p);
-          literal_index = args_p->register_end;
-          register_end = args_p->argument_end;
-          ident_end = args_p->ident_end;
-          const_literal_end = args_p->const_literal_end;
-        }
+        uint32_t literal_index = register_end;
 
         byte_code_p++;
         READ_LITERAL_INDEX (literal_index_end);
