@@ -105,7 +105,7 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
             if (literal_p->status_flags & LEXER_FLAG_FUNCTION_NAME)
             {
               PARSER_ASSERT (literal_p == parser_list_get (&context_p->literal_pool, 0));
-              status_flags |= PARSER_NAMED_FUNCTION_EXP | LEXER_FLAG_NO_REG_STORE;
+              status_flags |= PARSER_NAMED_FUNCTION_EXP | PARSER_NO_REG_STORE;
               context_p->status_flags = status_flags;
               context_p->literal_count++;
             }
@@ -410,6 +410,7 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
     dst_p = parser_encode_literal (dst_p,
                                    (uint16_t) (uninitialized_var_end - 1),
                                    literal_one_byte_limit);
+    context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
   }
 
   if (context_p->status_flags & PARSER_HAS_INITIALIZED_VARS)
@@ -418,6 +419,8 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
 #ifdef PARSER_DEBUG
     uint16_t next_index = uninitialized_var_end;
 #endif
+
+    context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
     *dst_p++ = CBC_INITIALIZE_VARS;
     dst_p = parser_encode_literal (dst_p,
@@ -521,6 +524,8 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
       uint16_t init_index;
 
       PARSER_ASSERT (literal_p->type == LEXER_IDENT_LITERAL);
+
+      context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
       if (literal_p->status_flags & LEXER_FLAG_FUNCTION_NAME)
       {
@@ -1030,6 +1035,16 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
     printf (",strict_mode");
   }
 
+  if (compiled_code_p->status_flags & CBC_CODE_FLAGS_ARGUMENTS_NEEDED)
+  {
+    printf (",arguments_needed");
+  }
+
+  if (compiled_code_p->status_flags & CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED)
+  {
+    printf (",no_lexical_env");
+  }
+
   printf ("]\n");
 
   printf ("  Argument range end: %d\n", (int) argument_end);
@@ -1415,7 +1430,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   compiled_code_p = (cbc_compiled_code_t *) parser_malloc (context_p, total_size);
 
   byte_code_p = (uint8_t *) compiled_code_p;
-  compiled_code_p->status_flags = 0;
+  compiled_code_p->status_flags = CBC_CODE_FLAGS_FUNCTION;
 
   if (needs_uint16_arguments)
   {
@@ -1453,6 +1468,18 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   if (context_p->status_flags & PARSER_IS_STRICT)
   {
     compiled_code_p->status_flags |= CBC_CODE_FLAGS_STRICT_MODE;
+  }
+
+  if ((context_p->status_flags & PARSER_ARGUMENTS_NEEDED)
+      && !(context_p->status_flags & PARSER_ARGUMENTS_NOT_NEEDED))
+  {
+    compiled_code_p->status_flags |= CBC_CODE_FLAGS_ARGUMENTS_NEEDED;
+    context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
+  }
+
+  if (!(context_p->status_flags & PARSER_LEXICAL_ENV_NEEDED))
+  {
+    compiled_code_p->status_flags |= CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED;
   }
 
   literal_pool_p = (lit_cpointer_t *) byte_code_p;
@@ -1701,7 +1728,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
     error_location->error = PARSER_ERR_NO_ERROR;
   }
 
-  context.status_flags = PARSER_NO_REG_STORE;
+  context.status_flags = PARSER_NO_REG_STORE | PARSER_LEXICAL_ENV_NEEDED | PARSER_ARGUMENTS_NOT_NEEDED;
   context.stack_depth = 0;
   context.stack_limit = 0;
   context.last_context_p = NULL;
@@ -1887,7 +1914,12 @@ parser_parse_function (parser_context_t *context_p, /**< context */
                                     &context_p->token.lit_location,
                                     LEXER_IDENT_LITERAL);
 
-    context_p->lit_object.literal_p->status_flags |= status_flags;
+    /* The arguments object is created later than the binding to the
+     * function expression name, so there is no need to assign special flags. */
+    if (context_p->lit_object.type != LEXER_LITERAL_OBJECT_ARGUMENTS)
+    {
+      context_p->lit_object.literal_p->status_flags |= status_flags;
+    }
 
     lexer_next_token (context_p);
   }
@@ -1921,6 +1953,12 @@ parser_parse_function (parser_context_t *context_p, /**< context */
           || context_p->lit_object.type != LEXER_LITERAL_OBJECT_ANY)
       {
         context_p->status_flags |= PARSER_HAS_NON_STRICT_ARG;
+      }
+
+      if (context_p->lit_object.type == LEXER_LITERAL_OBJECT_ARGUMENTS)
+      {
+        context_p->status_flags |= PARSER_ARGUMENTS_NOT_NEEDED;
+        context_p->status_flags &= ~PARSER_LEXICAL_ENV_NEEDED;
       }
 
       if (context_p->literal_count == literal_count)

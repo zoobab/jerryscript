@@ -36,7 +36,10 @@
 #define PARSER_HAS_INITIALIZED_VARS           0x0200u
 #define PARSER_NO_END_LABEL                   0x0400u
 #define PARSER_NO_REG_STORE                   0x0800u
-#define PARSER_HAS_LATE_LIT_INIT              0x1000u
+#define PARSER_ARGUMENTS_NEEDED               0x1000u
+#define PARSER_ARGUMENTS_NOT_NEEDED           0x2000u
+#define PARSER_LEXICAL_ENV_NEEDED             0x4000u
+#define PARSER_HAS_LATE_LIT_INIT              0x8000u
 
 /* Expression parsing flags. */
 #define PARSE_EXPR                            0x00

@@ -97,6 +97,11 @@ parser_emit_unary_lvalue_opcode (parser_context_t *context_p, /**< context */
       }
     }
 
+    if (opcode == CBC_DELETE)
+    {
+      context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
+    }
+
     if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
     {
       context_p->last_cbc_opcode = (uint16_t) (opcode + CBC_UNARY_LVALUE_WITH_IDENT);
@@ -631,6 +636,7 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
                    && context_p->last_cbc.literal_object_type == LEXER_LITERAL_OBJECT_EVAL)
           {
             PARSER_ASSERT (context_p->last_cbc.literal_type == LEXER_IDENT_LITERAL);
+            context_p->status_flags |= PARSER_ARGUMENTS_NEEDED | PARSER_LEXICAL_ENV_NEEDED;
             opcode = CBC_CALL_EVAL;
           }
         }
@@ -1026,6 +1032,20 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
       {
         uint16_t index = parser_stack_pop_uint16 (context_p);
         parser_emit_cbc_literal (context_p, opcode, index);
+
+        if (opcode == CBC_ASSIGN_PROP_THIS_LITERAL
+            && (context_p->stack_depth >= context_p->stack_limit))
+        {
+          /* Stack limit is increased for VM_OC_ASSIGN_PROP_THIS. Needed by vm.cpp. */
+          PARSER_ASSERT (context_p->stack_depth == context_p->stack_limit);
+
+          context_p->stack_limit++;
+
+          if (context_p->stack_limit > PARSER_MAXIMUM_STACK_LIMIT)
+          {
+            parser_raise_error (context_p, PARSER_ERR_STACK_LIMIT_REACHED);
+          }
+        }
         continue;
       }
     }

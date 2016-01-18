@@ -120,4 +120,13 @@ opfunc_logical_not (ecma_value_t);
 ecma_completion_value_t
 opfunc_typeof (ecma_value_t);
 
+void
+opfunc_set_accessor (bool, ecma_value_t, ecma_value_t, ecma_value_t);
+
+ecma_completion_value_t
+vm_op_delete_prop (ecma_value_t, ecma_value_t, bool);
+
+ecma_completion_value_t
+vm_op_delete_var (lit_cpointer_t, ecma_object_t *, bool);
+
 #endif /* OPCODES_H */

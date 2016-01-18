@@ -141,107 +141,6 @@ vm_op_set_value (ecma_value_t object, /**< base object */
 } /* vm_op_set_value */
 
 /**
- * Deletes an object property.
- *
- * @return completion value
- */
-static ecma_completion_value_t
-vm_op_delete_prop (ecma_value_t object, /**< base object */
-                   ecma_value_t property, /**< property name */
-                   bool is_strict) /**< strict mode */
-{
-  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
-
-  if (ecma_is_value_undefined (object))
-  {
-    JERRY_ASSERT (!is_strict);
-    completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
-  }
-  else
-  {
-    completion_value = ecma_make_empty_completion_value ();
-
-    ECMA_TRY_CATCH (check_coercible_ret,
-                    ecma_op_check_object_coercible (object),
-                    completion_value);
-    ECMA_TRY_CATCH (str_name_value,
-                    ecma_op_to_string (property),
-                    completion_value);
-
-    JERRY_ASSERT (ecma_is_value_string (str_name_value));
-    ecma_string_t *name_string_p = ecma_get_string_from_value (str_name_value);
-
-    ECMA_TRY_CATCH (obj_value, ecma_op_to_object (object), completion_value);
-
-    JERRY_ASSERT (ecma_is_value_object (obj_value));
-    ecma_object_t *obj_p = ecma_get_object_from_value (obj_value);
-    JERRY_ASSERT (!ecma_is_lexical_environment (obj_p));
-
-    ECMA_TRY_CATCH (delete_op_ret_val,
-                    ecma_op_object_delete (obj_p, name_string_p, is_strict),
-                    completion_value);
-
-    completion_value = ecma_make_normal_completion_value (delete_op_ret_val);
-
-    ECMA_FINALIZE (delete_op_ret_val);
-    ECMA_FINALIZE (obj_value);
-    ECMA_FINALIZE (str_name_value);
-    ECMA_FINALIZE (check_coercible_ret);
-  }
-
-  return completion_value;
-} /* vm_op_delete_prop */
-
-/**
- * Deletes a variable.
- *
- * @return completion value
- */
-static ecma_completion_value_t
-vm_op_delete_var (lit_cpointer_t name_literal, /**< name literal */
-                  ecma_object_t *lex_env_p, /**< lexical environment */
-                  bool is_strict) /**< strict mode */
-{
-  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
-
-  ecma_string_t *var_name_str_p;
-
-  var_name_str_p = ecma_new_ecma_string_from_lit_cp (name_literal);
-  ecma_reference_t ref = ecma_op_get_identifier_reference (lex_env_p,
-                                                           var_name_str_p,
-                                                           is_strict);
-
-  JERRY_ASSERT (!ref.is_strict);
-
-  if (ecma_is_value_undefined (ref.base))
-  {
-    completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
-  }
-  else
-  {
-    ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (lex_env_p, var_name_str_p);
-
-    JERRY_ASSERT (ecma_is_lexical_environment (ref_base_lex_env_p));
-
-    ECMA_TRY_CATCH (delete_op_ret_val,
-                    ecma_op_delete_binding (ref_base_lex_env_p,
-                                            ECMA_GET_NON_NULL_POINTER (ecma_string_t,
-                                                                       ref.referenced_name_cp)),
-                    completion_value);
-
-    completion_value = ecma_make_normal_completion_value (delete_op_ret_val);
-
-    ECMA_FINALIZE (delete_op_ret_val);
-
-  }
-
-  ecma_free_reference (ref);
-  ecma_deref_ecma_string (var_name_str_p);
-
-  return completion_value;
-} /* vm_op_delete_var */
-
-/**
  * Initialize interpreter.
  */
 void
@@ -279,22 +178,13 @@ vm_run_global (void)
 
   JERRY_ASSERT (__program != NULL);
 
-  bool is_strict = false;
-
-  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (__program);
-
-  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT)
-  {
-    is_strict = true;
-  }
-
   ecma_object_t *glob_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL);
   ecma_object_t *lex_env_p = ecma_get_global_environment ();
 
   ecma_completion_value_t completion = vm_run (__program,
                                                ecma_make_object_value (glob_obj_p),
                                                lex_env_p,
-                                               is_strict,
+                                               __program->status_flags & CBC_CODE_FLAGS_STRICT_MODE,
                                                false,
                                                NULL);
 
@@ -567,14 +457,14 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
   if (frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
   {
     cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (frame_ctx_p->bytecode_header_p);
-    register_end = args_p->argument_end;
+    register_end = args_p->register_end;
     ident_end = args_p->ident_end;
     const_literal_end = args_p->const_literal_end;
   }
   else
   {
     cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (frame_ctx_p->bytecode_header_p);
-    register_end = args_p->argument_end;
+    register_end = args_p->register_end;
     ident_end = args_p->ident_end;
     const_literal_end = args_p->const_literal_end;
   }
@@ -623,16 +513,24 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         while (literal_index <= literal_index_end)
         {
           uint32_t value_index;
-          uint8_t free_flags = 0;
           ecma_value_t lit_value;
           ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
 
           vm_var_decl (frame_ctx_p, name_p);
 
           READ_LITERAL_INDEX (value_index);
-          READ_LITERAL (value_index, lit_value, free_flags = 1);
 
           ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p, name_p);
+
+          if (value_index < register_end)
+          {
+            lit_value = frame_ctx_p->registers_p[value_index];
+          }
+          else
+          {
+            lit_value = vm_construct_literal_object (frame_ctx_p,
+                                                     literal_start_p[value_index].value.base_cp);
+          }
 
           // FIXME: check the return value
           ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
@@ -640,7 +538,11 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                                           frame_ctx_p->is_strict,
                                           lit_value);
 
-          ecma_free_value (lit_value, true);
+          if (value_index >= register_end)
+          {
+            ecma_free_value (lit_value, true);
+          }
+
           ecma_deref_ecma_string (name_p);
           literal_index++;
         }
@@ -655,7 +557,6 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
     }
   }
 
-error:
   return last_completion_value;
 }
 
@@ -699,14 +600,14 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
   if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
   {
     cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) (bytecode_header_p);
-    register_end = args_p->argument_end;
+    register_end = args_p->register_end;
     ident_end = args_p->ident_end;
     const_literal_end = args_p->const_literal_end;
   }
   else
   {
     cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) (bytecode_header_p);
-    register_end = args_p->argument_end;
+    register_end = args_p->register_end;
     ident_end = args_p->ident_end;
     const_literal_end = args_p->const_literal_end;
   }
@@ -796,7 +697,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
               JERRY_ASSERT (stack_top_p > vm_stack);
               right_value = left_value;
               left_value = *(--stack_top_p);
-              free_flags = (free_flags << 1) | VM_FREE_LEFT_VALUE;
+              free_flags = (uint8_t) ((free_flags << 1) | VM_FREE_LEFT_VALUE);
               break;
             }
             case VM_OC_GET_DATA_GET_ID (VM_OC_GET_LITERAL_BYTE):
@@ -816,8 +717,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             case VM_OC_GET_DATA_GET_ID (VM_OC_GET_THIS_LITERAL):
             {
               right_value = left_value;
-              free_flags = VM_FREE_RIGHT_VALUE;
-              left_value = frame_ctx_p->this_binding;
+              left_value = ecma_copy_value (frame_ctx_p->this_binding, true);
+              free_flags = (uint8_t) ((free_flags << 1) | VM_FREE_LEFT_VALUE);
               break;
             }
             default:
@@ -929,7 +830,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         }
         case VM_OC_PUSH_THIS:
         {
-          result = frame_ctx_p->this_binding;
+          result = ecma_copy_value (frame_ctx_p->this_binding, true);
           break;
         }
         case VM_OC_PUSH_NUMBER:
@@ -970,26 +871,33 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         {
           ecma_object_t *object_p = ecma_get_object_from_value (stack_top_p[-1]);
           ecma_string_t *prop_name_p = ecma_get_string_from_value (right_value);
-          ecma_property_t *new_property_p = ecma_create_named_data_property (object_p, prop_name_p, true, true, true);
-          ecma_named_data_property_assign_value (object_p, new_property_p, left_value);
+          ecma_property_t *property_p = ecma_find_named_property (object_p, prop_name_p);
+
+          if (property_p != NULL && property_p->type != ECMA_PROPERTY_NAMEDDATA)
+          {
+            ecma_delete_property (object_p, property_p);
+            property_p = NULL;
+          }
+
+          if (property_p == NULL)
+          {
+            property_p = ecma_create_named_data_property (object_p,
+                                                          prop_name_p,
+                                                          true,
+                                                          true,
+                                                          true);
+          }
+
+          ecma_named_data_property_assign_value (object_p, property_p, left_value);
           break;
         }
         case VM_OC_SET_GETTER:
         case VM_OC_SET_SETTER:
         {
-          ecma_object_t *object_p = ecma_get_object_from_value (stack_top_p[-1]);
-          ecma_string_t *accessor_name_p = ecma_get_string_from_value (left_value);
-          ecma_object_t *accessor_func_p = ecma_get_object_from_value (right_value);
-
-          if (VM_OC_GROUP_GET_INDEX (opcode_data) == VM_OC_SET_GETTER)
-          {
-            ecma_create_named_accessor_property (object_p, accessor_name_p, accessor_func_p, NULL, true, true);
-          }
-          else
-          {
-            JERRY_ASSERT (VM_OC_GROUP_GET_INDEX (opcode_data) == VM_OC_SET_SETTER);
-            ecma_create_named_accessor_property (object_p, accessor_name_p, NULL, accessor_func_p, true, true);
-          }
+          opfunc_set_accessor (VM_OC_GROUP_GET_INDEX (opcode_data) == VM_OC_SET_GETTER ? true : false,
+                               stack_top_p[-1],
+                               left_value,
+                               right_value);
           break;
         }
         case VM_OC_PUSH_ARRAY:
@@ -1073,13 +981,16 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         case VM_OC_IDENT_REFERENCE:
         {
           uint16_t literal_index;
+
           READ_LITERAL_INDEX (literal_index);
 
           JERRY_ASSERT (literal_index < ident_end);
 
-          if ((literal_index) < register_end)
+          if (literal_index < register_end)
           {
-            JERRY_ASSERT (false);
+            *stack_top_p++ = ecma_make_simple_value (ECMA_SIMPLE_VALUE_REGISTER_REF);
+            *stack_top_p++ = literal_index;
+            result = ecma_copy_value (frame_ctx_p->registers_p[literal_index], true);
           }
           else
           {
@@ -1368,6 +1279,12 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
           READ_LITERAL_INDEX (literal_index);
 
+          if (literal_index < register_end)
+          {
+            result = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_FALSE);
+            break;
+          }
+
           last_completion_value = vm_op_delete_var (literal_start_p[literal_index], frame_ctx_p->lex_env_p, frame_ctx_p->is_strict);
 
           if (ecma_is_completion_value_throw (last_completion_value))
@@ -1383,10 +1300,31 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           byte_code_p = byte_code_start_p + branch_offset;
           break;
         }
+        case VM_OC_BRANCH_IF_STRICT_EQUAL:
+        {
+          JERRY_ASSERT (stack_top_p > vm_stack);
+
+          last_completion_value = opfunc_equal_value_type (left_value,
+                                                           stack_top_p[-1]);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          result = ecma_get_completion_value_value (last_completion_value);
+
+          if (result == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
+          {
+            byte_code_p = byte_code_start_p + branch_offset;
+            ecma_free_value (*--stack_top_p, true);
+          }
+          break;
+        }
         case VM_OC_BRANCH_IF_TRUE:
         case VM_OC_BRANCH_IF_FALSE:
-        case VM_OC_BRANCH_IF_TRUE_LOGICAL:
-        case VM_OC_BRANCH_IF_FALSE_LOGICAL:
+        case VM_OC_BRANCH_IF_LOGICAL_TRUE:
+        case VM_OC_BRANCH_IF_LOGICAL_FALSE:
         {
           last_completion_value = ecma_make_empty_completion_value ();
           uint32_t base = VM_OC_GROUP_GET_INDEX (opcode_data) - VM_OC_BRANCH_IF_TRUE;
@@ -1414,27 +1352,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             goto error;
           }
 
-          break;
-        }
-        case VM_OC_BRANCH_STRICT_EQUAL:
-        {
-          JERRY_ASSERT (stack_top_p > vm_stack);
-
-          last_completion_value = opfunc_equal_value_type (left_value,
-                                                           stack_top_p[-1]);
-
-          if (ecma_is_completion_value_throw (last_completion_value))
-          {
-            goto error;
-          }
-
-          result = ecma_get_completion_value_value (last_completion_value);
-
-          if (result == ecma_make_simple_value (ECMA_SIMPLE_VALUE_TRUE))
-          {
-            byte_code_p = byte_code_start_p + branch_offset;
-            ecma_free_value (*--stack_top_p, true);
-          }
           break;
         }
         case VM_OC_PLUS:
@@ -1965,23 +1882,37 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           ecma_value_t property = *(--stack_top_p);
           ecma_value_t object = *(--stack_top_p);
 
-          last_completion_value = vm_op_set_value (object,
-                                                   property,
-                                                   result,
-                                                   frame_ctx_p->is_strict);
-
-          ecma_free_value (object, true);
-          ecma_free_value (property, true);
-
-          if (ecma_is_completion_value_throw (last_completion_value))
+          if (object == ecma_make_simple_value (ECMA_SIMPLE_VALUE_REGISTER_REF))
           {
-            ecma_free_value (result, true);
-            goto error;
+            ecma_free_value (frame_ctx_p->registers_p[property], true);
+
+            frame_ctx_p->registers_p[property] = result;
+
+            if (opcode_data & (VM_OC_PUT_STACK | VM_OC_PUT_BLOCK))
+            {
+              result = ecma_copy_value (result, true);
+            }
           }
-
-          if (!(opcode_data & (VM_OC_PUT_STACK | VM_OC_PUT_BLOCK)))
+          else
           {
-            ecma_free_value (result, true);
+            last_completion_value = vm_op_set_value (object,
+                                                     property,
+                                                     result,
+                                                     frame_ctx_p->is_strict);
+
+            ecma_free_value (object, true);
+            ecma_free_value (property, true);
+
+            if (ecma_is_completion_value_throw (last_completion_value))
+            {
+              ecma_free_value (result, true);
+              goto error;
+            }
+
+            if (!(opcode_data & (VM_OC_PUT_STACK | VM_OC_PUT_BLOCK)))
+            {
+              ecma_free_value (result, true);
+            }
           }
         }
 
@@ -2020,6 +1951,30 @@ error:
       ecma_free_value (right_value, true);
     }
 
+    if (unlikely (ecma_is_completion_value_throw (last_completion_value)))
+    {
+      ecma_value_t *vm_stack_p = stack_top_p;
+
+      for (vm_stack_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
+           vm_stack_p < stack_top_p;
+           vm_stack_p++)
+      {
+        if (*vm_stack_p == ecma_make_simple_value (ECMA_SIMPLE_VALUE_REGISTER_REF))
+        {
+          JERRY_ASSERT (vm_stack_p < stack_top_p);
+          vm_stack_p++;
+        }
+        else
+        {
+          ecma_free_value (*vm_stack_p, true);
+        }
+      }
+
+      stack_top_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
+    }
+
+    JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
+
     if (frame_ctx_p->context_depth == 0)
     {
       /* In most cases there is no context. */
@@ -2028,19 +1983,6 @@ error:
 
     if (ecma_is_completion_value_throw (last_completion_value))
     {
-      ecma_value_t *vm_stack_p = stack_top_p;
-
-      for (vm_stack_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
-           vm_stack_p < stack_top_p;
-           vm_stack_p++)
-      {
-        /* FIXME: When registers implemented, we need to skip register references. */
-
-        ecma_free_value (*vm_stack_p, true);
-      }
-
-      stack_top_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
-
       if (vm_stack_find_finally (frame_ctx_p,
                                  &stack_top_p,
                                  VM_CONTEXT_FINALLY_THROW,

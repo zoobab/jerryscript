@@ -83,6 +83,7 @@ typedef enum
                                          but are stored directly in the array's property list
                                          (used for array elements with non-default attribute values) */
   ECMA_SIMPLE_VALUE_ARRAY_HOLE, /**< array hole, used for initialization of an array literal */
+  ECMA_SIMPLE_VALUE_REGISTER_REF, /**< register reference, a special "base" value for vm */
   ECMA_SIMPLE_VALUE__COUNT /** count of simple ecma-values */
 } ecma_simple_value_t;
 
@@ -210,8 +211,6 @@ typedef enum
   ECMA_INTERNAL_PROPERTY_SCOPE, /**< [[Scope]] */
   ECMA_INTERNAL_PROPERTY_PARAMETERS_MAP, /**< [[ParametersMap]] */
   ECMA_INTERNAL_PROPERTY_CODE_BYTECODE, /**< first part of [[Code]] - compressed pointer to bytecode array */
-  ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET, /**< second part of [[Code]] - offset in bytecode array and code flags
-                                                 *   (see also: ecma_pack_code_internal_property_value) */
   ECMA_INTERNAL_PROPERTY_NATIVE_CODE, /**< native handler location descriptor */
   ECMA_INTERNAL_PROPERTY_NATIVE_HANDLE, /**< native handle associated with an object */
   ECMA_INTERNAL_PROPERTY_FREE_CALLBACK, /**< object's native free callback */

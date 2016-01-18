@@ -249,39 +249,11 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
                                 const cbc_compiled_code_t *bytecode_data_p) /**< byte-code array */
 {
   bool is_strict_mode_code = is_decl_in_strict_mode;
-  bool do_instantiate_arguments_object = true;
-  bool is_arguments_moved_to_regs = false;
-  bool is_no_lex_env = false;
 
-// FIXME
-//  vm_instr_counter_t instr_pos = first_instr_pos;
-//  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (bytecode_header_p, instr_pos++);
-  vm_instr_counter_t instr_pos = 0;
-  opcode_scope_code_flags_t scope_flags = 0;
-
-  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT)
+  if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE)
   {
     is_strict_mode_code = true;
   }
-
-  if ((scope_flags & OPCODE_SCOPE_CODE_FLAGS_NOT_REF_ARGUMENTS_IDENTIFIER)
-      && (scope_flags & OPCODE_SCOPE_CODE_FLAGS_NOT_REF_EVAL_IDENTIFIER))
-  {
-    /* the code doesn't use 'arguments' identifier
-     * and doesn't perform direct call to eval,
-     * so Arguments object can't be referenced */
-    do_instantiate_arguments_object = false;
-  }
-
-//  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_ARGUMENTS_ON_REGISTERS)
-//  {
-//    is_arguments_moved_to_regs = true;
-//  }
-
-//  if (scope_flags & OPCODE_SCOPE_CODE_FLAGS_NO_LEX_ENV)
-//  {
-//    is_no_lex_env = true;
-//  }
 
   // 1., 4., 13.
   ecma_object_t *prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_FUNCTION_PROTOTYPE);
@@ -320,13 +292,6 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
   // 12.
   ecma_property_t *bytecode_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
-
-  ecma_property_t *code_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
-//  code_prop_p->u.internal_property.value = ecma_pack_code_internal_property_value (is_strict_mode_code,
-//                                                                                   do_instantiate_arguments_object,
-//                                                                                   is_arguments_moved_to_regs,
-//                                                                                   is_no_lex_env,
-//                                                                                   instr_pos);
 
   // 14.
   // 15.
@@ -453,27 +418,20 @@ ecma_op_function_try_lazy_instantiate_property (ecma_object_t *obj_p, /**< the f
     if (formal_parameters_prop_p == NULL)
     {
       ecma_property_t *bytecode_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
-      ecma_property_t *code_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
 
-      uint32_t code_prop_value = code_prop_p->u.internal_property.value;
+      const cbc_compiled_code_t *bytecode_data_p;
+      bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
 
-      bool is_strict;
-      bool do_instantiate_args_obj;
-      bool is_arguments_moved_to_regs;
-      bool is_no_lex_env;
-
-/*
-      const bytecode_data_header_t *bytecode_header_p;
-      bytecode_header_p = MEM_CP_GET_POINTER (const bytecode_data_header_t, bytecode_prop_p->u.internal_property.value);
-
-      vm_instr_counter_t code_first_instr_pos = ecma_unpack_code_internal_property_value (code_prop_value,
-                                                                                          &is_strict,
-                                                                                          &do_instantiate_args_obj,
-                                                                                          &is_arguments_moved_to_regs,
-                                                                                          &is_no_lex_env);
-
-      *len_p = vm_get_scope_args_num (bytecode_header_p, code_first_instr_pos);
-*/
+      if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+      {
+        cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_data_p;
+        *len_p = args_p->argument_end;
+      }
+      else
+      {
+        cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_data_p;
+        *len_p = args_p->argument_end;
+      }
     }
     else
     {
@@ -930,28 +888,23 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       /* Entering Function Code (ECMA-262 v5, 10.4.3) */
       ecma_property_t *scope_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_SCOPE);
       ecma_property_t *bytecode_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
-      ecma_property_t *code_prop_p = ecma_get_internal_property (func_obj_p,
-                                                                 ECMA_INTERNAL_PROPERTY_CODE_FLAGS_AND_OFFSET);
 
       ecma_object_t *scope_p = ECMA_GET_NON_NULL_POINTER (ecma_object_t,
                                                           scope_prop_p->u.internal_property.value);
-      uint32_t code_prop_value = code_prop_p->u.internal_property.value;
 
       // 8.
+      ecma_value_t this_binding;
       bool is_strict;
-      bool do_instantiate_args_obj;
-      bool is_arguments_moved_to_regs;
+      bool do_instantiate_args_obj = false;
+      bool is_arguments_moved_to_regs = false;
       bool is_no_lex_env;
 
       const cbc_compiled_code_t *bytecode_data_p;
       bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
-      vm_instr_counter_t code_first_instr_pos = ecma_unpack_code_internal_property_value (code_prop_value,
-                                                                                          &is_strict,
-                                                                                          &do_instantiate_args_obj,
-                                                                                          &is_arguments_moved_to_regs,
-                                                                                          &is_no_lex_env);
 
-      ecma_value_t this_binding;
+      is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) ? true : false;
+      is_no_lex_env = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED) ? true : false;
+
       // 1.
       if (is_strict)
       {

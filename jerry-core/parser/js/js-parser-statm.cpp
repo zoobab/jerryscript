@@ -342,6 +342,11 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
   PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                  && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
 
+  if (context_p->lit_object.type == LEXER_LITERAL_OBJECT_ARGUMENTS)
+  {
+    context_p->status_flags |= PARSER_ARGUMENTS_NOT_NEEDED;
+  }
+
   name_p = context_p->lit_object.literal_p;
   context_p->status_flags |= PARSER_NO_REG_STORE;
 
@@ -476,6 +481,8 @@ parser_parse_with_statement_start (parser_context_t *context_p) /**< context */
   {
     parser_raise_error (context_p, PARSER_ERR_WITH_NOT_ALLOWED);
   }
+
+  context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
   parser_parse_enclosed_expr (context_p);
 
@@ -1162,6 +1169,9 @@ parser_parse_try_statement_end (parser_context_t *context_p) /**< context */
     lexer_expect_identifier (context_p, LEXER_IDENT_LITERAL);
     PARSER_ASSERT (context_p->token.type == LEXER_LITERAL
                    && context_p->token.lit_location.type == LEXER_IDENT_LITERAL);
+
+    context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
+    context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
     literal_index = context_p->lit_object.index;
 

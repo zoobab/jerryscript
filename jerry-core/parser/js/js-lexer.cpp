@@ -1266,6 +1266,10 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         && memcmp (source_p + 1, "rgument", 7) == 0)
     {
       context_p->lit_object.type = LEXER_LITERAL_OBJECT_ARGUMENTS;
+      if (!(context_p->status_flags & PARSER_ARGUMENTS_NOT_NEEDED))
+      {
+        context_p->status_flags |= PARSER_ARGUMENTS_NEEDED | PARSER_LEXICAL_ENV_NEEDED;
+      }
     }
   }
 
@@ -1355,6 +1359,8 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
   {
     parser_raise_error (context_p, PARSER_ERR_LITERAL_LIMIT_REACHED);
   }
+
+  context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
   literal_p->type = LEXER_UNUSED_LITERAL;
