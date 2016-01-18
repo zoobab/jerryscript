@@ -90,12 +90,15 @@ typedef enum {
   VM_OC_RET,
   VM_OC_THROW,
 
-  VM_OC_NEW,
-  VM_OC_NEW_N,
-  VM_OC_CALL,
+  /* The PROP forms must get the highest opcodes. */
+  VM_OC_EVAL,
   VM_OC_CALL_N,
-  VM_OC_CALL_PROP,
+  VM_OC_CALL,
   VM_OC_CALL_PROP_N,
+  VM_OC_CALL_PROP,
+
+  VM_OC_NEW_N,
+  VM_OC_NEW,
 
   VM_OC_JUMP,
   VM_OC_BRANCH_IF_STRICT_EQUAL,
@@ -179,8 +182,5 @@ extern ecma_completion_value_t vm_run_array_args (const cbc_compiled_code_t *,
 
 extern bool vm_is_strict_mode (void);
 extern bool vm_is_direct_eval_form_call (void);
-
-extern ecma_value_t vm_get_this_binding (void);
-extern ecma_object_t *vm_get_lex_env (void);
 
 #endif /* VM_H */

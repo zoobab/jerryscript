@@ -40,9 +40,14 @@
 static vm_frame_ctx_t *vm_top_context_p = NULL;
 
 /**
+ * Direct call from eval;
+ */
+static bool is_direct_eval_form_call = false;
+
+/**
  * Program bytecode pointer
  */
-const cbc_compiled_code_t *__program = NULL;
+static const cbc_compiled_code_t *__program = NULL;
 
 /**
  * Get the value of object[property].
@@ -135,6 +140,46 @@ vm_op_set_value (ecma_value_t object, /**< base object */
 } /* vm_op_set_value */
 
 /**
+ * Free compact bytecode (recursively).
+ */
+void
+vm_cbc_free (const cbc_compiled_code_t *bytecode_p) /**< byte code */
+{
+  lit_cpointer_t *literal_start_p = NULL;
+  uint16_t literal_end;
+  uint16_t const_literal_end;
+
+  if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint16_arguments_t));
+    literal_start_p = (lit_cpointer_t *) byte_p;
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
+  }
+  else
+  {
+    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint8_arguments_t));
+    literal_start_p = (lit_cpointer_t *) byte_p;
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
+  }
+
+  for (int i = const_literal_end; i < literal_end; i++)
+  {
+    cbc_compiled_code_t *func_bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                      literal_start_p[i].value.base_cp);
+    if (func_bytecode_p != bytecode_p)
+    {
+      vm_cbc_free (func_bytecode_p);
+    }
+  }
+
+  mem_heap_free_block (bytecode_p);
+} /* vm_cbc_free */
+
+/**
  * Initialize interpreter.
  */
 void
@@ -217,8 +262,9 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
   /* ECMA-262 v5, 10.4.2 */
   if (is_direct)
   {
-    this_binding = vm_get_this_binding ();
-    lex_env_p = vm_get_lex_env ();
+    this_binding = ecma_copy_value (vm_top_context_p->this_binding, true);
+    lex_env_p = vm_top_context_p->lex_env_p;
+    ecma_ref_object (vm_top_context_p->lex_env_p);
   }
   else
   {
@@ -251,6 +297,7 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
 
   ecma_deref_object (lex_env_p);
   ecma_free_value (this_binding, true);
+  vm_cbc_free (bytecode_data_p);
 
   return completion;
 } /* vm_run_eval */
@@ -362,46 +409,6 @@ enum
   while (0)
 
 /**
- * Cleanup compact bytecode
- */
-void
-vm_cleanup_cbc (const cbc_compiled_code_t *bytecode_p) /**< Bytecode */
-{
-  lit_cpointer_t *literal_start_p = NULL;
-  uint16_t literal_end;
-  uint16_t const_literal_end;
-
-  if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-  {
-    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint16_arguments_t));
-    literal_start_p = (lit_cpointer_t *) byte_p;
-    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
-    literal_end = args_p->literal_end;
-    const_literal_end = args_p->const_literal_end;
-  }
-  else
-  {
-    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint8_arguments_t));
-    literal_start_p = (lit_cpointer_t *) byte_p;
-    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
-    literal_end = args_p->literal_end;
-    const_literal_end = args_p->const_literal_end;
-  }
-
-  for (int i = const_literal_end; i < literal_end; i++)
-  {
-    cbc_compiled_code_t *func_bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
-                                                                      literal_start_p[i].value.base_cp);
-    if (func_bytecode_p != bytecode_p)
-    {
-      vm_cleanup_cbc (func_bytecode_p);
-    }
-  }
-
-  mem_heap_free_block (bytecode_p);
-} /* vm_cleanup_cbc */
-
-/**
  * Cleanup interpreter
  */
 void
@@ -409,7 +416,7 @@ vm_finalize (void)
 {
   if (__program)
   {
-    vm_cleanup_cbc (__program);
+    vm_cbc_free (__program);
   }
 
   __program = NULL;
@@ -1174,6 +1181,11 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           free_flags = 0;
           goto error;
         }
+        case VM_OC_EVAL:
+        {
+          is_direct_eval_form_call = true;
+          /* FALLTHRU */
+        }
         case VM_OC_CALL_N:
         case VM_OC_CALL_PROP_N:
         {
@@ -1190,7 +1202,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
           stack_top_p -= right_value;
 
-          if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP)
+          if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP_N)
           {
             this_value = stack_top_p[-3];
           }
@@ -1201,6 +1213,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                                                  stack_top_p,
                                                  right_value);
 
+          is_direct_eval_form_call = false;
+
           /* Free registers. */
           for (uint32_t i = 0; i < right_value; i++)
           {
@@ -1209,7 +1223,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
           ecma_free_value (*(--stack_top_p), true);
 
-          if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP)
+          if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP_N)
           {
             ecma_free_value (*(--stack_top_p), true);
             --stack_top_p;
@@ -1228,6 +1242,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           {
             ecma_free_completion_value (last_completion_value);
           }
+
           break;
         }
         case VM_OC_NEW_N:
@@ -2344,39 +2359,5 @@ vm_is_strict_mode (void)
 bool
 vm_is_direct_eval_form_call (void)
 {
-#if 0
-  if (vm_top_context_p != NULL)
-  {
-    return vm_top_context_p->is_call_in_direct_eval_form;
-  }
-  else
-  {
-    /*
-     * There is no any interpreter context, so call is performed not from a script.
-     * This implies that the call is indirect.
-     */
-    return false;
-  }
-#endif
-  return false;
+  return is_direct_eval_form_call;
 } /* vm_is_direct_eval_form_call */
-
-ecma_value_t vm_get_this_binding (void)
-{
-// FIXME: Implement this
-}
-
-/**
- * Get top lexical environment (variable environment) of current execution context
- *
- * @return lexical environment
- */
-ecma_object_t*
-vm_get_lex_env (void)
-{
-  JERRY_ASSERT (vm_top_context_p != NULL);
-
-  ecma_ref_object (vm_top_context_p->lex_env_p);
-
-  return vm_top_context_p->lex_env_p;
-} /* vm_get_lex_env */

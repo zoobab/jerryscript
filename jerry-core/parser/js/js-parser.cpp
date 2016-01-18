@@ -1715,6 +1715,7 @@ parser_free_literals (parser_list_t *literal_pool_p) /**< literals */
 cbc_compiled_code_t *
 parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
                      size_t size, /**< size of the source code */
+                     int strict_mode, /**< strict mode */
                      parser_error_location *error_location) /**< error location */
 {
   parser_context_t context;
@@ -1733,6 +1734,11 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
   context.stack_limit = 0;
   context.last_context_p = NULL;
   context.last_statement.current_p = NULL;
+
+  if (strict_mode)
+  {
+    context.status_flags |= PARSER_IS_STRICT;
+  }
 
   context.source_p = source_p;
   context.source_end_p = source_p + size;

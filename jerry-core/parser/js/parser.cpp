@@ -18,12 +18,11 @@
 #include "parser.h"
 
 jsp_status_t
-parser_parse_script (const jerry_api_char_t *source_p,
-                     size_t size,
-                     const cbc_compiled_code_t **bytecode_data_p)
+parser_parse_script (const jerry_api_char_t *source_p, /**< source code */
+                     size_t size, /**< size of the source code */
+                     const cbc_compiled_code_t **bytecode_data_p) /**< result */
 {
-  parser_error_location el;
-  *bytecode_data_p = parser_parse_script (source_p, size, &el);
+  *bytecode_data_p = parser_parse_script (source_p, size, false, NULL);
 
   if (!*bytecode_data_p)
   {
@@ -33,13 +32,20 @@ parser_parse_script (const jerry_api_char_t *source_p,
   return JSP_STATUS_OK;
 }
 
-extern jsp_status_t parser_parse_eval (const jerry_api_char_t *,
-                                       size_t,
-                                       bool,
-                                       const cbc_compiled_code_t **,
-                                       bool *)
+jsp_status_t
+parser_parse_eval (const jerry_api_char_t *source_p, /**< source code */
+                   size_t size, /**< size of the source code */
+                   bool is_strict, /**< strict mode */
+                   const cbc_compiled_code_t **bytecode_data_p) /**< result */
 {
-// FIXME: Implement this
+  *bytecode_data_p = parser_parse_script (source_p, size, is_strict, NULL);
+
+  if (!*bytecode_data_p)
+  {
+    return JSP_STATUS_SYNTAX_ERROR;
+  }
+
+  return JSP_STATUS_OK;
 }
 
 extern jsp_status_t parser_parse_new_function (const jerry_api_char_t **,
