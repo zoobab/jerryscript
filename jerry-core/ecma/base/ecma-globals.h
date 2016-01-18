@@ -28,7 +28,6 @@
 #include "lit-globals.h"
 #include "lit-magic-strings.h"
 #include "mem-allocator.h"
-#include "rcs-recordset.h"
 
 /** \addtogroup compressedpointer Compressed pointer
  * @{
@@ -755,11 +754,11 @@ typedef struct
  */
 typedef struct
 {
-  /** Compressed pointer to next chunk */
-  mem_cpointer_t next_chunk_cp;
-
   /** Characters */
   lit_utf8_byte_t data[ sizeof (uint64_t) - sizeof (mem_cpointer_t) ];
+
+  /** Compressed pointer to next chunk */
+  mem_cpointer_t next_chunk_cp;
 } ecma_collection_chunk_t;
 
 /**
@@ -776,14 +775,6 @@ typedef enum
   ECMA_STRING_CONTAINER_MAGIC_STRING, /**< the ecma-string is equal to one of ECMA magic strings */
   ECMA_STRING_CONTAINER_MAGIC_STRING_EX /**< the ecma-string is equal to one of external magic strings */
 } ecma_string_container_t;
-
-FIXME (Move to library that should define the type (literal.h /* ? */))
-
-/**
- * Literal and compressed pointer to literal
- */
-typedef rcs_record_t *literal_t;
-typedef rcs_cpointer_t lit_cpointer_t;
 
 /**
  * ECMA string-value descriptor

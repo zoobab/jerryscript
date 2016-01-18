@@ -221,13 +221,13 @@ util_print_literal (lexer_literal_t *literal_p) /**< literal */
   }
   else if (literal_p->type == LEXER_NUMBER_LITERAL)
   {
-    literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
+    lit_literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
     printf ("number(");
-    util_print_number (lit_charset_literal_get_number (literal));
+    util_print_number (lit_number_literal_get_number (literal));
   }
   else if (literal_p->type == LEXER_REGEXP_LITERAL)
   {
-    literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
+    lit_literal_t literal = lit_get_literal_by_cp (literal_p->u.value);
     printf ("regexp(");
     util_print_chars (lit_literal_to_str_internal_buf (literal), literal_p->prop.length);
   }

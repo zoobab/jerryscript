@@ -1335,7 +1335,7 @@ lexer_construct_number_object (parser_context_t *context_p, /**< context */
 
   context_p->literal_count++;
 
-  literal_p->u.value = lit_cpointer_t::compress (lit_find_or_create_literal_from_num (num));
+  literal_p->u.value = rcs_cpointer_compress (lit_find_or_create_literal_from_num (num));
   literal_p->type = LEXER_NUMBER_LITERAL;
 
   context_p->lit_object.literal_p = literal_p;
@@ -1532,8 +1532,8 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
   context_p->literal_count++;
 
-  literal_t lit = lit_find_or_create_literal_from_utf8_string (regex_start_p, length);
-  literal_p->u.value = lit_cpointer_t::compress (lit);
+  lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (regex_start_p, length);
+  literal_p->u.value = rcs_cpointer_compress (lit);
 
   literal_p->type = LEXER_REGEXP_LITERAL;
 

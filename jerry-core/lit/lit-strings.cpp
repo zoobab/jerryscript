@@ -296,10 +296,13 @@ lit_utf8_iterator_seek (lit_utf8_iterator_t *iter_p, /**< utf-8 string iterator 
 {
   JERRY_ASSERT (iter_pos.offset <= iter_p->buf_size);
 #ifndef JERRY_NDEBUG
-  lit_utf8_byte_t byte = *(iter_p->buf_p + iter_pos.offset);
-  JERRY_ASSERT ((byte & LIT_UTF8_EXTRA_BYTE_MASK) != LIT_UTF8_EXTRA_BYTE_MARKER);
-  JERRY_ASSERT (!iter_pos.is_non_bmp_middle || ((byte & LIT_UTF8_4_BYTE_MASK) == LIT_UTF8_4_BYTE_MARKER));
-#endif
+  if (iter_pos.offset < iter_p->buf_size)
+  {
+    lit_utf8_byte_t byte = *(iter_p->buf_p + iter_pos.offset);
+    JERRY_ASSERT ((byte & LIT_UTF8_EXTRA_BYTE_MASK) != LIT_UTF8_EXTRA_BYTE_MARKER);
+    JERRY_ASSERT (!iter_pos.is_non_bmp_middle || ((byte & LIT_UTF8_4_BYTE_MASK) == LIT_UTF8_4_BYTE_MARKER));
+  }
+#endif /* !JERRY_NDEBUG */
 
   iter_p->buf_pos = iter_pos;
 } /* lit_utf8_iterator_seek */
@@ -759,7 +762,7 @@ lit_utf8_string_code_unit_at (const lit_utf8_byte_t *utf8_buf_p, /**< utf-8 stri
  *
  * @return number of bytes occupied in CESU-8
  */
-lit_utf8_size_t
+lit_utf8_size_t __attr_always_inline___
 lit_get_unicode_char_size_by_utf8_first_byte (const lit_utf8_byte_t first_byte) /**< buffer with characters */
 {
   if ((first_byte & LIT_UTF8_1_BYTE_MASK) == LIT_UTF8_1_BYTE_MARKER)

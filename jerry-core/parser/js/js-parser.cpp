@@ -77,9 +77,9 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
 
       if (char_p != NULL)
       {
-        literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
-                                                                     literal_p->prop.length);
-        literal_p->u.value = lit_cpointer_t::compress (lit);
+        lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
+                                                                         literal_p->prop.length);
+        literal_p->u.value = rcs_cpointer_compress (lit);
 
         if (!(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
         {
@@ -489,9 +489,9 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
           || literal_p->type == LEXER_STRING_LITERAL)
       {
 #ifdef PARSER_DUMP_BYTE_CODE
-        literal_t lit = lit_find_or_create_literal_from_utf8_string (literal_p->u.char_p,
+        lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (literal_p->u.char_p,
                                                                      literal_p->prop.length);
-        literal_pool_p[literal_p->prop.index] = lit_cpointer_t::compress (lit);
+        literal_pool_p[literal_p->prop.index] = rcs_cpointer_compress (lit);
 
         if (!context_p->is_show_opcodes
             && !(literal_p->status_flags & LEXER_FLAG_SOURCE_PTR))
@@ -1675,9 +1675,9 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       {
         uint32_t source_data = literal_p->u.source_data;
         uint8_t *char_p = context_p->source_end_p - (source_data & 0xfffff);
-        literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
-                                                                     source_data >> 20);
-        literal_pool_p[literal_p->prop.index] = lit_cpointer_t::compress (lit);
+        lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (char_p,
+                                                                         source_data >> 20);
+        literal_pool_p[literal_p->prop.index] = rcs_cpointer_compress (lit);
       }
     }
   }

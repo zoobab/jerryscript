@@ -29,6 +29,7 @@
 #include "ecma-objects-general.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
+#include "rcs-records.h"
 #include "vm.h"
 #include "vm-stack.h"
 
@@ -385,17 +386,17 @@ enum
     else if (literal_index < const_literal_end) \
     { \
       lit_cpointer_t lit_cpointer = literal_start_p[literal_index]; \
-      literal_t lit = lit_cpointer_t::decompress (lit_cpointer); \
-      if (lit->get_type () != LIT_NUMBER_T) \
+      lit_literal_t lit = rcs_cpointer_decompress (lit_cpointer); \
+      if (unlikely (RCS_RECORD_IS_NUMBER (lit))) \
       { \
-        ecma_string_t *string_p = ecma_new_ecma_string_from_lit_cp (lit_cpointer); \
-        (target_value) = ecma_make_string_value (string_p); \
+        ecma_number_t *number_p = ecma_alloc_number (); \
+        *number_p = lit_number_literal_get_number (lit); \
+        (target_value) = ecma_make_number_value (number_p); \
       } \
       else \
       { \
-        ecma_number_t *number_p = ecma_alloc_number (); \
-        *number_p = lit_charset_literal_get_number (lit); \
-        (target_value) = ecma_make_number_value (number_p); \
+        ecma_string_t *string_p = ecma_new_ecma_string_from_lit_cp (lit_cpointer); \
+        (target_value) = ecma_make_string_value (string_p); \
       } \
       target_free_op; \
     } \
