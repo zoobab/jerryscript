@@ -54,12 +54,9 @@ typedef struct
   ecma_value_t *registers_p;                          /**< register start pointer */
   lit_cpointer_t *literal_start_p;                    /**< literal list start pointer */
   ecma_object_t *lex_env_p;                           /**< current lexical environment */
-  ecma_object_t *ref_base_lex_env_p;                  /**< current lexical environment */
-  uint16_t context_depth;                             /**< current context depth */
-  bool is_strict;                                     /**< strict mode flag */
-  bool is_eval_code;                                  /**< eval mode flag */
-  bool is_call_in_direct_eval_form;                   /**< direct eval call */
   ecma_value_t this_binding;                          /**< this binding */
+  uint16_t context_depth;                             /**< current context depth */
+  bool is_eval_code;                                  /**< eval mode flag */
 } vm_frame_ctx_t;
 
 #endif /* VM_DEFINES_H */

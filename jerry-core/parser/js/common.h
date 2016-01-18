@@ -27,7 +27,10 @@
 #define PARSER_DEBUG
 #endif
 
+#ifndef JERRY_NDEBUG
+/* Note: This flag is independent from debug mode. */
 #define PARSER_DUMP_BYTE_CODE
+#endif
 
 #include "ecma-globals.h"
 #include "lit-literal.h"

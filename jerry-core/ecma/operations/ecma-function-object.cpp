@@ -838,20 +838,100 @@ ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function objec
   {
     return ecma_op_function_call (func_obj_p, this_arg_value, NULL);
   }
-  else
+
+  if (ecma_get_object_type (func_obj_p) == ECMA_OBJECT_TYPE_FUNCTION
+      && !ecma_get_object_is_builtin (func_obj_p))
   {
-    ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (arguments_list_p,
-                                                                             arguments_list_len,
-                                                                             true);
+    /* Fast call. */
+    ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-    ecma_completion_value_t ret_value = ecma_op_function_call (func_obj_p,
-                                                               this_arg_value,
-                                                               arg_collection_p);
+    /* Entering Function Code (ECMA-262 v5, 10.4.3) */
+    ecma_property_t *scope_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_SCOPE);
+    ecma_property_t *bytecode_prop_p = ecma_get_internal_property (func_obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
 
-    ecma_free_values_collection (arg_collection_p, true);
+    ecma_object_t *scope_p = ECMA_GET_NON_NULL_POINTER (ecma_object_t,
+                                                        scope_prop_p->u.internal_property.value);
 
+    // 8.
+    ecma_value_t this_binding;
+    bool is_strict;
+    bool do_instantiate_args_obj = false;
+    bool is_no_lex_env;
+
+    const cbc_compiled_code_t *bytecode_data_p;
+    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
+
+    is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) ? true : false;
+    is_no_lex_env = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED) ? true : false;
+
+    // 1.
+    if (is_strict)
+    {
+      this_binding = ecma_copy_value (this_arg_value, true);
+    }
+    else if (ecma_is_value_undefined (this_arg_value)
+             || ecma_is_value_null (this_arg_value))
+    {
+      // 2.
+      this_binding = ecma_make_object_value (ecma_builtin_get (ECMA_BUILTIN_ID_GLOBAL));
+    }
+    else
+    {
+      // 3., 4.
+      ecma_completion_value_t completion = ecma_op_to_object (this_arg_value);
+      JERRY_ASSERT (ecma_is_completion_value_normal (completion));
+
+      this_binding = ecma_get_completion_value_value (completion);
+    }
+
+    // 5.
+    ecma_object_t *local_env_p;
+    if (is_no_lex_env)
+    {
+      local_env_p = scope_p;
+    }
+    else
+    {
+      local_env_p = ecma_create_decl_lex_env (scope_p);
+    }
+
+    ecma_completion_value_t completion = vm_run_array_args (bytecode_data_p,
+                                                            this_binding,
+                                                            local_env_p,
+                                                            false,
+                                                            arguments_list_p,
+                                                            arguments_list_len);
+
+    if (ecma_is_completion_value_return (completion))
+    {
+      ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
+    }
+    else
+    {
+      ret_value = completion;
+    }
+
+    if (!is_no_lex_env)
+    {
+      ecma_deref_object (local_env_p);
+    }
+
+    ecma_free_value (this_binding, true);
     return ret_value;
   }
+
+  /* Slow call. */
+
+  ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (arguments_list_p,
+                                                                           arguments_list_len,
+                                                                           true);
+
+  ecma_completion_value_t ret_value = ecma_op_function_call (func_obj_p,
+                                                             this_arg_value,
+                                                             arg_collection_p);
+
+  ecma_free_values_collection (arg_collection_p, true);
+  return ret_value;
 } /* ecma_op_function_call_array_args */
 
 /**
@@ -896,7 +976,6 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       ecma_value_t this_binding;
       bool is_strict;
       bool do_instantiate_args_obj = false;
-      bool is_arguments_moved_to_regs = false;
       bool is_no_lex_env;
 
       const cbc_compiled_code_t *bytecode_data_p;
@@ -936,59 +1015,22 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
         local_env_p = ecma_create_decl_lex_env (scope_p);
       }
 
-      if (is_arguments_moved_to_regs)
-      {
-        ecma_completion_value_t completion = vm_run (bytecode_data_p,
-                                                     this_binding,
-                                                     local_env_p,
-                                                     is_strict,
-                                                     false,
-                                                     arg_collection_p);
+      ecma_completion_value_t completion = vm_run (bytecode_data_p,
+                                                   this_binding,
+                                                   local_env_p,
+                                                   false,
+                                                   arg_collection_p);
 
-        if (ecma_is_completion_value_return (completion))
-        {
-          ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
-        }
-        else
-        {
-          ret_value = completion;
-        }
+      if (ecma_is_completion_value_return (completion))
+      {
+        ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
       }
       else
       {
-        // 9.
-        ECMA_TRY_CATCH (args_var_declaration_ret,
-                        ecma_function_call_setup_args_variables (func_obj_p,
-                                                                 local_env_p,
-                                                                 arg_collection_p,
-                                                                 is_strict,
-                                                                 do_instantiate_args_obj),
-                        ret_value);
-
-        ecma_completion_value_t completion = vm_run (bytecode_data_p,
-                                                     this_binding,
-                                                     local_env_p,
-                                                     is_strict,
-                                                     false,
-                                                     arg_collection_p);
-
-        if (ecma_is_completion_value_return (completion))
-        {
-          ret_value = ecma_make_normal_completion_value (ecma_get_completion_value_value (completion));
-        }
-        else
-        {
-          ret_value = completion;
-        }
-
-        ECMA_FINALIZE (args_var_declaration_ret);
+        ret_value = completion;
       }
 
-      if (is_no_lex_env)
-      {
-        /* do nothing */
-      }
-      else
+      if (!is_no_lex_env)
       {
         ecma_deref_object (local_env_p);
       }

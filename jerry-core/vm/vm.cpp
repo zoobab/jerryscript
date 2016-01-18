@@ -32,23 +32,17 @@
 #include "vm.h"
 #include "vm-stack.h"
 
+#include <alloca.h>
+
 /**
  * Top (current) interpreter context
  */
 static vm_frame_ctx_t *vm_top_context_p = NULL;
 
-/* FIXME: current stack top for function calls */
-static ecma_value_t *vm_arguments_start_p = NULL;
-
 /**
  * Program bytecode pointer
  */
 const cbc_compiled_code_t *__program = NULL;
-
-/**
- * Stack top position
- */
-static ecma_value_t vm_stack[1024];
 
 /**
  * Get the value of object[property].
@@ -184,7 +178,6 @@ vm_run_global (void)
   ecma_completion_value_t completion = vm_run (__program,
                                                ecma_make_object_value (glob_obj_p),
                                                lex_env_p,
-                                               __program->status_flags & CBC_CODE_FLAGS_STRICT_MODE,
                                                false,
                                                NULL);
 
@@ -216,9 +209,7 @@ ecma_completion_value_t
 vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data header */
              bool is_direct) /**< is eval called in direct mode? */
 {
-  opcode_scope_code_flags_t scope_flags = vm_get_scope_flags (bytecode_data_p);
-  bool is_strict = ((scope_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT) != 0);
-  //ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+  bool is_strict = ((bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
   ecma_value_t this_binding;
   ecma_object_t *lex_env_p;
@@ -246,7 +237,6 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
   ecma_completion_value_t completion = vm_run (bytecode_data_p,
                                                this_binding,
                                                lex_env_p,
-                                               is_strict,
                                                true,
                                                NULL);
 
@@ -276,10 +266,11 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 {
   ecma_collection_header_t *formal_params_collection_p = ecma_new_strings_collection (NULL, 0);
   cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, literal);
+  bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
   ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
                                                               frame_ctx_p->lex_env_p,
-                                                              frame_ctx_p->is_strict,
+                                                              is_strict,
                                                               bytecode_p);
 
   ecma_free_values_collection (formal_params_collection_p, true);
@@ -327,7 +318,7 @@ enum
         { \
           last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p, \
                                                                   name_p, \
-                                                                  frame_ctx_p->is_strict); \
+                                                                  is_strict); \
         } \
         else { \
           ecma_object_t *error = ecma_new_standard_error (ECMA_ERROR_REFERENCE); \
@@ -441,6 +432,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
   uint16_t ident_end;
   uint16_t const_literal_end;
   lit_cpointer_t *literal_start_p = frame_ctx_p->literal_start_p;
+  bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
   /* Prepare. */
   if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
@@ -535,7 +527,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           // FIXME: check the return value
           ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
                                           name_p,
-                                          frame_ctx_p->is_strict,
+                                          is_strict,
                                           lit_value);
 
           if (value_index >= register_end)
@@ -566,13 +558,14 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
  * @return completion value
  */
 ecma_completion_value_t
-vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
-         ecma_value_t *stack_top_p) /**< stack pointer */
+vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 {
   const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
   uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
   lit_cpointer_t *literal_start_p = frame_ctx_p->literal_start_p;
   ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
+
+  ecma_value_t *stack_top_p;
   uint16_t encoding_limit;
   uint16_t encoding_delta;
   uint16_t register_end;
@@ -584,6 +577,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
   ecma_value_t result = 0;
   ecma_value_t block_result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
   uint8_t free_flags = 0;
+  bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
   /* Prepare for byte code execution. */
   if (!(bytecode_header_p->status_flags & CBC_CODE_FLAGS_FULL_LITERAL_ENCODING))
@@ -611,6 +605,8 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
     ident_end = args_p->ident_end;
     const_literal_end = args_p->const_literal_end;
   }
+
+  stack_top_p = frame_ctx_p->registers_p + register_end;
 
   /* Outer loop for exception handling. */
   while (true)
@@ -694,7 +690,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           {
             case VM_OC_GET_DATA_GET_ID (VM_OC_GET_STACK_LITERAL):
             {
-              JERRY_ASSERT (stack_top_p > vm_stack);
+              JERRY_ASSERT (stack_top_p > frame_ctx_p->registers_p + register_end);
               right_value = left_value;
               left_value = *(--stack_top_p);
               free_flags = (uint8_t) ((free_flags << 1) | VM_FREE_LEFT_VALUE);
@@ -734,14 +730,14 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           {
             case VM_OC_GET_DATA_GET_ID (VM_OC_GET_STACK):
             {
-              JERRY_ASSERT (stack_top_p > vm_stack);
+              JERRY_ASSERT (stack_top_p > frame_ctx_p->registers_p + register_end);
               left_value = *(--stack_top_p);
               free_flags = VM_FREE_LEFT_VALUE;
               break;
             }
             case VM_OC_GET_DATA_GET_ID (VM_OC_GET_STACK_STACK):
             {
-              JERRY_ASSERT (stack_top_p > vm_stack + 1);
+              JERRY_ASSERT (stack_top_p > frame_ctx_p->registers_p + register_end + 1);
               right_value = *(--stack_top_p);
               left_value = *(--stack_top_p);
               free_flags = VM_FREE_LEFT_VALUE | VM_FREE_RIGHT_VALUE;
@@ -773,7 +769,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         }
         case VM_OC_POP:
         {
-          JERRY_ASSERT (stack_top_p > vm_stack);
+          JERRY_ASSERT (stack_top_p > frame_ctx_p->registers_p + register_end);
           ecma_free_value (*(--stack_top_p), true);
           break;
         }
@@ -1004,7 +1000,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
             last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
                                                                     name_p,
-                                                                    frame_ctx_p->is_strict);
+                                                                    is_strict);
 
             if (ecma_is_completion_value_throw (last_completion_value))
             {
@@ -1053,7 +1049,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         {
           last_completion_value = vm_op_get_value (left_value,
                                                    right_value,
-                                                   frame_ctx_p->is_strict);
+                                                   is_strict);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1178,11 +1174,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           free_flags = 0;
           goto error;
         }
-        case VM_OC_NEW_N:
-        {
-          right_value = opcode - CBC_NEW0;
-          /* FALLTHRU */
-        }
         case VM_OC_CALL_N:
         case VM_OC_CALL_PROP_N:
         {
@@ -1192,12 +1183,10 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           }
           /* FALLTHRU */
         }
-        case VM_OC_NEW:
         case VM_OC_CALL:
         case VM_OC_CALL_PROP:
         {
           ecma_value_t this_value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-          last_completion_value = ecma_make_empty_completion_value ();
 
           stack_top_p -= right_value;
 
@@ -1206,42 +1195,13 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             this_value = stack_top_p[-3];
           }
 
-          if (opcode >= CBC_CALL)
-          {
-            vm_arguments_start_p = stack_top_p;
+          last_completion_value = opfunc_call_n (frame_ctx_p,
+                                                 this_value,
+                                                 stack_top_p[-1],
+                                                 stack_top_p,
+                                                 right_value);
 
-            ECMA_TRY_CATCH (returned_value,
-                            opfunc_call_n (frame_ctx_p,
-                                           this_value,
-                                           stack_top_p[-1],
-                                           right_value,
-                                           stack_top_p),
-                            last_completion_value);
-
-            if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
-            {
-              result = ecma_copy_value (returned_value, true);
-            }
-
-            ECMA_FINALIZE (returned_value);
-          }
-          else
-          {
-            ECMA_TRY_CATCH (returned_value,
-                            opfunc_construct_n (frame_ctx_p,
-                                                stack_top_p[-1],
-                                                right_value,
-                                                stack_top_p),
-                            last_completion_value);
-
-            if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
-            {
-              result = ecma_copy_value (returned_value, true);
-            }
-
-            ECMA_FINALIZE (returned_value);
-          }
-
+          /* Free registers. */
           for (uint32_t i = 0; i < right_value; i++)
           {
             ecma_free_value (stack_top_p[i], true);
@@ -1259,11 +1219,50 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
           {
             goto error;
           }
+
+          if (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT))
+          {
+            result = ecma_get_completion_value_value (last_completion_value);
+          }
+          else
+          {
+            ecma_free_completion_value (last_completion_value);
+          }
+          break;
+        }
+        case VM_OC_NEW_N:
+        {
+          right_value = opcode - CBC_NEW0;
+          /* FALLTHRU */
+        }
+        case VM_OC_NEW:
+        {
+          stack_top_p -= right_value;
+
+          last_completion_value = opfunc_construct_n (stack_top_p[-1],
+                                                      right_value,
+                                                      stack_top_p);
+
+          /* Free registers. */
+          for (uint32_t i = 0; i < right_value; i++)
+          {
+            ecma_free_value (stack_top_p[i], true);
+          }
+
+          ecma_free_value (*(--stack_top_p), true);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          JERRY_ASSERT (opcode_data & (VM_OC_PUT_DATA_MASK << VM_OC_PUT_DATA_SHIFT));
+          result = ecma_get_completion_value_value (last_completion_value);
           break;
         }
         case VM_OC_PROP_DELETE:
         {
-          last_completion_value = vm_op_delete_prop (left_value, right_value, frame_ctx_p->is_strict);
+          last_completion_value = vm_op_delete_prop (left_value, right_value, is_strict);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1285,7 +1284,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             break;
           }
 
-          last_completion_value = vm_op_delete_var (literal_start_p[literal_index], frame_ctx_p->lex_env_p, frame_ctx_p->is_strict);
+          last_completion_value = vm_op_delete_var (literal_start_p[literal_index],
+                                                    frame_ctx_p->lex_env_p,
+                                                    is_strict);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1302,7 +1303,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         }
         case VM_OC_BRANCH_IF_STRICT_EQUAL:
         {
-          JERRY_ASSERT (stack_top_p > vm_stack);
+          JERRY_ASSERT (stack_top_p > frame_ctx_p->registers_p + register_end);
 
           last_completion_value = opfunc_equal_value_type (left_value,
                                                            stack_top_p[-1]);
@@ -1860,7 +1861,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
             last_completion_value = ecma_op_put_value_lex_env_base (ref_base_lex_env_p,
                                                                     var_name_str_p,
-                                                                    frame_ctx_p->is_strict,
+                                                                    is_strict,
                                                                     result);
 
             ecma_deref_ecma_string (var_name_str_p);
@@ -1898,7 +1899,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             last_completion_value = vm_op_set_value (object,
                                                      property,
                                                      result,
-                                                     frame_ctx_p->is_strict);
+                                                     is_strict);
 
             ecma_free_value (object, true);
             ecma_free_value (property, true);
@@ -2057,139 +2058,262 @@ error:
 #undef READ_LITERAL_INDEX
 
 /**
- * Run the code, starting from specified instruction position
+ * Execute code block.
+ *
+ * @return completion value
  */
-ecma_completion_value_t
-vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
-        ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
-        ecma_object_t *lex_env_p, /**< lexical environment to use */
-        bool is_strict, /**< is the code is strict mode code (ECMA-262 v5, 10.1.1) */
-        bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */
-        ecma_collection_header_t *arg_collection_p) /**< arguments list */
+static ecma_completion_value_t __attr_noinline___
+vm_execute (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
+            void *arg_p, /**< arguments list */
+            ecma_length_t arg_list_len) /**< length of arguments list */
 {
-  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
-  lit_cpointer_t *literal_p;
-  vm_frame_ctx_t frame_ctx;
+  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  ecma_completion_value_t completion_value;
+  vm_frame_ctx_t *prev_context_p;
   uint16_t argument_end;
   uint16_t register_end;
 
   if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
   {
-    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint16_arguments_t));
-    literal_p = (lit_cpointer_t *) byte_p;
-    frame_ctx.literal_start_p = literal_p;
     cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_header_p;
-    literal_p += args_p->literal_end;
+
     argument_end = args_p->argument_end;
     register_end = args_p->register_end;
   }
   else
   {
-    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint8_arguments_t));
-    literal_p = (lit_cpointer_t *) byte_p;
-    frame_ctx.literal_start_p = literal_p;
     cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_header_p;
-    literal_p += args_p->literal_end;
+    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint8_arguments_t));
+
     argument_end = args_p->argument_end;
     register_end = args_p->register_end;
   }
 
-  frame_ctx.bytecode_header_p = bytecode_header_p;
-  frame_ctx.byte_code_p = (uint8_t *) literal_p;
-  frame_ctx.byte_code_start_p = (uint8_t *) literal_p;
-  frame_ctx.lex_env_p = lex_env_p;
-  frame_ctx.ref_base_lex_env_p = lex_env_p;
-  frame_ctx.context_depth = 0;
-  frame_ctx.is_strict = is_strict;
-  frame_ctx.is_eval_code = is_eval_code;
-  frame_ctx.is_call_in_direct_eval_form = false;
-  frame_ctx.this_binding = this_binding_value;
-
-  if (vm_top_context_p == NULL)
+  if (argument_end > 0)
   {
-    frame_ctx.registers_p = vm_stack;
-  }
-  else
-  {
-    frame_ctx.registers_p = vm_arguments_start_p;
-  }
-
-  vm_frame_ctx_t *prev_context_p = vm_top_context_p;
-  vm_top_context_p = &frame_ctx;
-
-  /* FIXME: Check stack limit */
-
-  /* Arguments preparation */
-  uint32_t arg_coll_len = 0;
-
-  if (arg_collection_p != NULL)
-  {
-    arg_coll_len = arg_collection_p->unit_number;
-  }
-
-  if (arg_coll_len > argument_end)
-  {
-    ecma_value_t *stack_p = frame_ctx.registers_p + argument_end;
-
-    for (uint32_t i = 0; i < (arg_coll_len - argument_end); i++)
+    if (arg_list_len == 0)
     {
-      ecma_free_value (*stack_p++, true);
+      ecma_collection_header_t *arg_collection_p = (ecma_collection_header_t *) arg_p;
+      ecma_collection_iterator_t arguments_iterator;
 
-      /* FIXME: workaround for value passing */
-      frame_ctx.registers_p[i] = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+      arg_list_len = arg_collection_p->unit_number;
+      if (arg_list_len > argument_end)
+      {
+        arg_list_len = argument_end;
+      }
+
+      ecma_collection_iterator_init (&arguments_iterator, arg_collection_p);
+
+      for (uint32_t i = 0; i < arg_list_len; i++)
+      {
+        ecma_value_t value;
+
+        ecma_collection_iterator_next (&arguments_iterator);
+        value = *arguments_iterator.current_value_p;
+        frame_ctx_p->registers_p[i] = ecma_copy_value (value, true);
+      }
+    }
+    else
+    {
+      ecma_value_t *src_p = (ecma_value_t *) arg_p;
+      arg_list_len --;
+
+      if (arg_list_len > argument_end)
+      {
+        arg_list_len = argument_end;
+      }
+
+      for (uint32_t i = 0; i < arg_list_len; i++)
+      {
+        frame_ctx_p->registers_p[i] = ecma_copy_value (src_p[i], true);
+      }
     }
   }
-  else if (arg_coll_len < argument_end)
-  {
-    ecma_value_t *stack_p = frame_ctx.registers_p + arg_coll_len;
 
-    for (uint32_t i = arg_coll_len; i < argument_end; i++)
+  if (register_end > arg_list_len)
+  {
+    ecma_value_t *stack_p = frame_ctx_p->registers_p + argument_end;
+
+    for (uint32_t i = arg_list_len; i < register_end; i++)
     {
       *stack_p++ = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
     }
   }
 
-  if (register_end > argument_end)
-  {
-    ecma_value_t *stack_p = frame_ctx.registers_p + argument_end;
+  prev_context_p = vm_top_context_p;
+  vm_top_context_p = frame_ctx_p;
 
-    for (uint32_t i = argument_end; i < register_end; i++)
-    {
-      *stack_p++ = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-    }
-  }
+  vm_init_loop (frame_ctx_p);
 
-  vm_init_loop (&frame_ctx);
-
-  completion_value = vm_loop (&frame_ctx,
-                              frame_ctx.registers_p + register_end);
+  completion_value = vm_loop (frame_ctx_p);
 
   /* Free arguments and registers */
   for (uint32_t i = 0; i < register_end; i++)
   {
-    ecma_free_value (frame_ctx.registers_p[i], true);
-    /* FIXME: workaround for value passing */
-    frame_ctx.registers_p[i] = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+    ecma_free_value (frame_ctx_p->registers_p[i], true);
   }
 
   JERRY_ASSERT (ecma_is_completion_value_throw (completion_value)
                 || ecma_is_completion_value_return (completion_value));
 
   vm_top_context_p = prev_context_p;
-
   return completion_value;
+} /* vm_execute */
+
+#define INLINE_STACK_SIZE 16
+
+/**
+ * Run the code with inline stack.
+ *
+ * @return completion value
+ */
+static ecma_completion_value_t __attr_noinline___
+vm_run_with_inline_stack (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
+                          void *arg_p, /**< arguments list */
+                          ecma_length_t arg_list_len) /**< length of arguments list */
+{
+  ecma_value_t inline_stack[INLINE_STACK_SIZE];
+
+  frame_ctx_p->registers_p = inline_stack;
+
+  return vm_execute (frame_ctx_p, arg_p, arg_list_len);
+} /* vm_run_with_inline_stack */
+
+/**
+ * Run the code with inline stack.
+ *
+ * @return completion value
+ */
+static ecma_completion_value_t __attr_noinline___
+vm_run_with_alloca (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
+                    void *arg_p, /**< arguments list */
+                    ecma_length_t arg_list_len, /**< length of arguments list */
+                    uint32_t call_stack_size) /**< call stack size */
+{
+  ecma_value_t *stack = alloca (call_stack_size * sizeof (ecma_value_t));
+
+  frame_ctx_p->registers_p = stack;
+
+  return vm_execute (frame_ctx_p, arg_p, arg_list_len);
+} /* vm_run_with_alloca */
+
+/**
+ * Run the code.
+ *
+ * @return completion value
+ */
+ecma_completion_value_t
+vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
+        ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
+        ecma_object_t *lex_env_p, /**< lexical environment to use */
+        bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */
+        ecma_collection_header_t *arg_collection_p) /**< arguments list */
+{
+  lit_cpointer_t *literal_p;
+  vm_frame_ctx_t frame_ctx;
+  uint32_t call_stack_size;
+
+  if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_header_p;
+    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint16_arguments_t));
+
+    literal_p = (lit_cpointer_t *) byte_p;
+    frame_ctx.literal_start_p = literal_p;
+    literal_p += args_p->literal_end;
+    call_stack_size = args_p->register_end + args_p->stack_limit;
+  }
+  else
+  {
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_header_p;
+    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint8_arguments_t));
+
+    literal_p = (lit_cpointer_t *) byte_p;
+    frame_ctx.literal_start_p = literal_p;
+    literal_p += args_p->literal_end;
+    call_stack_size = args_p->register_end + args_p->stack_limit;
+  }
+
+  frame_ctx.bytecode_header_p = bytecode_header_p;
+  frame_ctx.byte_code_p = (uint8_t *) literal_p;
+  frame_ctx.byte_code_start_p = (uint8_t *) literal_p;
+  frame_ctx.lex_env_p = lex_env_p;
+  frame_ctx.this_binding = this_binding_value;
+  frame_ctx.context_depth = 0;
+  frame_ctx.is_eval_code = is_eval_code;
+
+  if (call_stack_size <= INLINE_STACK_SIZE)
+  {
+    return vm_run_with_inline_stack (&frame_ctx, arg_collection_p, 0);
+  }
+  else
+  {
+    return vm_run_with_alloca (&frame_ctx, arg_collection_p, 0, call_stack_size);
+  }
 } /* vm_run */
 
 /**
- * Get scope code flags from instruction at specified position
+ * Run the code.
  *
- * @return mask of scope code flags
+ * @return completion value
  */
-opcode_scope_code_flags_t
-vm_get_scope_flags (const cbc_compiled_code_t *bytecode_header_p) /**< byte-code data */
+ecma_completion_value_t
+vm_run_array_args (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
+                   ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
+                   ecma_object_t *lex_env_p, /**< lexical environment to use */
+                   bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */
+                   const ecma_value_t* arg_list_p, /**< arguments list */
+                   ecma_length_t arg_list_len) /**< length of arguments list */
 {
-  return bytecode_header_p->status_flags;
-} /* vm_get_scope_flags */
+  lit_cpointer_t *literal_p;
+  vm_frame_ctx_t frame_ctx;
+  uint32_t call_stack_size;
+
+  if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_header_p;
+    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint16_arguments_t));
+
+    literal_p = (lit_cpointer_t *) byte_p;
+    frame_ctx.literal_start_p = literal_p;
+    literal_p += args_p->literal_end;
+    call_stack_size = args_p->register_end + args_p->stack_limit;
+  }
+  else
+  {
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_header_p;
+    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint8_arguments_t));
+
+    literal_p = (lit_cpointer_t *) byte_p;
+    frame_ctx.literal_start_p = literal_p;
+    literal_p += args_p->literal_end;
+    call_stack_size = args_p->register_end + args_p->stack_limit;
+  }
+
+  frame_ctx.bytecode_header_p = bytecode_header_p;
+  frame_ctx.byte_code_p = (uint8_t *) literal_p;
+  frame_ctx.byte_code_start_p = (uint8_t *) literal_p;
+  frame_ctx.lex_env_p = lex_env_p;
+  frame_ctx.this_binding = this_binding_value;
+  frame_ctx.context_depth = 0;
+  frame_ctx.is_eval_code = is_eval_code;
+
+  arg_list_len++;
+
+  if (call_stack_size <= INLINE_STACK_SIZE)
+  {
+    return vm_run_with_inline_stack (&frame_ctx,
+                                     arg_list_p,
+                                     arg_list_len);
+  }
+  else
+  {
+    return vm_run_with_alloca (&frame_ctx,
+                               arg_list_p,
+                               arg_list_len,
+                               call_stack_size);
+  }
+} /* vm_run */
 
 /**
  * Check whether currently executed code is strict mode code
@@ -2203,7 +2327,6 @@ vm_is_strict_mode (void)
   JERRY_ASSERT (vm_top_context_p != NULL);
 
   return vm_top_context_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE;
-  //return __program->status_flags & CBC_CODE_FLAGS_STRICT_MODE;
 } /* vm_is_strict_mode */
 
 /**
@@ -2221,6 +2344,7 @@ vm_is_strict_mode (void)
 bool
 vm_is_direct_eval_form_call (void)
 {
+#if 0
   if (vm_top_context_p != NULL)
   {
     return vm_top_context_p->is_call_in_direct_eval_form;
@@ -2233,6 +2357,8 @@ vm_is_direct_eval_form_call (void)
      */
     return false;
   }
+#endif
+  return false;
 } /* vm_is_direct_eval_form_call */
 
 ecma_value_t vm_get_this_binding (void)

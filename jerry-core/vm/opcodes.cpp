@@ -57,12 +57,13 @@ opfunc_func_decl_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
   }
 
   const bool is_configurable_bindings = frame_ctx_p->is_eval_code;
+  bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & OPCODE_SCOPE_CODE_FLAGS_STRICT) != 0);
 
   ecma_completion_value_t ret_value = ecma_op_function_declaration (frame_ctx_p->lex_env_p,
                                                                     func_name_str_p,
                                                                     frame_ctx_p->bytecode_header_p,
                                                                     formal_params_collection_p,
-                                                                    frame_ctx_p->is_strict,
+                                                                    is_strict,
                                                                     is_configurable_bindings);
 
   return ret_value;
@@ -80,15 +81,20 @@ ecma_completion_value_t
 opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
                ecma_value_t this_value, /**< this object value */
                ecma_value_t func_value, /**< function object value */
-               uint8_t args_num, /**< number of arguments */
-               ecma_value_t *stack_p) /**< stack pointer */
+               const ecma_value_t *arguments_list_p, /**< stack pointer */
+               ecma_length_t arguments_list_len) /**< number of arguments */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
-  if (this_value == 0)
+  if (!ecma_op_is_callable (func_value))
+  {
+    return ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
+  }
+
+  if (this_value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED))
   {
     ecma_completion_value_t this_comp_value;
-    this_comp_value = ecma_op_implicit_this_value (frame_ctx_p->ref_base_lex_env_p);
+    this_comp_value = ecma_op_implicit_this_value (frame_ctx_p->lex_env_p);
 
     if (ecma_is_completion_value_throw (this_comp_value))
     {
@@ -98,52 +104,13 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
     this_value = ecma_get_completion_value_value (this_comp_value);
   }
 
-  JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
+  ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
 
-  // FIXME: Fix fucntion calls in eval!
-  uint8_t call_flags;
-  ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
+  ret_value = ecma_op_function_call_array_args (func_obj_p,
+                                                this_value,
+                                                arguments_list_p,
+                                                arguments_list_len);
 
-  for (int i = 0; i < args_num; i++)
-  {
-    ecma_append_to_values_collection (arg_collection_p, stack_p[i], true);
-  }
-
-  if (!ecma_op_is_callable (func_value))
-  {
-    ret_value = ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
-  }
-  else
-  {
-    if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
-    {
-      frame_ctx_p->is_call_in_direct_eval_form = true;
-    }
-
-    ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
-
-    ECMA_TRY_CATCH (call_ret_value,
-                    ecma_op_function_call (func_obj_p,
-                                           this_value,
-                                           arg_collection_p),
-                    ret_value);
-
-    ret_value = ecma_make_normal_completion_value (ecma_copy_value (call_ret_value, true));
-
-    ECMA_FINALIZE (call_ret_value);
-
-    if (call_flags & OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM)
-    {
-      JERRY_ASSERT (frame_ctx_p->is_call_in_direct_eval_form);
-      frame_ctx_p->is_call_in_direct_eval_form = false;
-    }
-    else
-    {
-      JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
-    }
-  }
-
-  ecma_free_values_collection (arg_collection_p, true);
   ecma_free_value (this_value, true);
 
   return ret_value;
@@ -158,15 +125,11 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
  *         Returned value must be freed with ecma_free_completion_value.
  */
 ecma_completion_value_t
-opfunc_construct_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-                    ecma_value_t constructor_value, /**< constructor object value */
+opfunc_construct_n (ecma_value_t constructor_value, /**< constructor object value */
                     uint8_t args_num, /**< number of arguments */
                     ecma_value_t *stack_p) /**< stack pointer */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  JERRY_ASSERT (!frame_ctx_p->is_call_in_direct_eval_form);
-
   ecma_collection_header_t *arg_collection_p = ecma_new_values_collection (NULL, 0, true);
 
   for (int i = 0; i < args_num; i++)
