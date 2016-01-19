@@ -874,8 +874,30 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         case VM_OC_SET_PROPERTY:
         {
           ecma_object_t *object_p = ecma_get_object_from_value (stack_top_p[-1]);
-          ecma_string_t *prop_name_p = ecma_get_string_from_value (right_value);
-          ecma_property_t *property_p = ecma_find_named_property (object_p, prop_name_p);
+          ecma_string_t *prop_name_p;
+          ecma_property_t *property_p;
+
+          if (ecma_is_value_string (right_value))
+          {
+            prop_name_p = ecma_get_string_from_value (right_value);
+            property_p = ecma_find_named_property (object_p, prop_name_p);
+          }
+          else
+          {
+            ECMA_TRY_CATCH (property_name,
+                            ecma_op_to_string (right_value),
+                            last_completion_value);
+
+            prop_name_p = ecma_get_string_from_value (property_name);
+            property_p = ecma_find_named_property (object_p, prop_name_p);
+
+            ECMA_FINALIZE (property_name);
+
+            if (ecma_is_completion_value_throw (last_completion_value))
+            {
+              goto error;
+            }
+          }
 
           if (property_p != NULL && property_p->type != ECMA_PROPERTY_NAMEDDATA)
           {
