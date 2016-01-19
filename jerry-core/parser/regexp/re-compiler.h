@@ -76,9 +76,9 @@ typedef uint8_t re_bytecode_t;
  */
 typedef struct
 {
-  re_bytecode_t *block_start_p; /**< start of bytecode block */
-  re_bytecode_t *block_end_p; /**< end of bytecode block */
-  re_bytecode_t *current_p; /**< current position in bytecode */
+  re_bytecode_t *block_start_p;      /**< start of bytecode block */
+  re_bytecode_t *block_end_p;        /**< end of bytecode block */
+  re_bytecode_t *current_p;          /**< current position in bytecode */
 } re_bytecode_ctx_t;
 
 /**
@@ -86,17 +86,17 @@ typedef struct
  */
 typedef struct
 {
-  uint8_t flags; /**< RegExp flags */
-  uint32_t num_of_captures; /**< number of capture groups */
-  uint32_t num_of_non_captures; /**< number of non-capture groups */
-  uint32_t highest_backref; /**< highest backreference */
+  uint16_t flags;                    /**< RegExp flags */
+  uint32_t num_of_captures;          /**< number of capture groups */
+  uint32_t num_of_non_captures;      /**< number of non-capture groups */
+  uint32_t highest_backref;          /**< highest backreference */
   re_bytecode_ctx_t *bytecode_ctx_p; /**< pointer of RegExp bytecode context */
-  re_token_t current_token; /**< current token */
-  re_parser_ctx_t *parser_ctx_p; /**< pointer of RegExp parser context */
+  re_token_t current_token;          /**< current token */
+  re_parser_ctx_t *parser_ctx_p;     /**< pointer of RegExp parser context */
 } re_compiler_ctx_t;
 
 ecma_completion_value_t
-re_compile_bytecode (re_bytecode_t **, ecma_string_t *, uint8_t);
+re_compile_bytecode (re_bytecode_t **, ecma_string_t *, uint16_t);
 
 re_opcode_t
 re_get_opcode (re_bytecode_t **);

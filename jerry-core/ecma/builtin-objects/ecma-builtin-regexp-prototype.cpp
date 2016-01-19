@@ -72,7 +72,7 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
   else
   {
     ecma_string_t *pattern_string_p = NULL;
-    uint8_t flags = 0;
+    uint16_t flags = 0;
 
     if (ecma_is_value_object (pattern_arg)
         && ecma_object_get_class_name (ecma_get_object_from_value (pattern_arg)) == LIT_MAGIC_STRING_REGEXP_UL)

@@ -1384,12 +1384,13 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
                                int parse_only) /**< parse only */
 {
   const uint8_t *source_p = context_p->source_p;
-  const uint8_t *regex_start_p = context_p->source_p - 1;
+  const uint8_t *regex_start_p = context_p->source_p;
+  const uint8_t *regex_end_p = regex_start_p;
   const uint8_t *source_end_p = context_p->source_end_p;
   parser_line_counter_t column = context_p->column;
   lexer_literal_t *literal_p;
   int in_class = PARSER_FALSE;
-  uint32_t current_flags;
+  uint16_t current_flags;
   size_t length;
 
   PARSER_ASSERT (context_p->token.type == LEXER_DIVIDE
@@ -1409,6 +1410,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
     if (!in_class && source_p[0] == '/')
     {
+      regex_end_p = source_p;
       source_p++;
       column++;
       break;
@@ -1464,6 +1466,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
     }
   }
 
+  /* FIXME: This is duplicate of 're_parse_regexp_flags'. Move this to a helper function. */
   current_flags = 0;
   while (source_p < source_end_p)
   {
@@ -1471,15 +1474,15 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
     if (source_p[0] == 'g')
     {
-      flag = 0x1;
+      flag = RE_FLAG_GLOBAL;
     }
     else if (source_p[0] == 'i')
     {
-      flag = 0x2;
+      flag = RE_FLAG_IGNORE_CASE;
     }
     else if (source_p[0] == 'm')
     {
-      flag = 0x4;
+      flag = RE_FLAG_MULTILINE;
     }
 
     if (flag == 0)
@@ -1506,7 +1509,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->source_p = source_p;
   context_p->column = column;
 
-  length = (size_t) (source_p - regex_start_p);
+  length = (size_t) (regex_end_p - regex_start_p);
   if (length > PARSER_MAXIMUM_STRING_LENGTH)
   {
     parser_raise_error (context_p, PARSER_ERR_REGEXP_TOO_LONG);
@@ -1532,8 +1535,14 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
   context_p->literal_count++;
 
-  lit_literal_t lit = lit_find_or_create_literal_from_utf8_string (regex_start_p, length);
-  literal_p->u.value = rcs_cpointer_compress (lit);
+  /* Compile the RegExp literal and store the RegExp bytecode pointer */
+  re_bytecode_t *bc_p = NULL;
+  ecma_string_t *pattern_str_p = ecma_new_ecma_string_from_utf8 (regex_start_p, length);
+  // FIXME: check return value of 're_compile_bytecode' and throw an error
+  re_compile_bytecode (&bc_p, pattern_str_p, current_flags);
+  ecma_deref_ecma_string (pattern_str_p);
+
+  literal_p->u.regexp_p = bc_p;
 
   literal_p->type = LEXER_REGEXP_LITERAL;
 

@@ -27,6 +27,7 @@
 #include "ecma-lex-env.h"
 #include "ecma-objects.h"
 #include "ecma-objects-general.h"
+#include "ecma-regexp-object.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
 #include "rcs-records.h"
@@ -169,11 +170,21 @@ vm_cbc_free (const cbc_compiled_code_t *bytecode_p) /**< byte code */
 
   for (int i = const_literal_end; i < literal_end; i++)
   {
-    cbc_compiled_code_t *func_bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
-                                                                      literal_start_p[i].value.base_cp);
-    if (func_bytecode_p != bytecode_p)
+    cbc_compiled_code_t *func_bc_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
+                                                                literal_start_p[i].value.base_cp);
+
+    bool is_function = ((func_bc_p->status_flags & CBC_CODE_FLAGS_FUNCTION) != 0);
+
+    if (is_function)
     {
-      vm_cbc_free (func_bytecode_p);
+      if (func_bc_p != bytecode_p)
+      {
+        vm_cbc_free (func_bc_p);
+      }
+    }
+    else
+    {
+      // FIXME: free RegExp bytecode properly (see: 'ecma_free_internal_property')
     }
   }
 
@@ -310,16 +321,38 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
  */
 static ecma_value_t
 vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
-                             ecma_value_t literal /**< literal */)
+                             lit_cpointer_t lit_cp /**< literal */)
 {
-  cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, literal);
-  bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
+  cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, lit_cp.value.base_cp);
+  bool is_function = ((bytecode_p->status_flags & CBC_CODE_FLAGS_FUNCTION) != 0);
 
-  ecma_object_t *func_obj_p = ecma_op_create_function_object (frame_ctx_p->lex_env_p,
-                                                              is_strict,
-                                                              bytecode_p);
+  if (is_function)
+  {
+    bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
-  return ecma_make_object_value (func_obj_p);
+    ecma_object_t *func_obj_p = ecma_op_create_function_object (frame_ctx_p->lex_env_p,
+                                                                is_strict,
+                                                                bytecode_p);
+
+    return ecma_make_object_value (func_obj_p);
+  }
+  else
+  {
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
+    ecma_completion_value_t ret_value;
+    ret_value = ecma_op_create_regexp_object_from_bytecode ((re_bytecode_t *) bytecode_p);
+
+    if (ecma_is_completion_value_throw (ret_value))
+    {
+      // FIXME
+      return ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+    }
+
+    return ecma_get_completion_value_value (ret_value);
+#else
+    JERRY_UNIMPLEMENTED ("Regular Expressions are not supported in compact profile!");
+#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+  }
 } /* vm_construct_literal_object */
 
 enum
@@ -399,7 +432,7 @@ enum
     else \
     { \
       /* Object construction. */ \
-      (target_value) = vm_construct_literal_object (frame_ctx_p, literal_start_p[literal_index].value.base_cp); \
+      (target_value) = vm_construct_literal_object (frame_ctx_p, literal_start_p[literal_index]); \
       target_free_op; \
     } \
   } \
@@ -525,7 +558,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           else
           {
             lit_value = vm_construct_literal_object (frame_ctx_p,
-                                                     literal_start_p[value_index].value.base_cp);
+                                                     literal_start_p[value_index]);
           }
 
           // FIXME: check the return value

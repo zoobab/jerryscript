@@ -616,7 +616,7 @@ re_parse_alternative (re_compiler_ctx_t *re_ctx_p, /**< RegExp compiler context 
 ecma_completion_value_t
 re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecode */
                      ecma_string_t *pattern_str_p, /**< pattern */
-                     uint8_t flags) /**< flags */
+                     uint16_t flags) /**< flags */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
   re_compiler_ctx_t re_ctx;
@@ -663,6 +663,7 @@ re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecod
     /* 3. Insert extra informations for bytecode header */
     re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.num_of_non_captures);
     re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.num_of_captures * 2);
+    re_insert_u32 (&bc_ctx, 0, ecma_make_string_value (ecma_copy_or_ref_ecma_string (pattern_str_p)));
     re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.flags);
   }
   ECMA_FINALIZE (empty);

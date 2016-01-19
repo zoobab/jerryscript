@@ -519,6 +519,11 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
         ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
                                    literal_p->u.function_p);
       }
+      else if (literal_p->type == LEXER_REGEXP_LITERAL)
+      {
+        ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
+                                   literal_p->u.regexp_p);
+      }
       else
       {
         literal_pool_p[literal_p->prop.index] = literal_p->u.value;

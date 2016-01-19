@@ -65,7 +65,7 @@
  */
 ecma_completion_value_t
 re_parse_regexp_flags (ecma_string_t *flags_str_p, /**< Input string with flags */
-                       uint8_t *flags_p) /**< Output: parsed flag bits */
+                       uint16_t *flags_p) /**< Output: parsed flag bits */
 {
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
@@ -129,7 +129,7 @@ re_parse_regexp_flags (ecma_string_t *flags_str_p, /**< Input string with flags 
 void
 re_initialize_props (ecma_object_t *re_obj_p, /**< RegExp obejct */
                      ecma_string_t *source_p, /**< source string */
-                     uint8_t flags) /**< flags */
+                     uint16_t flags) /**< flags */
 {
  /* Set source property. ECMA-262 v5, 15.10.7.1 */
   ecma_string_t *magic_string_p = ecma_get_magic_string (LIT_MAGIC_STRING_SOURCE);
@@ -227,12 +227,55 @@ re_initialize_props (ecma_object_t *re_obj_p, /**< RegExp obejct */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
+ecma_op_create_regexp_object_from_bytecode (re_bytecode_t *bytecode_p) /**< input pattern */
+{
+  JERRY_ASSERT (bytecode_p != NULL);
+  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
+
+  ecma_object_t *re_prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE);
+
+  ecma_object_t *obj_p = ecma_create_object (re_prototype_obj_p, true, ECMA_OBJECT_TYPE_GENERAL);
+  ecma_deref_object (re_prototype_obj_p);
+
+  /* Set the internal [[Class]] property */
+  ecma_property_t *class_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CLASS);
+  class_prop_p->u.internal_property.value = LIT_MAGIC_STRING_REGEXP_UL;
+
+  /* Set bytecode internal property. */
+  ecma_property_t *bytecode_prop_p;
+  bytecode_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_REGEXP_BYTECODE);
+  ECMA_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_p);
+
+  /* Initialize RegExp object properties */
+  uint16_t flags = (uint16_t) re_get_value (&bytecode_p);
+  ecma_string_t *pattern_p = ecma_get_string_from_value ((ecma_value_t) re_get_value (&bytecode_p));
+  re_initialize_props (obj_p, pattern_p, flags);
+
+  ret_value = ecma_make_normal_completion_value (ecma_make_object_value (obj_p));
+
+  if (ecma_is_completion_value_throw (ret_value))
+  {
+    ecma_deref_object (obj_p);
+  }
+
+  return ret_value;
+} /* ecma_op_create_regexp_object_from_bytecode */
+
+/**
+ * RegExp object creation operation.
+ *
+ * See also: ECMA-262 v5, 15.10.4.1
+ *
+ * @return completion value
+ *         Returned value must be freed with ecma_free_completion_value
+ */
+ecma_completion_value_t
 ecma_op_create_regexp_object (ecma_string_t *pattern_p, /**< input pattern */
                               ecma_string_t *flags_str_p) /**< flags */
 {
   JERRY_ASSERT (pattern_p != NULL);
   ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-  uint8_t flags = 0;
+  uint16_t flags = 0;
 
   if (flags_str_p != NULL)
   {
@@ -1240,11 +1283,12 @@ ecma_regexp_exec_helper (ecma_value_t regexp_value, /**< RegExp object */
   re_ctx.input_end_p = input_buffer_p + input_string_size;
 
   /* 1. Read bytecode header and init regexp matcher context. */
-  re_ctx.flags = (uint8_t) re_get_value (&bc_p);
+  re_ctx.flags = (uint16_t) re_get_value (&bc_p);
+  bc_p += sizeof (ecma_value_t); /* Skip pattern string in the RegExp header */
 
   if (ignore_global)
   {
-    re_ctx.flags &= (uint8_t) ~RE_FLAG_GLOBAL;
+    re_ctx.flags &= (uint16_t) ~RE_FLAG_GLOBAL;
   }
 
   JERRY_DDLOG ("Exec with flags [global: %d, ignoreCase: %d, multiline: %d]\n",

@@ -33,6 +33,7 @@
 #endif
 
 #include "ecma-globals.h"
+#include "ecma-regexp-object.h"
 #include "lit-literal.h"
 #include "mem-heap.h"
 
@@ -103,6 +104,7 @@ typedef struct
     lit_cpointer_t value;    /**< literal value (not processed by the parser) */
     const uint8_t *char_p;   /**< character value */
     void *function_p;        /**< compiled function pointer */
+    re_bytecode_t *regexp_p; /**< compiled regexp pointer */
     uint32_t source_data;    /**< encoded source literal */
   } u;
 
