@@ -1,5 +1,5 @@
-/* Copyright 2015 Samsung Electronics Co., Ltd.
- * Copyright 2015 University of Szeged.
+/* Copyright 2015-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -390,3 +390,42 @@ vm_op_delete_var (lit_cpointer_t name_literal, /**< name literal */
 
   return completion_value;
 } /* vm_op_delete_var */
+
+/**
+ * 'for-in' opcode handler
+ *
+ * See also:
+ *          ECMA-262 v5, 12.6.4
+ *
+ * @return completion value
+ *         Returned value must be freed with ecma_free_completion_value
+ */
+ecma_collection_header_t *
+opfunc_for_in (ecma_value_t left_value) /**< left value */
+{
+  ecma_completion_value_t compl_val = ecma_make_empty_completion_value ();
+  ecma_collection_header_t *prop_names_p;
+
+  /* 3. */
+  if (!ecma_is_value_undefined (left_value)
+      && !ecma_is_value_null (left_value))
+  {
+    /* 4. */
+    ECMA_TRY_CATCH (obj_expr_value,
+                    ecma_op_to_object (left_value),
+                    compl_val);
+
+    ecma_object_t *obj_p = ecma_get_object_from_value (obj_expr_value);
+    prop_names_p = ecma_op_object_get_property_names (obj_p, false, true, true);
+
+    ECMA_FINALIZE (obj_expr_value);
+  }
+  else
+  {
+    prop_names_p = ecma_new_strings_collection (NULL, 0);
+  }
+
+  JERRY_ASSERT (ecma_is_completion_value_empty (compl_val));
+
+  return prop_names_p;
+} /* opfunc_for_in */

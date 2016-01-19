@@ -1,5 +1,5 @@
-/* Copyright 2015 Samsung Electronics Co., Ltd.
- * Copyright 2015 University of Szeged.
+/* Copyright 2015-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,5 +132,8 @@ vm_op_delete_prop (ecma_value_t, ecma_value_t, bool);
 
 ecma_completion_value_t
 vm_op_delete_var (lit_cpointer_t, ecma_object_t *, bool);
+
+ecma_collection_header_t *
+opfunc_for_in (ecma_value_t);
 
 #endif /* OPCODES_H */

@@ -1,5 +1,5 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
- * Copyright 2015 University of Szeged.
+/* Copyright 2014-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "ecma-alloc.h"
 #include "ecma-gc.h"
 #include "ecma-helpers.h"
 #include "vm-defines.h"
@@ -85,6 +86,26 @@ vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
       VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_TRY_CONTEXT_STACK_ALLOCATION);
       vm_stack_top_p -= PARSER_TRY_CONTEXT_STACK_ALLOCATION;
+      break;
+    }
+    case VM_CONTEXT_FOR_IN:
+    {
+      mem_cpointer_t current = vm_stack_top_p[-2];
+
+      while (current != MEM_CP_NULL)
+      {
+        ecma_collection_chunk_t *chunk_p = MEM_CP_GET_NON_NULL_POINTER (ecma_collection_chunk_t,
+                                                                        current);
+
+        ecma_free_value (*(ecma_value_t *) chunk_p->data, true);
+
+        current = chunk_p->next_chunk_cp;
+        ecma_dealloc_collection_chunk (chunk_p);
+      }
+
+      VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+      vm_stack_top_p -= PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
+
       break;
     }
     default:

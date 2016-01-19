@@ -1,5 +1,5 @@
-/* Copyright 2015 Samsung Electronics Co., Ltd.
- * Copyright 2015 University of Szeged.
+/* Copyright 2015-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1734,6 +1734,57 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           stack_top_p[-2] = ecma_make_object_value (frame_ctx_p->lex_env_p);
 
           frame_ctx_p->lex_env_p = with_env_p;
+          break;
+        }
+        case VM_OC_FOR_IN_CREATE_CONTEXT:
+        {
+          JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
+
+          ecma_collection_header_t *header_p = opfunc_for_in (left_value);
+
+          if (header_p->unit_number == 0)
+          {
+            ecma_dealloc_collection_header (header_p);
+            byte_code_p = byte_code_start_p + branch_offset;
+            break;
+          }
+
+          branch_offset += (uint32_t) (byte_code_start_p - frame_ctx_p->byte_code_start_p);
+
+          VM_PLUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+          stack_top_p += PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
+          stack_top_p[-1] = VM_CREATE_CONTEXT (VM_CONTEXT_FOR_IN, branch_offset);
+          stack_top_p[-2] = header_p->first_chunk_cp;
+
+          ecma_dealloc_collection_header (header_p);
+          break;
+        }
+        case VM_OC_FOR_IN_GET_NEXT:
+        {
+          ecma_value_t *context_top_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
+          ecma_collection_chunk_t *chunk_p = MEM_CP_GET_NON_NULL_POINTER (ecma_collection_chunk_t, context_top_p[-2]);
+
+          JERRY_ASSERT (VM_GET_CONTEXT_TYPE (context_top_p[-1]) == VM_CONTEXT_FOR_IN);
+
+          result = *(ecma_value_t *) chunk_p->data;
+          context_top_p[-2] = chunk_p->next_chunk_cp;
+
+          ecma_dealloc_collection_chunk (chunk_p);
+          break;
+        }
+        case VM_OC_FOR_IN_HAS_NEXT:
+        {
+          JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
+
+          if (stack_top_p[-2] != MEM_CP_NULL)
+          {
+            byte_code_p = byte_code_start_p + branch_offset;
+          }
+          else
+          {
+            VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+            stack_top_p -= PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
+          }
           break;
         }
         case VM_OC_TRY:

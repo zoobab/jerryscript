@@ -1,4 +1,5 @@
-/* Copyright 2015 Samsung Electronics Co., Ltd.
+/* Copyright 2015-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +63,7 @@ typedef enum {
   VM_CONTEXT_TRY,                             /**< try context */
   VM_CONTEXT_CATCH,                           /**< catch context */
   VM_CONTEXT_WITH,                            /**< with context */
+  VM_CONTEXT_FOR_IN,                          /**< for-in context */
 } vm_stack_context_type_t;
 
 extern ecma_value_t *vm_stack_context_abort (vm_frame_ctx_t *, ecma_value_t *);

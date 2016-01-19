@@ -1,5 +1,5 @@
-/* Copyright 2014-2015 Samsung Electronics Co., Ltd.
- * Copyright 2015 University of Szeged.
+/* Copyright 2014-2016 Samsung Electronics Co., Ltd.
+ * Copyright 2015-2016 University of Szeged.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,6 +142,9 @@ typedef enum {
   VM_OC_INSTANCEOF,
 
   VM_OC_WITH,
+  VM_OC_FOR_IN_CREATE_CONTEXT,
+  VM_OC_FOR_IN_GET_NEXT,
+  VM_OC_FOR_IN_HAS_NEXT,
   VM_OC_TRY,
   VM_OC_CATCH,
   VM_OC_FINALLY,
