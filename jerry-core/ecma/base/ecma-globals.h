@@ -213,7 +213,6 @@ typedef enum
   ECMA_INTERNAL_PROPERTY_NATIVE_CODE, /**< native handler location descriptor */
   ECMA_INTERNAL_PROPERTY_NATIVE_HANDLE, /**< native handle associated with an object */
   ECMA_INTERNAL_PROPERTY_FREE_CALLBACK, /**< object's native free callback */
-  ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS, /**< [[FormalParameters]] */
   ECMA_INTERNAL_PROPERTY_PRIMITIVE_STRING_VALUE, /**< [[Primitive value]] for String objects */
   ECMA_INTERNAL_PROPERTY_PRIMITIVE_NUMBER_VALUE, /**< [[Primitive value]] for Number objects */
   ECMA_INTERNAL_PROPERTY_PRIMITIVE_BOOLEAN_VALUE, /**< [[Primitive value]] for Boolean objects */

@@ -312,16 +312,12 @@ static ecma_value_t
 vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
                              ecma_value_t literal /**< literal */)
 {
-  ecma_collection_header_t *formal_params_collection_p = ecma_new_strings_collection (NULL, 0);
   cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, literal);
   bool is_strict = ((frame_ctx_p->bytecode_header_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
 
-  ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
-                                                              frame_ctx_p->lex_env_p,
+  ecma_object_t *func_obj_p = ecma_op_create_function_object (frame_ctx_p->lex_env_p,
                                                               is_strict,
                                                               bytecode_p);
-
-  ecma_free_values_collection (formal_params_collection_p, true);
 
   return ecma_make_object_value (func_obj_p);
 } /* vm_construct_literal_object */
@@ -2127,50 +2123,49 @@ vm_execute (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
     register_end = args_p->register_end;
   }
 
-  if (argument_end > 0)
+  if (arg_list_len == 0)
   {
-    if (arg_list_len == 0)
+    ecma_collection_header_t *arg_collection_p = (ecma_collection_header_t *) arg_p;
+    ecma_collection_iterator_t arguments_iterator;
+
+    arg_list_len = arg_collection_p->unit_number;
+    if (arg_list_len > argument_end)
     {
-      ecma_collection_header_t *arg_collection_p = (ecma_collection_header_t *) arg_p;
-      ecma_collection_iterator_t arguments_iterator;
-
-      arg_list_len = arg_collection_p->unit_number;
-      if (arg_list_len > argument_end)
-      {
-        arg_list_len = argument_end;
-      }
-
-      ecma_collection_iterator_init (&arguments_iterator, arg_collection_p);
-
-      for (uint32_t i = 0; i < arg_list_len; i++)
-      {
-        ecma_value_t value;
-
-        ecma_collection_iterator_next (&arguments_iterator);
-        value = *arguments_iterator.current_value_p;
-        frame_ctx_p->registers_p[i] = ecma_copy_value (value, true);
-      }
+      arg_list_len = argument_end;
     }
-    else
+
+    ecma_collection_iterator_init (&arguments_iterator, arg_collection_p);
+
+    for (uint32_t i = 0; i < arg_list_len; i++)
     {
-      ecma_value_t *src_p = (ecma_value_t *) arg_p;
-      arg_list_len --;
+      ecma_value_t value;
 
-      if (arg_list_len > argument_end)
-      {
-        arg_list_len = argument_end;
-      }
+      ecma_collection_iterator_next (&arguments_iterator);
+      value = *arguments_iterator.current_value_p;
+      frame_ctx_p->registers_p[i] = ecma_copy_value (value, true);
+    }
+  }
+  else
+  {
+    ecma_value_t *src_p = (ecma_value_t *) arg_p;
+    arg_list_len --;
 
-      for (uint32_t i = 0; i < arg_list_len; i++)
-      {
-        frame_ctx_p->registers_p[i] = ecma_copy_value (src_p[i], true);
-      }
+    if (arg_list_len > argument_end)
+    {
+      arg_list_len = argument_end;
+    }
+
+    for (uint32_t i = 0; i < arg_list_len; i++)
+    {
+      frame_ctx_p->registers_p[i] = ecma_copy_value (src_p[i], true);
     }
   }
 
+  /* The arg_list_len contains the end of the copied arguments.
+   * Fill everything else with undefined. */
   if (register_end > arg_list_len)
   {
-    ecma_value_t *stack_p = frame_ctx_p->registers_p + argument_end;
+    ecma_value_t *stack_p = frame_ctx_p->registers_p + arg_list_len;
 
     for (uint32_t i = arg_list_len; i < register_end; i++)
     {
@@ -2280,13 +2275,25 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
   frame_ctx.context_depth = 0;
   frame_ctx.is_eval_code = is_eval_code;
 
+  ecma_length_t arg_list_len = 0;
+
+  if (arg_collection_p == NULL)
+  {
+    arg_list_len = 1;
+  }
+
   if (call_stack_size <= INLINE_STACK_SIZE)
   {
-    return vm_run_with_inline_stack (&frame_ctx, arg_collection_p, 0);
+    return vm_run_with_inline_stack (&frame_ctx,
+                                     arg_collection_p,
+                                     arg_list_len);
   }
   else
   {
-    return vm_run_with_alloca (&frame_ctx, arg_collection_p, 0, call_stack_size);
+    return vm_run_with_alloca (&frame_ctx,
+                               arg_collection_p,
+                               arg_list_len,
+                               call_stack_size);
   }
 } /* vm_run */
 

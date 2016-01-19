@@ -763,17 +763,6 @@ ecma_free_internal_property (ecma_property_t *property_p) /**< the property */
       break;
     }
 
-    case ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS: /* a strings' collection */
-    {
-      if (property_value != ECMA_NULL_POINTER)
-      {
-        ecma_free_values_collection (ECMA_GET_NON_NULL_POINTER (ecma_collection_header_t,
-                                                                property_value),
-                                     false);
-      }
-      break;
-    }
-
     case ECMA_INTERNAL_PROPERTY_PRIMITIVE_STRING_VALUE: /* compressed pointer to a ecma_string_t */
     {
       ecma_string_t *str_p = ECMA_GET_NON_NULL_POINTER (ecma_string_t,

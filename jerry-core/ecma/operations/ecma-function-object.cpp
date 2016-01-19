@@ -150,13 +150,7 @@ ecma_function_bind_merge_arg_lists (ecma_object_t *func_obj_p, /**< Function obj
  * @return pointer to newly created Function object
  */
 ecma_object_t*
-ecma_op_create_function_object (ecma_collection_header_t *formal_params_collection_p, /**< formal parameters collection
-                                                                                       *   Warning:
-                                                                                       *     the collection should not
-                                                                                       *     be changed / used / freed
-                                                                                       *     by caller after passing it
-                                                                                       *     to the routine */
-                                ecma_object_t *scope_p, /**< function's scope */
+ecma_op_create_function_object (ecma_object_t *scope_p, /**< function's scope */
                                 bool is_decl_in_strict_mode, /**< is function declared in strict mode code? */
                                 const cbc_compiled_code_t *bytecode_data_p) /**< byte-code array */
 {
@@ -192,15 +186,8 @@ ecma_op_create_function_object (ecma_collection_header_t *formal_params_collecti
   ecma_property_t *scope_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_SCOPE);
   ECMA_SET_POINTER (scope_prop_p->u.internal_property.value, scope_p);
 
-  // 10., 11.
-  if (formal_params_collection_p != NULL
-      && formal_params_collection_p->unit_number != 0)
-  {
-    ecma_property_t *formal_params_prop_p = ecma_create_internal_property (f,
-                                                                           ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-    ECMA_SET_POINTER (formal_params_prop_p->u.internal_property.value, formal_params_collection_p);
-  }
-
+  // 10.
+  // 11.
   // 12.
   ecma_property_t *bytecode_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
@@ -325,32 +312,20 @@ ecma_op_function_try_lazy_instantiate_property (ecma_object_t *obj_p, /**< the f
     // 14
     ecma_number_t *len_p = ecma_alloc_number ();
 
-    ecma_property_t *formal_parameters_prop_p = ecma_find_internal_property (obj_p,
-                                                                             ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-    if (formal_parameters_prop_p == NULL)
+    ecma_property_t *bytecode_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
+
+    const cbc_compiled_code_t *bytecode_data_p;
+    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
+
+    if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
     {
-      ecma_property_t *bytecode_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
-
-      const cbc_compiled_code_t *bytecode_data_p;
-      bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
-
-      if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-      {
-        cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_data_p;
-        *len_p = args_p->argument_end;
-      }
-      else
-      {
-        cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_data_p;
-        *len_p = args_p->argument_end;
-      }
+      cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_data_p;
+      *len_p = args_p->argument_end;
     }
     else
     {
-      ecma_collection_header_t *formal_parameters_p;
-      formal_parameters_p = ECMA_GET_NON_NULL_POINTER (ecma_collection_header_t,
-                                                       formal_parameters_prop_p->u.internal_property.value);
-      *len_p = ecma_uint32_to_number (formal_parameters_p->unit_number);
+      cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_data_p;
+      *len_p = args_p->argument_end;
     }
 
     // 15
@@ -1042,20 +1017,13 @@ ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment */
                               ecma_string_t *function_name_p, /**< function name */
                               const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data */
-                              ecma_collection_header_t *formal_params_collection_p, /**< formal parameters collection
-                                                                                     *   Warning:
-                                                                                     *     the collection should not
-                                                                                     *     be changed / used / freed
-                                                                                     *     by caller after passing it
-                                                                                     *     to the routine */
                               bool is_decl_in_strict_mode, /**< flag, indicating if function is
                                                             *   declared in strict mode code */
                               bool is_configurable_bindings) /**< flag indicating whether function
                                                               *   is declared in eval code */
 {
   // b.
-  ecma_object_t *func_obj_p = ecma_op_create_function_object (formal_params_collection_p,
-                                                              lex_env_p,
+  ecma_object_t *func_obj_p = ecma_op_create_function_object (lex_env_p,
                                                               is_decl_in_strict_mode,
                                                               bytecode_data_p);
 

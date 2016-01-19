@@ -336,7 +336,6 @@ ecma_gc_mark (ecma_object_t *object_p) /**< object to mark from */
               JERRY_UNREACHABLE ();
             }
 
-            case ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS: /* a collection of strings */
             case ECMA_INTERNAL_PROPERTY_PRIMITIVE_STRING_VALUE: /* compressed pointer to a ecma_string_t */
             case ECMA_INTERNAL_PROPERTY_PRIMITIVE_NUMBER_VALUE: /* compressed pointer to a ecma_number_t */
             case ECMA_INTERNAL_PROPERTY_PRIMITIVE_BOOLEAN_VALUE: /* a simple boolean value */
