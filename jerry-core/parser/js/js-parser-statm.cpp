@@ -399,7 +399,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
   literal_p->status_flags = LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED | no_reg_store;
 
   name_p->type = LEXER_UNUSED_LITERAL;
-  name_p->status_flags &= LEXER_FLAG_FUNCTION_ARGUMENT;
+  name_p->status_flags &= LEXER_FLAG_FUNCTION_ARGUMENT | LEXER_FLAG_SOURCE_PTR;
   /* Byte code references to this literal are
    * redirected to the newly allocated literal. */
   name_p->prop.index = context_p->literal_count;

@@ -50,6 +50,12 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
   uint16_t const_literal_index;
   uint16_t literal_index;
 
+  if (status_flags & PARSER_ARGUMENTS_NOT_NEEDED)
+  {
+    status_flags &= ~PARSER_ARGUMENTS_NEEDED;
+    context_p->status_flags = status_flags;
+  }
+
   /* First phase: count the number of items in each group. */
   parser_list_iterator_init (&context_p->literal_pool, &literal_iterator);
   while ((literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator)))
@@ -112,8 +118,14 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
 
             if (literal_p->status_flags & LEXER_FLAG_FUNCTION_ARGUMENT)
             {
-              /* Arguments are bound to their position, or move
-               * to the initialized var section. */
+              if ((status_flags & PARSER_ARGUMENTS_NEEDED)
+                  && !(status_flags & PARSER_IS_STRICT))
+              {
+                literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
+              }
+
+              /* Arguments are bound to their position, or
+               * moved to the initialized var section. */
               if (literal_p->status_flags & LEXER_FLAG_NO_REG_STORE)
               {
                 initialized_var_count++;
@@ -243,7 +255,7 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
         continue;
       }
 
-      PARSER_ASSERT ((literal_p->status_flags & ~LEXER_FLAG_FUNCTION_ARGUMENT) == 0);
+      PARSER_ASSERT ((literal_p->status_flags & ~(LEXER_FLAG_FUNCTION_ARGUMENT | LEXER_FLAG_SOURCE_PTR)) == 0);
 
       if (literal_p->status_flags & LEXER_FLAG_FUNCTION_ARGUMENT)
       {
@@ -1470,10 +1482,10 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     compiled_code_p->status_flags |= CBC_CODE_FLAGS_STRICT_MODE;
   }
 
-  if ((context_p->status_flags & PARSER_ARGUMENTS_NEEDED)
-      && !(context_p->status_flags & PARSER_ARGUMENTS_NOT_NEEDED))
+  if (context_p->status_flags & PARSER_ARGUMENTS_NEEDED)
   {
     compiled_code_p->status_flags |= CBC_CODE_FLAGS_ARGUMENTS_NEEDED;
+    /* Arguments is stored in the lexical environment. */
     context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
   }
 
@@ -1682,6 +1694,50 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     }
   }
 #endif /* PARSER_DUMP_BYTE_CODE */
+
+  if ((context_p->status_flags & PARSER_ARGUMENTS_NEEDED)
+      && !(context_p->status_flags & PARSER_IS_STRICT))
+  {
+    parser_list_iterator_t literal_iterator;
+    lexer_literal_t *literal_p;
+    uint16_t argument_count = 0;
+
+    parser_list_iterator_init (&context_p->literal_pool, &literal_iterator);
+    while (argument_count < context_p->argument_count)
+    {
+      literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator);
+
+      PARSER_ASSERT (literal_p != NULL);
+
+      if (!(literal_p->status_flags & LEXER_FLAG_FUNCTION_ARGUMENT))
+      {
+        continue;
+      }
+
+      /* All arguments must be moved to initialized registers. */
+      if (literal_p->type == LEXER_UNUSED_LITERAL)
+      {
+        if (literal_p->u.char_p == NULL)
+        {
+          literal_pool_p[argument_count] = rcs_cpointer_null_cp ();
+          argument_count++;
+          continue;
+        }
+
+        literal_p = parser_list_get (&context_p->literal_pool, literal_p->prop.index);
+
+        PARSER_ASSERT (literal_p != NULL);
+      }
+
+      PARSER_ASSERT (literal_p->type == LEXER_IDENT_LITERAL
+                     && (literal_p->status_flags & LEXER_FLAG_VAR));
+
+      PARSER_ASSERT (argument_count < literal_p->prop.index);
+
+      literal_pool_p[argument_count] = literal_pool_p[literal_p->prop.index];
+      argument_count++;
+    }
+  }
 
   return compiled_code_p;
 } /* parser_post_processing */
@@ -1991,6 +2047,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 
         /* Only the LEXER_FLAG_FUNCTION_ARGUMENT flag is kept. */
         context_p->lit_object.literal_p->status_flags &= LEXER_FLAG_FUNCTION_ARGUMENT;
+        context_p->lit_object.literal_p->u.char_p = NULL;
       }
       else
       {

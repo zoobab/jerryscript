@@ -2310,9 +2310,9 @@ vm_run_array_args (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code 
   if (bytecode_header_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
   {
     cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_header_p;
-    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint16_arguments_t));
+    uint8_t *byte_p = (uint8_t *) bytecode_header_p;
 
-    literal_p = (lit_cpointer_t *) byte_p;
+    literal_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint16_arguments_t));
     frame_ctx.literal_start_p = literal_p;
     literal_p += args_p->literal_end;
     call_stack_size = args_p->register_end + args_p->stack_limit;
@@ -2320,9 +2320,9 @@ vm_run_array_args (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code 
   else
   {
     cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_header_p;
-    uint8_t *byte_p = ((uint8_t *) bytecode_header_p + sizeof (cbc_uint8_arguments_t));
+    uint8_t *byte_p = (uint8_t *) bytecode_header_p;
 
-    literal_p = (lit_cpointer_t *) byte_p;
+    literal_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint8_arguments_t));
     frame_ctx.literal_start_p = literal_p;
     literal_p += args_p->literal_end;
     call_stack_size = args_p->register_end + args_p->stack_limit;

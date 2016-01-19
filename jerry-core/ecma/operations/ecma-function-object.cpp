@@ -37,94 +37,6 @@
  */
 
 /**
- * Pack 'is_strict', 'do_instantiate_arguments_object' flags and instruction position to value
- * that can be stored in an [[Code]] internal property.
- *
- * @return packed value
- */
-static uint32_t
-ecma_pack_code_internal_property_value (bool is_strict, /**< is code strict? */
-                                        bool do_instantiate_args_obj, /**< should an Arguments object be
-                                                                       *   instantiated for the code */
-                                        bool is_arguments_moved_to_regs, /**< values of the function's arguments
-                                                                          *   are placed on registers */
-                                        bool is_no_lex_env, /**< the function needs no lexical environment */
-                                        vm_instr_counter_t instr_oc) /**< position of first instruction */
-{
-  uint32_t value;/* = instr_oc;
-  const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
-  const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
-  const uint32_t arguments_moved_to_regs_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 3);
-  const uint32_t no_lex_env_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 4);
-
-  JERRY_ASSERT (((value) & (1u << is_strict_bit_offset)) == 0);
-  JERRY_ASSERT (((value) & (1u << do_instantiate_arguments_object_bit_offset)) == 0);
-  JERRY_ASSERT (((value) & (1u << arguments_moved_to_regs_bit_offset)) == 0);
-  JERRY_ASSERT (((value) & (1u << no_lex_env_bit_offset)) == 0);
-
-  if (is_strict)
-  {
-    value |= (1u << is_strict_bit_offset);
-  }
-
-  if (do_instantiate_args_obj)
-  {
-    value |= (1u << do_instantiate_arguments_object_bit_offset);
-  }
-
-  if (is_arguments_moved_to_regs)
-  {
-    value |= (1u << arguments_moved_to_regs_bit_offset);
-  }
-
-  if (is_no_lex_env)
-  {
-    value |= (1u << no_lex_env_bit_offset);
-  }
-
-  */
-  return value;
-} /* ecma_pack_code_internal_property_value */
-
-/**
- * Unpack 'is_strict', 'do_instantiate_arguments_object' flags and instruction position from value
- * that can be stored in an [[Code]] internal property.
- *
- * @return instruction position
- */
-static vm_instr_counter_t
-ecma_unpack_code_internal_property_value (uint32_t value, /**< packed value */
-                                          bool* out_is_strict_p, /**< out: is code strict? */
-                                          bool* out_do_instantiate_args_obj_p, /**< should an Arguments object be
-                                                                                *   instantiated for the code */
-                                          bool* out_is_arguments_moved_to_regs_p, /**< values of the function's
-                                                                                   *   arguments are placed
-                                                                                   *   on registers */
-                                          bool* out_is_no_lex_env_p) /**< the function needs no lexical environment */
-{
-  JERRY_ASSERT (out_is_strict_p != NULL);
-  JERRY_ASSERT (out_do_instantiate_args_obj_p != NULL);
-  JERRY_ASSERT (out_is_arguments_moved_to_regs_p != NULL);
-  JERRY_ASSERT (out_is_no_lex_env_p != NULL);
-
-  const uint32_t is_strict_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 1);
-  const uint32_t do_instantiate_arguments_object_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 2);
-  const uint32_t is_arguments_moved_to_regs_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 3);
-  const uint32_t is_no_lex_env_bit_offset = (uint32_t) (sizeof (value) * JERRY_BITSINBYTE - 4);
-
-  *out_is_strict_p = ((value & (1u << is_strict_bit_offset)) != 0);
-  *out_do_instantiate_args_obj_p = ((value & (1u << do_instantiate_arguments_object_bit_offset)) != 0);
-  *out_is_arguments_moved_to_regs_p = ((value & (1u << is_arguments_moved_to_regs_bit_offset)) != 0);
-  *out_is_no_lex_env_p = ((value & (1u << is_no_lex_env_bit_offset)) != 0);
-  value &= ~((1u << is_strict_bit_offset)
-             | (1u << do_instantiate_arguments_object_bit_offset)
-             | (1u << is_arguments_moved_to_regs_bit_offset)
-             | (1u << is_no_lex_env_bit_offset));
-
-  return (vm_instr_counter_t) value;
-} /* ecma_unpack_code_internal_property_value */
-
-/**
  * IsCallable operation.
  *
  * See also: ECMA-262 v5, 9.11
@@ -582,154 +494,6 @@ ecma_op_create_external_function_object (ecma_external_pointer_t code_p) /**< po
 } /* ecma_op_create_external_function_object */
 
 /**
- * Setup variables for arguments listed in formal parameter list,
- * and, if necessary, Arguments object with 'arguments' binding.
- *
- * See also:
- *          Declaration binding instantiation (ECMA-262 v5, 10.5), block 4 and 7
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-static ecma_completion_value_t
-ecma_function_call_setup_args_variables (ecma_object_t *func_obj_p, /**< Function object */
-                                         ecma_object_t *env_p, /**< lexical environment */
-                                         ecma_collection_header_t *arg_collection_p, /**< arguments collection */
-                                         bool is_strict, /**< flag indicating strict mode */
-                                         bool do_instantiate_arguments_object) /**< flag indicating whether
-                                                                                *   Arguments object should be
-                                                                                *   instantiated */
-{
-  ecma_collection_header_t *formal_parameters_p = NULL;
-
-  ecma_property_t *formal_parameters_prop_p = ecma_find_internal_property (func_obj_p,
-                                                                           ECMA_INTERNAL_PROPERTY_FORMAL_PARAMETERS);
-
-  if (formal_parameters_prop_p != NULL)
-  {
-    formal_parameters_p = ECMA_GET_POINTER (ecma_collection_header_t,
-                                            formal_parameters_prop_p->u.internal_property.value);
-
-    ecma_length_t formal_parameters_count = formal_parameters_p->unit_number;
-
-    ecma_collection_iterator_t arguments_iterator, formal_params_iterator;
-
-    ecma_collection_iterator_init (&arguments_iterator, arg_collection_p);
-    ecma_collection_iterator_init (&formal_params_iterator, formal_parameters_p);
-
-    /*
-     * Formal parameter list is stored in reversed order
-     *
-     * Although, specification defines ascending order of formal parameters list enumeration,
-     * implementation enumerates the parameters in descending order.
-     *
-     * In the case, redundant SetMutableBinding invocation could be avoided.
-     */
-    for (ecma_length_t n = 0;
-         n < formal_parameters_count;
-         n++)
-    {
-      ecma_value_t arg_value;
-      if (ecma_collection_iterator_next (&arguments_iterator))
-      {
-        arg_value = *arguments_iterator.current_value_p;
-      }
-      else
-      {
-        arg_value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-      }
-
-      bool is_moved = ecma_collection_iterator_next (&formal_params_iterator);
-      JERRY_ASSERT (is_moved);
-
-      ecma_value_t formal_parameter_name_value = *formal_params_iterator.current_value_p;
-      ecma_string_t *formal_parameter_name_string_p = ecma_get_string_from_value (formal_parameter_name_value);
-
-      bool arg_already_declared = ecma_op_has_binding (env_p, formal_parameter_name_string_p);
-      if (!arg_already_declared)
-      {
-        ecma_completion_value_t completion = ecma_op_create_mutable_binding (env_p,
-                                                                             formal_parameter_name_string_p,
-                                                                             false);
-        if (ecma_is_completion_value_throw (completion))
-        {
-          return completion;
-        }
-
-        JERRY_ASSERT (ecma_is_completion_value_empty (completion));
-      }
-
-      ecma_completion_value_t completion = ecma_op_set_mutable_binding (env_p,
-                                                                        formal_parameter_name_string_p,
-                                                                        arg_value,
-                                                                        is_strict);
-
-      if (ecma_is_completion_value_throw (completion))
-      {
-        return completion;
-      }
-
-      JERRY_ASSERT (ecma_is_completion_value_empty (completion));
-    }
-  }
-
-  if (do_instantiate_arguments_object)
-  {
-    /*
-     * According to ECMA-262 v5, 10.5, the Arguments object should be instantiated
-     * after instantiating declared functions, and only if there is no binding named 'arguments'
-     * by that time.
-     *
-     * However, we can setup Arguments object and 'arguments' binding here, because:
-     *  - instantiation of Arguments object itself doesn't have any side effects;
-     *  - if 'arguments' is name of a declared function in current scope,
-     *    value of the binding would be overwritten, execution would proceed in correct state.
-     *  - declaration of function, named 'arguments', is considered to be unrecommended (and so, rare) case,
-     *    so instantiation of Arguments object here, in general, is supposed to not affect resource consumption
-     *    significantly.
-     */
-
-    ecma_string_t *arguments_string_p = ecma_get_magic_string (LIT_MAGIC_STRING_ARGUMENTS);
-
-    bool binding_already_declared = ecma_op_has_binding (env_p, arguments_string_p);
-
-    if (!binding_already_declared)
-    {
-      ecma_object_t *args_obj_p = ecma_op_create_arguments_object (func_obj_p,
-                                                                   env_p,
-                                                                   formal_parameters_p,
-                                                                   arg_collection_p,
-                                                                   is_strict);
-
-      if (is_strict)
-      {
-        ecma_op_create_immutable_binding (env_p, arguments_string_p);
-        ecma_op_initialize_immutable_binding (env_p, arguments_string_p, ecma_make_object_value (args_obj_p));
-      }
-      else
-      {
-        ecma_completion_value_t completion = ecma_op_create_mutable_binding (env_p,
-                                                                             arguments_string_p,
-                                                                             false);
-        JERRY_ASSERT (ecma_is_completion_value_empty (completion));
-
-        completion = ecma_op_set_mutable_binding (env_p,
-                                                  arguments_string_p,
-                                                  ecma_make_object_value (args_obj_p),
-                                                  false);
-        JERRY_ASSERT (ecma_is_completion_value_empty (completion));
-      }
-
-      ecma_deref_object (args_obj_p);
-    }
-
-    ecma_deref_ecma_string (arguments_string_p);
-  }
-
-  return ecma_make_empty_completion_value ();
-} /* ecma_function_call_setup_args_variables */
-
-/**
  * [[Call]] implementation for Function objects,
  * created through 13.2 (ECMA_OBJECT_TYPE_FUNCTION)
  * or 15.3.4.5 (ECMA_OBJECT_TYPE_BOUND_FUNCTION),
@@ -831,7 +595,7 @@ ecma_op_function_has_instance (ecma_object_t *func_obj_p, /**< Function object *
 ecma_completion_value_t
 ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function object */
                                   ecma_value_t this_arg_value, /**< 'this' argument's value */
-                                  const ecma_value_t* arguments_list_p, /**< arguments list */
+                                  const ecma_value_t *arguments_list_p, /**< arguments list */
                                   ecma_length_t arguments_list_len) /**< length of arguments list */
 {
   if (arguments_list_len == 0)
@@ -859,7 +623,8 @@ ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function objec
     bool is_no_lex_env;
 
     const cbc_compiled_code_t *bytecode_data_p;
-    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
+    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t,
+                                          bytecode_prop_p->u.internal_property.value);
 
     is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) ? true : false;
     is_no_lex_env = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED) ? true : false;
@@ -893,6 +658,15 @@ ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function objec
     else
     {
       local_env_p = ecma_create_decl_lex_env (scope_p);
+
+      if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_ARGUMENTS_NEEDED)
+      {
+        ecma_op_create_arguments_object_array_args (func_obj_p,
+                                                    local_env_p,
+                                                    arguments_list_p,
+                                                    arguments_list_len,
+                                                    bytecode_data_p);
+      }
     }
 
     ecma_completion_value_t completion = vm_run_array_args (bytecode_data_p,
@@ -1013,6 +787,14 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       else
       {
         local_env_p = ecma_create_decl_lex_env (scope_p);
+
+        if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_ARGUMENTS_NEEDED)
+        {
+          ecma_op_create_arguments_object (func_obj_p,
+                                           local_env_p,
+                                           arg_collection_p,
+                                           bytecode_data_p);
+        }
       }
 
       ecma_completion_value_t completion = vm_run (bytecode_data_p,
