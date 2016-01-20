@@ -18,6 +18,10 @@
 #include "js-parser-internal.h"
 #include "lit-literal.h"
 
+#ifdef PARSER_DUMP_BYTE_CODE
+static int parser_show_instrs = PARSER_FALSE;
+#endif /* PARSER_DUMP_BYTE_CODE */
+
 /**
  * Compute real literal indicies.
  *
@@ -1821,7 +1825,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
 #endif /* PARSER_DEBUG */
 
 #ifdef PARSER_DUMP_BYTE_CODE
-  context.is_show_opcodes = PARSER_TRUE;
+  context.is_show_opcodes = parser_show_instrs;
   context.total_byte_code_size = 0;
 
   if (context.is_show_opcodes)
@@ -2201,3 +2205,14 @@ parser_raise_error (parser_context_t *context_p, /**< context */
   /* Should never been reached. */
   PARSER_ASSERT (0);
 } /* parser_raise_error */
+
+/**
+ * Tell parser whether to dump bytecode
+ */
+void
+parser_set_show_instrs (int show_instrs) /**< flag indicating whether to dump bytecode */
+{
+#ifdef PARSER_DUMP_BYTE_CODE
+  parser_show_instrs = show_instrs;
+#endif /* PARSER_DUMP_BYTE_CODE */
+} /* parser_set_show_instrs */
