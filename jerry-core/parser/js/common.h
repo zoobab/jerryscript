@@ -101,11 +101,11 @@ typedef struct
 {
   union
   {
-    lit_cpointer_t value;    /**< literal value (not processed by the parser) */
-    const uint8_t *char_p;   /**< character value */
-    void *function_p;        /**< compiled function pointer */
-    re_bytecode_t *regexp_p; /**< compiled regexp pointer */
-    uint32_t source_data;    /**< encoded source literal */
+    lit_cpointer_t value;           /**< literal value (not processed by the parser) */
+    const uint8_t *char_p;          /**< character value */
+    void *function_p;               /**< compiled function pointer */
+    re_compiled_code_t *regexp_p;   /**< compiled regexp pointer */
+    uint32_t source_data;           /**< encoded source literal */
   } u;
 
 #ifdef PARSER_DUMP_BYTE_CODE
@@ -114,12 +114,12 @@ typedef struct
   union
 #endif
   {
-    uint16_t length;         /**< length of ident / string literal */
-    uint16_t index;          /**< real index during post processing */
+    uint16_t length;                /**< length of ident / string literal */
+    uint16_t index;                 /**< real index during post processing */
   } prop;
 
-  uint8_t type;              /**< type of the literal */
-  uint8_t status_flags;      /**< status flags */
+  uint8_t type;                     /**< type of the literal */
+  uint8_t status_flags;             /**< status flags */
 } lexer_literal_t;
 
 void util_set_function_literal (lexer_literal_t *, void *);

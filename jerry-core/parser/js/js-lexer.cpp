@@ -208,6 +208,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
         if (LEXER_NEWLINE_LS_PS_BYTE_23 (context_p->source_p))
         {
           /* Codepoint \u2028 and \u2029 */
+          context_p->source_p += 3;
           context_p->line++;
           context_p->column = 1;
           context_p->token.was_newline = 1;
@@ -1536,15 +1537,25 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->literal_count++;
 
   /* Compile the RegExp literal and store the RegExp bytecode pointer */
-  re_bytecode_t *bc_p = NULL;
+  re_compiled_code_t *bc_p = NULL;
+  ecma_completion_value_t completion_value;
+
   ecma_string_t *pattern_str_p = ecma_new_ecma_string_from_utf8 (regex_start_p, length);
   // FIXME: check return value of 're_compile_bytecode' and throw an error
-  re_compile_bytecode (&bc_p, pattern_str_p, current_flags);
+  completion_value = re_compile_bytecode (&bc_p, pattern_str_p, current_flags);
   ecma_deref_ecma_string (pattern_str_p);
 
-  literal_p->u.regexp_p = bc_p;
+  bool is_throw = ecma_is_completion_value_throw (completion_value);
+
+  ecma_free_completion_value (completion_value);
+
+  if (is_throw)
+  {
+    parser_raise_error (context_p, PARSER_ERR_INVALID_REGEXP);
+  }
 
   literal_p->type = LEXER_REGEXP_LITERAL;
+  literal_p->u.regexp_p = bc_p;
 
   context_p->token.type = LEXER_LITERAL;
   context_p->token.literal_is_reserved = PARSER_FALSE;

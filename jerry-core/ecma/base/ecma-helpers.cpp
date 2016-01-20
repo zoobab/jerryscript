@@ -26,6 +26,8 @@
 #include "ecma-helpers.h"
 #include "ecma-lcache.h"
 #include "jrt-bit-fields.h"
+#include "byte-code.h"
+#include "re-compiler.h"
 
 /**
  * Create an object with specified prototype object
@@ -796,7 +798,6 @@ ecma_free_internal_property (ecma_property_t *property_p) /**< the property */
     case ECMA_INTERNAL_PROPERTY_PROTOTYPE: /* the property's value is located in ecma_object_t */
     case ECMA_INTERNAL_PROPERTY_EXTENSIBLE: /* the property's value is located in ecma_object_t */
     case ECMA_INTERNAL_PROPERTY_CLASS: /* an enum */
-    case ECMA_INTERNAL_PROPERTY_CODE_BYTECODE: /* compressed pointer to a bytecode array */
     case ECMA_INTERNAL_PROPERTY_BUILT_IN_ID: /* an integer */
     case ECMA_INTERNAL_PROPERTY_BUILT_IN_ROUTINE_DESC: /* an integer */
     case ECMA_INTERNAL_PROPERTY_EXTENSION_ID: /* an integer */
@@ -828,16 +829,24 @@ ecma_free_internal_property (ecma_property_t *property_p) /**< the property */
                                          * but number of the real internal property types */
     {
       JERRY_UNREACHABLE ();
+      break;
     }
-    case ECMA_INTERNAL_PROPERTY_REGEXP_BYTECODE:
-    {
-      uint32_t *bytecode_p = ECMA_GET_POINTER (uint32_t, property_value);
 
-      if (bytecode_p)
+    case ECMA_INTERNAL_PROPERTY_CODE_BYTECODE: /* compressed pointer to a bytecode array */
+    {
+      ecma_bytecode_deref (ECMA_GET_NON_NULL_POINTER (void, property_value));
+      break;
+    }
+
+    case ECMA_INTERNAL_PROPERTY_REGEXP_BYTECODE: /* compressed pointer to a regexp bytecode array */
+    {
+      void *bytecode_p = ECMA_GET_POINTER (void, property_value);
+
+      if (bytecode_p != NULL)
       {
-        ecma_free_value ((ecma_value_t) *(bytecode_p + 1), true);
-        mem_heap_free_block (bytecode_p);
+        ecma_bytecode_deref (bytecode_p);
       }
+      break;
     }
   }
 
@@ -1316,6 +1325,91 @@ ecma_get_property_descriptor_from_property (ecma_property_t *prop_p) /**< proper
 
   return prop_desc;
 } /* ecma_get_property_descriptor_from_property */
+
+/**
+ * Increase reference counter of Compact
+ * Byte Code or regexp byte code.
+ */
+void
+ecma_bytecode_ref (void *bytecode_p) /**< byte code pointer */
+{
+  uint16_t *ref_counter_p = bytecode_p;
+
+  /* Abort program if maximum reference number is reached.
+   * Note: This is not tested for objects. */
+  if ((*ref_counter_p >> ECMA_BYTECODE_REF_SHIFT) >= 0x3ff)
+  {
+    jerry_fatal (ERR_UNIMPLEMENTED_CASE);
+  }
+
+   *ref_counter_p += 1 << ECMA_BYTECODE_REF_SHIFT;
+} /* ecma_bytecode_ref */
+
+/**
+ * Decrease reference counter of Compact
+ * Byte Code or regexp byte code.
+ */
+void
+ecma_bytecode_deref (void *bytecode_p) /**< byte code pointer */
+{
+  uint16_t *ref_counter_p = bytecode_p;
+
+  JERRY_ASSERT ((*ref_counter_p >> ECMA_BYTECODE_REF_SHIFT) > 0);
+
+  *ref_counter_p -= 1 << ECMA_BYTECODE_REF_SHIFT;
+
+  if (*ref_counter_p >= (1 << ECMA_BYTECODE_REF_SHIFT))
+  {
+    return;
+  }
+
+  if ((*ref_counter_p) & CBC_CODE_FLAGS_FUNCTION)
+  {
+    cbc_compiled_code_t *cbc_bytecode_p = (cbc_compiled_code_t *) bytecode_p;
+    lit_cpointer_t *literal_start_p = NULL;
+    uint32_t literal_end;
+    uint32_t const_literal_end;
+
+    if (cbc_bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+    {
+      uint8_t *byte_p = (uint8_t *) bytecode_p;
+
+      literal_start_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint16_arguments_t));
+      cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
+      literal_end = args_p->literal_end;
+      const_literal_end = args_p->const_literal_end;
+    }
+    else
+    {
+      uint8_t *byte_p = (uint8_t *) bytecode_p;
+
+      literal_start_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint8_arguments_t));
+      cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
+      literal_end = args_p->literal_end;
+      const_literal_end = args_p->const_literal_end;
+    }
+
+    for (uint32_t i = const_literal_end; i < literal_end; i++)
+    {
+      mem_cpointer_t bytecode_cpointer = literal_start_p[i].value.base_cp;
+      void *bytecode_literal_p = ECMA_GET_NON_NULL_POINTER (void, bytecode_cpointer);
+
+      /* Self references are ignored. */
+      if (bytecode_literal_p != bytecode_p)
+      {
+        ecma_bytecode_deref (bytecode_literal_p);
+      }
+    }
+  }
+  else
+  {
+    re_compiled_code_t *re_bytecode_p = (re_compiled_code_t *) bytecode_p;
+
+    ecma_deref_ecma_string (ECMA_GET_NON_NULL_POINTER (ecma_string_t, re_bytecode_p->pattern_cp));
+  }
+
+  mem_heap_free_block (bytecode_p);
+} /* ecma_bytecode_deref */
 
 /**
  * @}

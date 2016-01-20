@@ -142,56 +142,6 @@ vm_op_set_value (ecma_value_t object, /**< base object */
 } /* vm_op_set_value */
 
 /**
- * Free compact bytecode (recursively).
- */
-void
-vm_cbc_free (const cbc_compiled_code_t *bytecode_p) /**< byte code */
-{
-  lit_cpointer_t *literal_start_p = NULL;
-  uint16_t literal_end;
-  uint16_t const_literal_end;
-
-  if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-  {
-    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint16_arguments_t));
-    literal_start_p = (lit_cpointer_t *) byte_p;
-    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) bytecode_p;
-    literal_end = args_p->literal_end;
-    const_literal_end = args_p->const_literal_end;
-  }
-  else
-  {
-    uint8_t *byte_p = ((uint8_t *) bytecode_p + sizeof (cbc_uint8_arguments_t));
-    literal_start_p = (lit_cpointer_t *) byte_p;
-    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) bytecode_p;
-    literal_end = args_p->literal_end;
-    const_literal_end = args_p->const_literal_end;
-  }
-
-  for (int i = const_literal_end; i < literal_end; i++)
-  {
-    cbc_compiled_code_t *func_bc_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t,
-                                                                literal_start_p[i].value.base_cp);
-
-    bool is_function = ((func_bc_p->status_flags & CBC_CODE_FLAGS_FUNCTION) != 0);
-
-    if (is_function)
-    {
-      if (func_bc_p != bytecode_p)
-      {
-        vm_cbc_free (func_bc_p);
-      }
-    }
-    else
-    {
-      // FIXME: free RegExp bytecode properly (see: 'ecma_free_internal_property')
-    }
-  }
-
-  mem_heap_free_block (bytecode_p);
-} /* vm_cbc_free */
-
-/**
  * Initialize interpreter.
  */
 void
@@ -309,7 +259,7 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
 
   ecma_deref_object (lex_env_p);
   ecma_free_value (this_binding, true);
-  vm_cbc_free (bytecode_data_p);
+  ecma_bytecode_deref (bytecode_data_p);
 
   return completion;
 } /* vm_run_eval */
@@ -340,7 +290,7 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
   {
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
     ecma_completion_value_t ret_value;
-    ret_value = ecma_op_create_regexp_object_from_bytecode ((re_bytecode_t *) bytecode_p);
+    ret_value = ecma_op_create_regexp_object_from_bytecode ((re_compiled_code_t *) bytecode_p);
 
     if (ecma_is_completion_value_throw (ret_value))
     {
@@ -446,7 +396,7 @@ vm_finalize (void)
 {
   if (__program)
   {
-    vm_cbc_free (__program);
+    ecma_bytecode_deref (__program);
   }
 
   __program = NULL;
@@ -658,26 +608,16 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
       opcode = *byte_code_p++;
 
-#ifndef JERRY_NDEBUG
-      char *opcode_name = NULL;
-#endif
-
       if (opcode == CBC_EXT_OPCODE)
       {
         opcode = *byte_code_p++;
         opcode_flags = cbc_ext_flags[opcode];
         opcode_data = vm_ext_decode_table[opcode];
-#ifndef JERRY_NDEBUG
-        opcode_name = cbc_ext_names[opcode];
-#endif
       }
       else
       {
         opcode_flags = cbc_flags[opcode];
         opcode_data = vm_decode_table[opcode];
-#ifndef JERRY_NDEBUG
-        opcode_name = cbc_names[opcode];
-#endif
       }
 
       if (opcode_flags & CBC_HAS_BRANCH_ARG)
@@ -798,9 +738,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       {
         case VM_OC_NONE:
         {
-#ifndef JERRY_NDEBUG
-          fprintf (stderr, "Unimplemented opcode: %s\n", opcode_name);
-#endif /* JERRY_NDEBUG */
           JERRY_UNREACHABLE ();
           break;
         }
@@ -2058,8 +1995,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
     }
 error:
 
-    ecma_free_value (block_result, true);
-
     if (free_flags & VM_FREE_LEFT_VALUE)
     {
       ecma_free_value (left_value, true);
@@ -2097,11 +2032,34 @@ error:
     if (frame_ctx_p->context_depth == 0)
     {
       /* In most cases there is no context. */
+
+      ecma_free_value (block_result, true);
       return last_completion_value;
     }
 
-    if (ecma_is_completion_value_throw (last_completion_value))
+    if (ecma_is_completion_value_return (last_completion_value))
     {
+      JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
+
+      stack_top_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
+
+      if (vm_stack_find_finally (frame_ctx_p,
+                                 &stack_top_p,
+                                 VM_CONTEXT_FINALLY_RETURN,
+                                 0))
+      {
+        JERRY_ASSERT (VM_GET_CONTEXT_TYPE (stack_top_p[-1]) == VM_CONTEXT_FINALLY_RETURN);
+        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
+
+        byte_code_p = frame_ctx_p->byte_code_p;
+        stack_top_p[-2] = ecma_get_completion_value_value (last_completion_value);
+        continue;
+      }
+    }
+    else
+    {
+      JERRY_ASSERT (ecma_is_completion_value_throw (last_completion_value));
+
       if (vm_stack_find_finally (frame_ctx_p,
                                  &stack_top_p,
                                  VM_CONTEXT_FINALLY_THROW,
@@ -2147,27 +2105,8 @@ error:
         continue;
       }
     }
-    else
-    {
-      JERRY_ASSERT (ecma_is_completion_value_return (last_completion_value));
-      JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
 
-      stack_top_p = frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth;
-
-      if (vm_stack_find_finally (frame_ctx_p,
-                                 &stack_top_p,
-                                 VM_CONTEXT_FINALLY_RETURN,
-                                 0))
-      {
-        JERRY_ASSERT (VM_GET_CONTEXT_TYPE (stack_top_p[-1]) == VM_CONTEXT_FINALLY_RETURN);
-        JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
-
-        byte_code_p = frame_ctx_p->byte_code_p;
-        stack_top_p[-2] = ecma_get_completion_value_value (last_completion_value);
-        continue;
-      }
-    }
-
+    ecma_free_value (block_result, true);
     return last_completion_value;
   }
 } /* vm_loop */

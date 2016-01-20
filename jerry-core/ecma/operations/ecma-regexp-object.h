@@ -50,8 +50,8 @@ typedef struct
   uint16_t flags; /**< RegExp flags */
 } re_matcher_ctx_t;
 
-extern ecma_completion_value_t
-ecma_op_create_regexp_object_from_bytecode (re_bytecode_t *);
+extern ecma_value_t
+ecma_op_create_regexp_object_from_bytecode (re_compiled_code_t *);
 
 extern ecma_completion_value_t
 ecma_op_create_regexp_object (ecma_string_t *, ecma_string_t *);

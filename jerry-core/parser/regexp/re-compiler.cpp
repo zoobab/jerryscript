@@ -47,7 +47,7 @@ re_dump_bytecode (re_bytecode_ctx_t *bc_ctx);
  *
  * @return current position in RegExp bytecode
  */
-static re_bytecode_t*
+static uint8_t *
 re_realloc_regexp_bytecode_block (re_bytecode_ctx_t *bc_ctx_p) /**< RegExp bytecode context */
 {
   JERRY_ASSERT (bc_ctx_p->block_end_p - bc_ctx_p->block_start_p >= 0);
@@ -62,8 +62,8 @@ re_realloc_regexp_bytecode_block (re_bytecode_ctx_t *bc_ctx_p) /**< RegExp bytec
   JERRY_ASSERT (bc_ctx_p->current_p - bc_ctx_p->block_start_p >= 0);
   size_t current_ptr_offset = static_cast<size_t> (bc_ctx_p->current_p - bc_ctx_p->block_start_p);
 
-  re_bytecode_t *new_block_start_p = (re_bytecode_t *) mem_heap_alloc_block (new_block_size,
-                                                                             MEM_HEAP_ALLOC_SHORT_TERM);
+  uint8_t *new_block_start_p = (uint8_t *) mem_heap_alloc_block (new_block_size,
+                                                                 MEM_HEAP_ALLOC_SHORT_TERM);
   if (bc_ctx_p->current_p)
   {
     memcpy (new_block_start_p, bc_ctx_p->block_start_p, static_cast<size_t> (current_ptr_offset));
@@ -81,12 +81,12 @@ re_realloc_regexp_bytecode_block (re_bytecode_ctx_t *bc_ctx_p) /**< RegExp bytec
  */
 static void
 re_bytecode_list_append (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
-                         re_bytecode_t *bytecode_p, /**< input bytecode */
+                         uint8_t *bytecode_p, /**< input bytecode */
                          size_t length) /**< length of input */
 {
   JERRY_ASSERT (length <= REGEXP_BYTECODE_BLOCK_SIZE);
 
-  re_bytecode_t *current_p = bc_ctx_p->current_p;
+  uint8_t *current_p = bc_ctx_p->current_p;
   if (current_p + length > bc_ctx_p->block_end_p)
   {
     current_p = re_realloc_regexp_bytecode_block (bc_ctx_p);
@@ -102,24 +102,24 @@ re_bytecode_list_append (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode conte
 static void
 re_bytecode_list_insert (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
                          size_t offset, /**< distance from the start of the container */
-                         re_bytecode_t *bytecode_p, /**< input bytecode */
+                         uint8_t *bytecode_p, /**< input bytecode */
                          size_t length) /**< length of input */
 {
   JERRY_ASSERT (length <= REGEXP_BYTECODE_BLOCK_SIZE);
 
-  re_bytecode_t *current_p = bc_ctx_p->current_p;
+  uint8_t *current_p = bc_ctx_p->current_p;
   if (current_p + length > bc_ctx_p->block_end_p)
   {
     re_realloc_regexp_bytecode_block (bc_ctx_p);
   }
 
-  re_bytecode_t *src_p = bc_ctx_p->block_start_p + offset;
+  uint8_t *src_p = bc_ctx_p->block_start_p + offset;
   if ((re_get_bytecode_length (bc_ctx_p) - offset) > 0)
   {
-    re_bytecode_t *dest_p = src_p + length;
-    re_bytecode_t *tmp_block_start_p;
-    tmp_block_start_p = (re_bytecode_t *) mem_heap_alloc_block ((re_get_bytecode_length (bc_ctx_p) - offset),
-                                                                 MEM_HEAP_ALLOC_SHORT_TERM);
+    uint8_t *dest_p = src_p + length;
+    uint8_t *tmp_block_start_p;
+    tmp_block_start_p = (uint8_t *) mem_heap_alloc_block ((re_get_bytecode_length (bc_ctx_p) - offset),
+                                                          MEM_HEAP_ALLOC_SHORT_TERM);
     memcpy (tmp_block_start_p, src_p, (size_t) (re_get_bytecode_length (bc_ctx_p) - offset));
     memcpy (dest_p, tmp_block_start_p, (size_t) (re_get_bytecode_length (bc_ctx_p) - offset));
     mem_heap_free_block (tmp_block_start_p);
@@ -136,7 +136,7 @@ static void
 re_append_opcode (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
                   re_opcode_t opcode) /**< input opcode */
 {
-  re_bytecode_list_append (bc_ctx_p, (re_bytecode_t*) &opcode, sizeof (re_bytecode_t));
+  re_bytecode_list_append (bc_ctx_p, (uint8_t*) &opcode, sizeof (uint8_t));
 } /* re_append_opcode */
 
 /**
@@ -146,7 +146,7 @@ static void
 re_append_u32 (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
                uint32_t value) /**< input value */
 {
-  re_bytecode_list_append (bc_ctx_p, (re_bytecode_t*) &value, sizeof (uint32_t));
+  re_bytecode_list_append (bc_ctx_p, (uint8_t*) &value, sizeof (uint32_t));
 } /* re_append_u32 */
 
 /**
@@ -168,7 +168,7 @@ re_insert_opcode (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
                   uint32_t offset, /**< distance from the start of the container */
                   re_opcode_t opcode) /**< input opcode */
 {
-  re_bytecode_list_insert (bc_ctx_p, offset, (re_bytecode_t*) &opcode, sizeof (re_bytecode_t));
+  re_bytecode_list_insert (bc_ctx_p, offset, (uint8_t*) &opcode, sizeof (uint8_t));
 } /* re_insert_opcode */
 
 /**
@@ -179,17 +179,17 @@ re_insert_u32 (re_bytecode_ctx_t *bc_ctx_p, /**< RegExp bytecode context */
                uint32_t offset, /**< distance from the start of the container */
                uint32_t value) /**< input value */
 {
-  re_bytecode_list_insert (bc_ctx_p, offset, (re_bytecode_t*) &value, sizeof (uint32_t));
+  re_bytecode_list_insert (bc_ctx_p, offset, (uint8_t*) &value, sizeof (uint32_t));
 } /* re_insert_u32 */
 
 /**
  * Get a RegExp opcode
  */
 re_opcode_t
-re_get_opcode (re_bytecode_t **bc_p) /**< pointer to bytecode start */
+re_get_opcode (uint8_t **bc_p) /**< pointer to bytecode start */
 {
-  re_bytecode_t bytecode = **bc_p;
-  (*bc_p) += sizeof (re_bytecode_t);
+  uint8_t bytecode = **bc_p;
+  (*bc_p) += sizeof (uint8_t);
   return (re_opcode_t) bytecode;
 } /* get_opcode */
 
@@ -197,7 +197,7 @@ re_get_opcode (re_bytecode_t **bc_p) /**< pointer to bytecode start */
  * Get a parameter of a RegExp opcode
  */
 uint32_t
-re_get_value (re_bytecode_t **bc_p) /**< pointer to bytecode start */
+re_get_value (uint8_t **bc_p) /**< pointer to bytecode start */
 {
   uint32_t value = *((uint32_t*) *bc_p);
   (*bc_p) += sizeof (uint32_t);
@@ -614,7 +614,7 @@ re_parse_alternative (re_compiler_ctx_t *re_ctx_p, /**< RegExp compiler context 
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_completion_value_t
-re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecode */
+re_compile_bytecode (re_compiled_code_t **out_bytecode_p, /**< out:pointer to bytecode */
                      ecma_string_t *pattern_str_p, /**< pattern */
                      uint16_t flags) /**< flags */
 {
@@ -661,10 +661,18 @@ re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecod
     re_append_opcode (&bc_ctx, RE_OP_EOF);
 
     /* 3. Insert extra informations for bytecode header */
-    re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.num_of_non_captures);
-    re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.num_of_captures * 2);
-    re_insert_u32 (&bc_ctx, 0, ecma_make_string_value (ecma_copy_or_ref_ecma_string (pattern_str_p)));
-    re_insert_u32 (&bc_ctx, 0, (uint32_t) re_ctx.flags);
+    re_compiled_code_t re_compiled_code;
+
+    re_compiled_code.flags = re_ctx.flags | (1 << ECMA_BYTECODE_REF_SHIFT);
+    ECMA_SET_NON_NULL_POINTER (re_compiled_code.pattern_cp,
+                               ecma_copy_or_ref_ecma_string (pattern_str_p));
+    re_compiled_code.num_of_captures = re_ctx.num_of_captures * 2;
+    re_compiled_code.num_of_non_captures = re_ctx.num_of_non_captures;
+
+    re_bytecode_list_insert (&bc_ctx,
+                             0,
+                             (uint8_t *) &re_compiled_code,
+                             sizeof (re_compiled_code_t));
   }
   ECMA_FINALIZE (empty);
 
@@ -680,7 +688,7 @@ re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecod
   {
     /* The RegExp bytecode contains at least a RE_OP_SAVE_AT_START opdoce, so it cannot be NULL. */
     JERRY_ASSERT (bc_ctx.block_start_p != NULL);
-    *out_bytecode_p = bc_ctx.block_start_p;
+    *out_bytecode_p = (re_compiled_code_t *) bc_ctx.block_start_p;
   }
 
 #ifdef JERRY_ENABLE_LOG
@@ -697,10 +705,12 @@ re_compile_bytecode (re_bytecode_t **out_bytecode_p, /**< out:pointer to bytecod
 void
 re_dump_bytecode (re_bytecode_ctx_t *bc_ctx_p)
 {
-  re_bytecode_t *bytecode_p = bc_ctx_p->block_start_p;
-  JERRY_DLOG ("%d ", re_get_value (&bytecode_p));
-  JERRY_DLOG ("%d ", re_get_value (&bytecode_p));
-  JERRY_DLOG ("%d | ", re_get_value (&bytecode_p));
+  re_compiled_code_t *compiled_code_p = bc_ctx_p->block_start_p;
+  JERRY_DLOG ("%d ", compiled_code_p->flags);
+  JERRY_DLOG ("%d ", compiled_code_p->num_of_captures);
+  JERRY_DLOG ("%d | ", compiled_code_p->num_of_non_captures);
+
+  uint8_t *bytecode_p = (uint8_t *) (compiled_code_p + 1);
 
   re_opcode_t op;
   while ((op = re_get_opcode (&bytecode_p)))

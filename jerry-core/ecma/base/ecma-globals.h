@@ -827,6 +827,14 @@ typedef struct ecma_string_t
 typedef uintptr_t ecma_external_pointer_t;
 
 /**
+ * Shift value for byte code reference counting.
+ * The last 10 bit of the first uint16_t value
+ * of compact byte code or regexp byte code
+ * is reserved for reference counting.
+ */
+#define ECMA_BYTECODE_REF_SHIFT 6
+
+/**
  * @}
  */
 

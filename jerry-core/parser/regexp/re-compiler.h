@@ -62,23 +62,29 @@ typedef enum
 } re_opcode_t;
 
 /**
+ * Compiled byte code data.
+ */
+typedef struct
+{
+  uint16_t flags;                    /**< RegExp flags */
+  mem_cpointer_t pattern_cp;         /**< original RegExp pattern */
+  uint32_t num_of_captures;          /**< number of capturing brackets */
+  uint32_t num_of_non_captures;      /**< number of non capturing brackets */
+} re_compiled_code_t;
+
+/**
  * Check if a RegExp opcode is a capture group or not
  */
 #define RE_IS_CAPTURE_GROUP(x) (((x) < RE_OP_NON_CAPTURE_GROUP_START) ? 1 : 0)
-
-/**
- * Type of bytecode elements
- */
-typedef uint8_t re_bytecode_t;
 
 /**
  * Context of RegExp bytecode container
  */
 typedef struct
 {
-  re_bytecode_t *block_start_p;      /**< start of bytecode block */
-  re_bytecode_t *block_end_p;        /**< end of bytecode block */
-  re_bytecode_t *current_p;          /**< current position in bytecode */
+  uint8_t *block_start_p;      /**< start of bytecode block */
+  uint8_t *block_end_p;        /**< end of bytecode block */
+  uint8_t *current_p;          /**< current position in bytecode */
 } re_bytecode_ctx_t;
 
 /**
@@ -96,13 +102,13 @@ typedef struct
 } re_compiler_ctx_t;
 
 ecma_completion_value_t
-re_compile_bytecode (re_bytecode_t **, ecma_string_t *, uint16_t);
+re_compile_bytecode (re_compiled_code_t **, ecma_string_t *, uint16_t);
 
 re_opcode_t
-re_get_opcode (re_bytecode_t **);
+re_get_opcode (uint8_t **);
 
 uint32_t
-re_get_value (re_bytecode_t **);
+re_get_value (uint8_t **);
 
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
 #endif /* RE_COMPILER_H */
