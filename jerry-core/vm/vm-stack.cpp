@@ -90,7 +90,7 @@ vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
     }
     case VM_CONTEXT_FOR_IN:
     {
-      mem_cpointer_t current = vm_stack_top_p[-2];
+      mem_cpointer_t current = (uint16_t) vm_stack_top_p[-2];
 
       while (current != MEM_CP_NULL)
       {
@@ -254,7 +254,7 @@ vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
       branch_offset += (uint32_t) (byte_code_p - frame_ctx_p->byte_code_start_p);
 
-      vm_stack_top_p[-1] = VM_CREATE_CONTEXT (finally_type, branch_offset);
+      vm_stack_top_p[-1] = VM_CREATE_CONTEXT ((uint32_t) finally_type, branch_offset);
 
       byte_code_p += 2 + branch_offset_length;
       frame_ctx_p->byte_code_p = byte_code_p;

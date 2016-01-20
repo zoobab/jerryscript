@@ -52,8 +52,8 @@ typedef struct vm_stack_frame_t
 extern vm_stack_frame_t *vm_stack_get_top_frame (void);
 extern ecma_value_t vm_stack_frame_get_reg_value (vm_stack_frame_t *, uint32_t);
 
-#define VM_CREATE_CONTEXT(type, end_offset) ((type) | (end_offset) << 4)
-#define VM_GET_CONTEXT_TYPE(value) ((value) & 0xf)
+#define VM_CREATE_CONTEXT(type, end_offset) ((ecma_value_t) ((type) | (end_offset) << 4))
+#define VM_GET_CONTEXT_TYPE(value) ((vm_stack_context_type_t) ((value) & 0xf))
 #define VM_GET_CONTEXT_END(value) ((value) >> 4)
 
 typedef enum {

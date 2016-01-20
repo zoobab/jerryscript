@@ -97,7 +97,6 @@ ecma_op_eval_chars_buffer (const jerry_api_char_t *code_p, /**< code characters 
 
   bool is_strict_call = (is_direct && is_called_from_strict_mode_code);
 
-  bool code_contains_functions;
   parse_status = parser_parse_eval (code_p,
                                     code_buffer_size,
                                     is_strict_call,

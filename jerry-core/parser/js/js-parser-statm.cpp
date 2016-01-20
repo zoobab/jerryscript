@@ -169,27 +169,27 @@ parser_statement_length (uint8_t type)
     /* PARSER_STATEMENT_BLOCK */
     1,
     /* PARSER_STATEMENT_LABEL */
-    sizeof (parser_label_statement_t) + 1,
+    (uint8_t) (sizeof (parser_label_statement_t) + 1),
     /* PARSER_STATEMENT_IF */
-    sizeof (parser_if_else_statement_t) + 1,
+    (uint8_t) (sizeof (parser_if_else_statement_t) + 1),
     /* PARSER_STATEMENT_ELSE */
-    sizeof (parser_if_else_statement_t) + 1,
+    (uint8_t) (sizeof (parser_if_else_statement_t) + 1),
     /* PARSER_STATEMENT_SWITCH */
-    sizeof (parser_switch_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_switch_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_SWITCH_NO_DEFAULT */
-    sizeof (parser_switch_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_switch_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_DO_WHILE */
-    sizeof (parser_do_while_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_do_while_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_WHILE */
-    sizeof (parser_while_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_while_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_FOR */
-    sizeof (parser_for_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_for_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_FOR_IN */
-    sizeof (parser_for_in_statement_t) + sizeof (parser_loop_statement_t) + 1,
+    (uint8_t) (sizeof (parser_for_in_statement_t) + sizeof (parser_loop_statement_t) + 1),
     /* PARSER_STATEMENT_WITH */
-    sizeof (parser_with_statement_t) + 1,
+    (uint8_t) (sizeof (parser_with_statement_t) + 1),
     /* PARSER_STATEMENT_TRY */
-    sizeof (parser_try_statement_t) + 1,
+    (uint8_t) (sizeof (parser_try_statement_t) + 1),
   };
 
   PARSER_ASSERT (type >= PARSER_STATEMENT_BLOCK && type <= PARSER_STATEMENT_TRY);
@@ -365,7 +365,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
       /* Overwrite the previous initialization. */
       cbc_compiled_code_t *compiled_code_p;
 
-      literal_p = parser_list_get (&context_p->literal_pool, (size_t) (context_p->lit_object.index + 1));
+      literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, (size_t) (context_p->lit_object.index + 1));
 
       PARSER_ASSERT (literal_p->type == LEXER_FUNCTION_LITERAL
                      && literal_p->status_flags == 0);
@@ -1150,7 +1150,7 @@ parser_parse_try_statement_end (parser_context_t *context_p) /**< context */
 
   if (try_statement.type == parser_finally_block)
   {
-    parser_stack_pop (context_p, NULL, sizeof (parser_try_statement_t) + 1);
+    parser_stack_pop (context_p, NULL, (uint32_t) (sizeof (parser_try_statement_t) + 1));
     parser_stack_iterator_init (context_p, &context_p->last_statement);
     return;
   }

@@ -104,7 +104,7 @@ ecma_op_create_arguments_object_common (ecma_object_t *obj_p, /**< arguments obj
       ecma_object_t *map_p = ecma_op_create_object_object_noarg ();
 
       // 11.c
-      for (int32_t indx = 0;
+      for (uint32_t indx = 0;
            indx < formal_params_number;
            indx++)
       {

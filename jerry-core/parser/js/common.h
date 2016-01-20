@@ -43,7 +43,7 @@
 /* Malloc functions. */
 
 #define PARSER_MALLOC(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_LONG_TERM)
-#define PARSER_FREE(ptr) mem_heap_free_block (ptr)
+#define PARSER_FREE(ptr) mem_heap_free_block ((void *) ptr)
 
 #define PARSER_MALLOC_LOCAL(size) mem_heap_alloc_block (size, MEM_HEAP_ALLOC_SHORT_TERM)
 #define PARSER_FREE_LOCAL(ptr) mem_heap_free_block (ptr)

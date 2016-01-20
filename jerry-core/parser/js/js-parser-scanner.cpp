@@ -506,8 +506,8 @@ parser_scan_until (parser_context_t *context_p, /**< context */
 
   while (PARSER_TRUE)
   {
-    lexer_token_type_t type = context_p->token.type;
-    scan_stack_modes_t stack_top = context_p->stack_top_uint8;
+    lexer_token_type_t type = (lexer_token_type_t) context_p->token.type;
+    scan_stack_modes_t stack_top = (scan_stack_modes_t) context_p->stack_top_uint8;
 
     if (type == LEXER_EOS)
     {

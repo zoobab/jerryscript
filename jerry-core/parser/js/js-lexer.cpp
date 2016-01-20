@@ -1048,8 +1048,8 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
 
   if (has_escape)
   {
-    literal_p->u.char_p = PARSER_MALLOC (length);
-    memcpy (literal_p->u.char_p, char_p, length);
+    literal_p->u.char_p = (uint8_t *) PARSER_MALLOC (length);
+    memcpy ((uint8_t *) literal_p->u.char_p, char_p, length);
   }
   else
   {
@@ -1496,7 +1496,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
       parser_raise_error (context_p, PARSER_ERR_DUPLICATED_REGEXP_FLAG);
     }
 
-    current_flags |= flag;
+    current_flags |= (uint16_t) flag;
     source_p++;
     column++;
   }

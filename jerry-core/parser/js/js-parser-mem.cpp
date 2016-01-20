@@ -140,8 +140,8 @@ parser_cbc_stream_alloc_page (parser_context_t *context_p, /**< context */
 {
   parser_mem_page_t *page_p = data_p->first_p;
 
-  page_p = parser_malloc (context_p,
-                          sizeof (parser_mem_page_t *) + PARSER_CBC_STREAM_PAGE_SIZE);
+  page_p = (parser_mem_page_t *) parser_malloc (context_p,
+                                                sizeof (parser_mem_page_t *) + PARSER_CBC_STREAM_PAGE_SIZE);
 
   page_p->next_p = NULL;
   data_p->last_position = 0;
@@ -209,8 +209,8 @@ parser_list_append (parser_context_t *context_p, /**< context */
 
   if (list_p->data.last_position + list_p->item_size > list_p->page_size)
   {
-    page_p = parser_malloc (context_p,
-                            sizeof (parser_mem_page_t *) + list_p->page_size);
+    page_p = (parser_mem_page_t *) parser_malloc (context_p,
+                                                  sizeof (parser_mem_page_t *) + list_p->page_size);
 
     page_p->next_p = NULL;
     list_p->data.last_position = 0;
@@ -356,8 +356,8 @@ parser_stack_push_uint8 (parser_context_t *context_p, /**< context */
     }
     else
     {
-      page_p = parser_malloc (context_p,
-                              sizeof (parser_mem_page_t *) + PARSER_STACK_PAGE_SIZE);
+      page_p = (parser_mem_page_t *) parser_malloc (context_p,
+                                                    sizeof (parser_mem_page_t *) + PARSER_STACK_PAGE_SIZE);
     }
 
     page_p->next_p = context_p->stack.first_p;
@@ -504,8 +504,8 @@ parser_stack_push (parser_context_t *context_p, /**< context */
   }
   else
   {
-    page_p = parser_malloc (context_p,
-                            sizeof (parser_mem_page_t *) + PARSER_STACK_PAGE_SIZE);
+    page_p = (parser_mem_page_t *) parser_malloc (context_p,
+                                                  sizeof (parser_mem_page_t *) + PARSER_STACK_PAGE_SIZE);
   }
 
   page_p->next_p = context_p->stack.first_p;

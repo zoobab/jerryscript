@@ -595,7 +595,6 @@ ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function objec
     // 8.
     ecma_value_t this_binding;
     bool is_strict;
-    bool do_instantiate_args_obj = false;
     bool is_no_lex_env;
 
     const cbc_compiled_code_t *bytecode_data_p;
@@ -725,7 +724,6 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       // 8.
       ecma_value_t this_binding;
       bool is_strict;
-      bool do_instantiate_args_obj = false;
       bool is_no_lex_env;
 
       const cbc_compiled_code_t *bytecode_data_p;

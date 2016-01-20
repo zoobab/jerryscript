@@ -475,18 +475,6 @@ ecma_get_completion_value_value_field (ecma_completion_value_t completion_value)
 } /* ecma_get_completion_value_value_field */
 
 /**
- * Get target of break / continue completion value
- *
- * @return instruction counter
- */
-static vm_instr_counter_t
-ecma_get_completion_value_target (ecma_completion_value_t completion_value) /**< completion value */
-{
-  // FIXME
-  return NULL;
-} /* ecma_get_completion_value_target */
-
-/**
  * Set type field of completion value
  *
  * @return completion value with updated field
@@ -518,19 +506,6 @@ ecma_set_completion_value_value_field (ecma_completion_value_t completion_value,
                                                             ECMA_COMPLETION_VALUE_VALUE_WIDTH);
 } /* ecma_set_completion_value_value_field */
 
-/**
- * Set target of break / continue completion value
- *
- * @return completion value with updated field
- */
-static ecma_completion_value_t __attr_const___
-ecma_set_completion_value_target (ecma_completion_value_t completion_value, /**< completion value
-                                                                             * to set field in */
-                                  vm_instr_counter_t target) /**< break / continue target */
-{
-  // FIXME
-  return ecma_make_empty_completion_value ();
-} /* ecma_set_completion_value_target */
 
 /**
  * Normal, throw, return, exit and meta completion values constructor
@@ -650,24 +625,6 @@ ecma_make_meta_completion_value (void)
 } /* ecma_make_meta_completion_value */
 
 /**
- * Break / continue completion values constructor
- *
- * @return completion value
- */
-ecma_completion_value_t __attr_const___
-ecma_make_jump_completion_value (vm_instr_counter_t target) /**< target break / continue */
-{
-  ecma_completion_value_t completion_value = 0;
-
-  completion_value = ecma_set_completion_value_type_field (completion_value,
-                                                           ECMA_COMPLETION_TYPE_JUMP);
-  completion_value = ecma_set_completion_value_target (completion_value,
-                                                       target);
-
-  return completion_value;
-} /* ecma_make_jump_completion_value */
-
-/**
  * Get ecma-value from specified completion value
  *
  * @return ecma-value
@@ -718,20 +675,6 @@ ecma_get_object_from_completion_value (ecma_completion_value_t completion_value)
 {
   return ecma_get_object_from_value (ecma_get_completion_value_value (completion_value));
 } /* ecma_get_object_from_completion_value */
-
-/**
- * Get break / continue target from completion value
- *
- * @return instruction counter
- */
-vm_instr_counter_t
-ecma_get_jump_target_from_completion_value (ecma_completion_value_t completion_value) /**< completion
-                                                                                       *   value */
-{
-  JERRY_ASSERT (ecma_get_completion_value_type_field (completion_value) == ECMA_COMPLETION_TYPE_JUMP);
-
-  return ecma_get_completion_value_target (completion_value);
-} /* ecma_get_jump_target_from_completion_value */
 
 /**
  * Copy ecma-completion value.

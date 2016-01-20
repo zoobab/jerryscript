@@ -1135,7 +1135,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
     }
     else
     {
-      ext_opcode = byte_code_p[1];
+      ext_opcode = (cbc_ext_opcode_t) byte_code_p[1];
       flags = cbc_ext_flags[ext_opcode];
       printf (" %3d : %s", (int) cbc_offset, cbc_ext_names[ext_opcode]);
       byte_code_p += 2;
@@ -1289,7 +1289,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     size_t branch_offset_length;
 
     opcode_p = page_p->bytes + offset;
-    last_opcode = *opcode_p;
+    last_opcode = (cbc_opcode_t) (*opcode_p);
     PARSER_NEXT_BYTE (page_p, offset);
     branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (last_opcode);
     flags = cbc_flags[last_opcode];
@@ -1299,7 +1299,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     {
       cbc_ext_opcode_t ext_opcode;
 
-      ext_opcode = page_p->bytes[offset];
+      ext_opcode = (cbc_ext_opcode_t) page_p->bytes[offset];
       branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (ext_opcode);
       flags = cbc_ext_flags[ext_opcode];
       PARSER_NEXT_BYTE (page_p, offset);
@@ -1316,14 +1316,14 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       length++;
 
       literal_index |= ((size_t) page_p->bytes[offset]) << 8;
-      literal_p = parser_list_get (&context_p->literal_pool, literal_index);
+      literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_index);
 
       if (literal_p->type == LEXER_UNUSED_LITERAL)
       {
         /* In a few cases uninitialized literals may have been converted to initialized
          * literals later. Byte code references to the old (uninitialized) literals
          * must be redirected to the new instance of the literal. */
-        literal_p = parser_list_get (&context_p->literal_pool, literal_p->prop.index);
+        literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_p->prop.index);
 
         PARSER_ASSERT (literal_p != NULL && literal_p->type != LEXER_UNUSED_LITERAL);
       }
@@ -1527,7 +1527,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
 
     opcode_p = dst_p;
     branch_mark_p = page_p->bytes + offset;
-    opcode = *branch_mark_p;
+    opcode = (cbc_opcode_t) (*branch_mark_p);
     branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (opcode);
 
     if (opcode == CBC_JUMP_FORWARD)
@@ -1558,7 +1558,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     {
       cbc_ext_opcode_t ext_opcode;
 
-      ext_opcode = page_p->bytes[offset];
+      ext_opcode = (cbc_ext_opcode_t) page_p->bytes[offset];
       flags = cbc_ext_flags[ext_opcode];
       branch_offset_length = CBC_BRANCH_OFFSET_LENGTH (ext_opcode);
 
@@ -1730,7 +1730,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
           continue;
         }
 
-        literal_p = parser_list_get (&context_p->literal_pool, literal_p->prop.index);
+        literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_p->prop.index);
 
         PARSER_ASSERT (literal_p != NULL);
       }
@@ -1817,7 +1817,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
   context.byte_code_size = 0;
   parser_list_init (&context.literal_pool,
                     sizeof (lexer_literal_t),
-                    (128 - sizeof (void *)) / sizeof (lexer_literal_t));
+                    (128 - (uint32_t) (sizeof (void *) / sizeof (lexer_literal_t))));
   parser_stack_init (&context);
 
 #ifdef PARSER_DEBUG
