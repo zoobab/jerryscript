@@ -16,6 +16,7 @@
 
 #include "common.h"
 #include "ecma-helpers.h"
+#include "lit-char-helpers.h"
 
 /**
  * Checks whether the next UTF8 character is a valid identifier start.
@@ -25,12 +26,12 @@
 int
 util_is_identifier_start (const uint8_t *src_p) /* pointer to a vaild UTF8 character */
 {
-  if (*src_p > 127)
+  if (*src_p <= 127)
   {
-    return 0;
+    return util_is_identifier_start_character (*src_p);
   }
 
-  return util_is_identifier_start_character (*src_p);
+  return util_is_identifier_start_character (lit_utf8_peek_next (src_p));
 } /* util_is_identifier_start */
 
 /**
@@ -41,12 +42,12 @@ util_is_identifier_start (const uint8_t *src_p) /* pointer to a vaild UTF8 chara
 int
 util_is_identifier_part (const uint8_t *src_p) /* pointer to a vaild UTF8 character */
 {
-  if (*src_p > 127)
+  if (*src_p <= 127)
   {
-    return 0;
+    return util_is_identifier_part_character (*src_p);
   }
 
-  return util_is_identifier_part_character (*src_p);
+  return util_is_identifier_part_character (lit_utf8_peek_next (src_p));
 } /* util_is_identifier_part */
 
 /**
@@ -57,8 +58,15 @@ util_is_identifier_part (const uint8_t *src_p) /* pointer to a vaild UTF8 charac
 int
 util_is_identifier_start_character (uint16_t chr) /**< EcmaScript character */
 {
-  return (((chr | 0x20) >= 'a' && (chr | 0x20) <= 'z')
-          || chr == '$' || chr == '_');
+  if (chr <= 127)
+  {
+    return (((chr | 0x20) >= LIT_CHAR_LOWERCASE_A && (chr | 0x20) <= LIT_CHAR_LOWERCASE_Z)
+            || chr == LIT_CHAR_DOLLAR_SIGN
+            || chr == LIT_CHAR_UNDERSCORE);
+  }
+
+  return lit_char_is_unicode_letter (chr);
+
 } /* util_is_identifier_start_character */
 
 /**
@@ -69,9 +77,18 @@ util_is_identifier_start_character (uint16_t chr) /**< EcmaScript character */
 int
 util_is_identifier_part_character (uint16_t chr) /**< EcmaScript character */
 {
-  return (((chr | 0x20) >= 'a' && (chr | 0x20) <= 'z')
-          || (chr >= '0' && chr <= '9')
-          || chr == '$' || chr == '_');
+  if (chr <= 127)
+  {
+    return (((chr | 0x20) >= LIT_CHAR_LOWERCASE_A && (chr | 0x20) <= LIT_CHAR_LOWERCASE_Z)
+            || (chr >= LIT_CHAR_0 && chr <= LIT_CHAR_9)
+            || chr == LIT_CHAR_DOLLAR_SIGN
+            || chr == LIT_CHAR_UNDERSCORE);
+  }
+
+  return (lit_char_is_unicode_letter (chr)
+          || lit_char_is_unicode_combining_mark (chr)
+          || lit_char_is_unicode_digit (chr)
+          || lit_char_is_unicode_connector_punctuation (chr));
 } /* util_is_identifier_part_character */
 
 /**

@@ -114,6 +114,7 @@ typedef enum {
   VM_OC_NOT,
   VM_OC_BIT_NOT,
   VM_OC_VOID,
+  VM_OC_TYPEOF_IDENT,
   VM_OC_TYPEOF,
 
   VM_OC_ADD,
