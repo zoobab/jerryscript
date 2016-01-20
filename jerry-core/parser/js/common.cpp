@@ -136,7 +136,7 @@ void
 util_set_function_literal (lexer_literal_t *literal_p, /**< literal */
                            void *function_p) /* function */
 {
-  literal_p->u.function_p = function_p;
+  literal_p->u.bytecode_p = function_p;
 } /* util_set_function_literal */
 
 /**
@@ -153,13 +153,10 @@ util_free_literal (lexer_literal_t *literal_p) /**< literal */
       PARSER_FREE ((uint8_t *) literal_p->u.char_p);
     }
   }
-  else if (literal_p->type == LEXER_FUNCTION_LITERAL)
+  else if ((literal_p->type == LEXER_FUNCTION_LITERAL)
+           || (literal_p->type == LEXER_REGEXP_LITERAL))
   {
-    PARSER_FREE (literal_p->u.function_p);
-  }
-  else
-  {
-    // FIXME free literals
+    ecma_bytecode_deref (literal_p->u.bytecode_p);
   }
 } /* util_free_literal */
 

@@ -320,7 +320,6 @@ parser_scan_statement (parser_context_t *context_p, /**< context */
     case LEXER_SEMICOLON:
     case LEXER_KEYW_ELSE:
     case LEXER_KEYW_DO:
-    case LEXER_KEYW_RETURN:
     case LEXER_KEYW_TRY:
     case LEXER_KEYW_FINALLY:
     case LEXER_KEYW_DEBUGGER:
@@ -366,6 +365,16 @@ parser_scan_statement (parser_context_t *context_p, /**< context */
     {
       *mode = SCAN_MODE_PRIMARY_EXPRESSION;
       return PARSER_FALSE;
+    }
+    case LEXER_KEYW_RETURN:
+    {
+      lexer_next_token (context_p);
+      if (!context_p->token.was_newline
+          && context_p->token.type != LEXER_SEMICOLON)
+      {
+        *mode = SCAN_MODE_PRIMARY_EXPRESSION;
+      }
+      return PARSER_TRUE;
     }
     case LEXER_KEYW_BREAK:
     case LEXER_KEYW_CONTINUE:

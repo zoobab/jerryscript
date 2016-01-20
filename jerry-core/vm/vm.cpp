@@ -850,19 +850,17 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           }
           else
           {
-            ECMA_TRY_CATCH (property_name,
-                            ecma_op_to_string (right_value),
-                            last_completion_value);
-
-            prop_name_p = ecma_get_string_from_value (property_name);
-            property_p = ecma_find_named_property (object_p, prop_name_p);
-
-            ECMA_FINALIZE (property_name);
+            last_completion_value = ecma_op_to_string (right_value);
 
             if (ecma_is_completion_value_throw (last_completion_value))
             {
               goto error;
             }
+
+            ecma_value_t property_name = ecma_get_completion_value_value (last_completion_value);
+
+            prop_name_p = ecma_get_string_from_value (property_name);
+            property_p = ecma_find_named_property (object_p, prop_name_p);
           }
 
           if (property_p != NULL && property_p->type != ECMA_PROPERTY_NAMEDDATA)
@@ -881,6 +879,11 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           }
 
           ecma_named_data_property_assign_value (object_p, property_p, left_value);
+
+          if (!ecma_is_value_string (right_value))
+          {
+            ecma_deref_ecma_string (prop_name_p);
+          }
           break;
         }
         case VM_OC_SET_GETTER:
@@ -1331,12 +1334,16 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         case VM_OC_BRANCH_IF_LOGICAL_TRUE:
         case VM_OC_BRANCH_IF_LOGICAL_FALSE:
         {
-          last_completion_value = ecma_make_empty_completion_value ();
           uint32_t base = VM_OC_GROUP_GET_INDEX (opcode_data) - VM_OC_BRANCH_IF_TRUE;
 
-          ECMA_TRY_CATCH (value,
-                          ecma_op_to_boolean (left_value),
-                          last_completion_value);
+          last_completion_value = ecma_op_to_boolean (left_value);
+
+          if (ecma_is_completion_value_throw (last_completion_value))
+          {
+            goto error;
+          }
+
+          ecma_value_t value = ecma_get_completion_value_value (last_completion_value);
 
           JERRY_ASSERT (free_flags & VM_FREE_LEFT_VALUE);
           if (value == ecma_make_simple_value ((base & 0x1) ? ECMA_SIMPLE_VALUE_FALSE
@@ -1349,14 +1356,6 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
               ++stack_top_p;
             }
           }
-
-          ECMA_FINALIZE (value);
-
-          if (ecma_is_completion_value_throw (last_completion_value))
-          {
-            goto error;
-          }
-
           break;
         }
         case VM_OC_PLUS:

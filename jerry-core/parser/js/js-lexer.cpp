@@ -1555,7 +1555,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   }
 
   literal_p->type = LEXER_REGEXP_LITERAL;
-  literal_p->u.regexp_p = bc_p;
+  literal_p->u.bytecode_p = bc_p;
 
   context_p->token.type = LEXER_LITERAL;
   context_p->token.literal_is_reserved = PARSER_FALSE;

@@ -514,18 +514,15 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
         literal_pool_p[literal_p->prop.index] = literal_p->u.value;
 #endif /* PARSER_DUMP_BYTE_CODE */
       }
-      else if (literal_p->type == LEXER_FUNCTION_LITERAL)
+      else if ((literal_p->type == LEXER_FUNCTION_LITERAL)
+               || (literal_p->type == LEXER_REGEXP_LITERAL))
       {
         ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
-                                   literal_p->u.function_p);
-      }
-      else if (literal_p->type == LEXER_REGEXP_LITERAL)
-      {
-        ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
-                                   literal_p->u.regexp_p);
+                                   literal_p->u.bytecode_p);
       }
       else
       {
+        PARSER_ASSERT (literal_p->type == LEXER_NUMBER_LITERAL);
         literal_pool_p[literal_p->prop.index] = literal_p->u.value;
       }
     }
@@ -565,7 +562,7 @@ parser_generate_initializers (parser_context_t *context_p, /**< context */
                        && literal_p->type == LEXER_FUNCTION_LITERAL);
         init_index = literal_p->prop.index;
         ECMA_SET_NON_NULL_POINTER (literal_pool_p[literal_p->prop.index].value.base_cp,
-                                   literal_p->u.function_p);
+                                   literal_p->u.bytecode_p);
       }
 
       *dst_p++ = CBC_INITIALIZE_VAR;

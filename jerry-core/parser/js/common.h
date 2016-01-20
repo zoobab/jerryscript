@@ -103,8 +103,7 @@ typedef struct
   {
     lit_cpointer_t value;           /**< literal value (not processed by the parser) */
     const uint8_t *char_p;          /**< character value */
-    void *function_p;               /**< compiled function pointer */
-    re_compiled_code_t *regexp_p;   /**< compiled regexp pointer */
+    void *bytecode_p;               /**< compiled function or regexp pointer */
     uint32_t source_data;           /**< encoded source literal */
   } u;
 
