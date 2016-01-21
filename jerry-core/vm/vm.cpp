@@ -1406,39 +1406,41 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
           READ_LITERAL_INDEX (literal_index);
 
-          if (literal_index >= register_end && literal_index <= ident_end)
+          PARSER_ASSERT (literal_index < ident_end);
+
+          if (literal_index < register_end)
+          {
+            left_value = ecma_copy_value (frame_ctx_p->registers_p[literal_index], true);
+            free_flags = VM_FREE_LEFT_VALUE;
+          }
+          else
           {
             ecma_string_t *name_p = ecma_new_ecma_string_from_lit_cp (literal_start_p[literal_index]);
             ecma_object_t *ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p,
                                                                                 name_p);
-            if (ref_base_lex_env_p != NULL)
-            {
-              last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
-                                                                      name_p,
-                                                                      is_strict);
 
-              ecma_deref_ecma_string (name_p);
-
-              if (ecma_is_completion_value_throw (last_completion_value))
-              {
-                goto error;
-              }
-
-              left_value = ecma_get_completion_value_value (last_completion_value);
-              free_flags = VM_FREE_LEFT_VALUE;
-            }
-            else
+            if (ref_base_lex_env_p == NULL)
             {
               ecma_deref_ecma_string (name_p);
-              result = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+
+              ecma_string_t *string_p = ecma_get_magic_string (LIT_MAGIC_STRING_UNDEFINED);
+              result = ecma_make_string_value (string_p);
               break;
             }
-          }
-          else
-          {
-            READ_LITERAL (literal_index,
-                          left_value,
-                          free_flags = VM_FREE_LEFT_VALUE);
+
+            last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
+                                                                    name_p,
+                                                                    is_strict);
+
+            ecma_deref_ecma_string (name_p);
+
+            if (ecma_is_completion_value_throw (last_completion_value))
+            {
+              goto error;
+            }
+
+            left_value = ecma_get_completion_value_value (last_completion_value);
+            free_flags = VM_FREE_LEFT_VALUE;
           }
           /* FALLTHRU */
         }

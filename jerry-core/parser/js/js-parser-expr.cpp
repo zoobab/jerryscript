@@ -780,14 +780,50 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
     {
       token = (uint8_t) (LEXER_UNARY_OP_TOKEN_TO_OPCODE (token));
 
-      if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
+      if (token == CBC_TYPEOF)
       {
-        PARSER_ASSERT (CBC_SAME_ARGS (context_p->last_cbc_opcode, token + 1));
-        context_p->last_cbc_opcode = (uint16_t) (token + 1);
+        if (PARSER_IS_PUSH_LITERAL (context_p->last_cbc_opcode)
+            && context_p->last_cbc.literal_type == LEXER_IDENT_LITERAL)
+        {
+          if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
+          {
+            context_p->last_cbc_opcode = CBC_TYPEOF_IDENT;
+          }
+          else if (context_p->last_cbc_opcode == CBC_PUSH_TWO_LITERALS)
+          {
+            context_p->last_cbc_opcode = CBC_PUSH_LITERAL;
+            parser_emit_cbc_literal (context_p,
+                                     CBC_TYPEOF_IDENT,
+                                     context_p->last_cbc.value);
+          }
+          else
+          {
+            PARSER_ASSERT (context_p->last_cbc_opcode == CBC_PUSH_THREE_LITERALS);
+
+            context_p->last_cbc_opcode = CBC_PUSH_TWO_LITERALS;
+            parser_emit_cbc_literal (context_p,
+                                     CBC_TYPEOF_IDENT,
+                                     context_p->last_cbc.third_literal_index);
+          }
+        }
+        else
+        {
+          parser_emit_cbc (context_p, token);
+        }
       }
       else
       {
-        parser_emit_cbc (context_p, token);
+        if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
+        {
+          /* It is not worth to combine with push multiple literals
+           * since the byte code size will not decrease. */
+          PARSER_ASSERT (CBC_SAME_ARGS (context_p->last_cbc_opcode, token + 1));
+          context_p->last_cbc_opcode = (uint16_t) (token + 1);
+        }
+        else
+        {
+          parser_emit_cbc (context_p, token);
+        }
       }
     }
   }
