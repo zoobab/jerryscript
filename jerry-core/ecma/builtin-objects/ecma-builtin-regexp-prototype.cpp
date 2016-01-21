@@ -125,7 +125,7 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
         ecma_property_t *bc_prop_p = ecma_get_internal_property (this_obj_p,
                                                                  ECMA_INTERNAL_PROPERTY_REGEXP_BYTECODE);
 
-        FIXME ("We currently have to re-compile the bytecode, because we can't copy it without knowing its length.")
+        /* FIXME: "We currently have to re-compile the bytecode, because we can't copy it without knowing its length." */
         re_compiled_code_t *new_bc_p = NULL;
         ecma_completion_value_t bc_comp = re_compile_bytecode (&new_bc_p, pattern_string_p, flags);
         /* Should always succeed, since we're compiling from a source that has been compiled previously. */
@@ -135,7 +135,8 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
                                                          bc_prop_p->u.internal_property.value);
         if (old_bc_p != NULL)
         {
-          mem_heap_free_block (old_bc_p);
+          /* Free the old bytecode */
+          ecma_bytecode_deref ((void *) old_bc_p);
         }
 
         ECMA_SET_POINTER (bc_prop_p->u.internal_property.value, new_bc_p);
@@ -199,8 +200,8 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
 
         if (old_bc_p != NULL)
         {
-          /* Replace old bytecode with new one. */
-          mem_heap_free_block (old_bc_p);
+          /* Free the old bytecode */
+          ecma_bytecode_deref ((void *) old_bc_p);
         }
 
         ECMA_SET_POINTER (bc_prop_p->u.internal_property.value, new_bc_p);
