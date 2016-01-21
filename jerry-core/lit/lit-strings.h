@@ -183,8 +183,8 @@ lit_utf8_size_t lit_read_prev_code_unit_from_utf8 (const lit_utf8_byte_t *,
 
 ecma_char_t lit_utf8_read_next (lit_utf8_byte_t **);
 ecma_char_t lit_utf8_read_prev (lit_utf8_byte_t **);
-ecma_char_t lit_utf8_peek_next (lit_utf8_byte_t *);
-ecma_char_t lit_utf8_peek_prev (lit_utf8_byte_t *);
+ecma_char_t lit_utf8_peek_next (const lit_utf8_byte_t *);
+ecma_char_t lit_utf8_peek_prev (const lit_utf8_byte_t *);
 void lit_utf8_incr (lit_utf8_byte_t **);
 void lit_utf8_decr (lit_utf8_byte_t **);
 

@@ -165,7 +165,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     if (flags & (CBC_HAS_LITERAL_ARG | CBC_HAS_LITERAL_ARG2))
     {
       uint16_t literal_index = context_p->last_cbc.literal_index;
-      lexer_literal_t *literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_index);
+      lexer_literal_t *literal_p = PARSER_GET_LITERAL (literal_index);
       printf (" idx:%d->", literal_index);
       util_print_literal (literal_p);
     }
@@ -173,7 +173,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
     if (flags & CBC_HAS_LITERAL_ARG2)
     {
       uint16_t literal_index = context_p->last_cbc.value;
-      lexer_literal_t *literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_index);
+      lexer_literal_t *literal_p = PARSER_GET_LITERAL (literal_index);
       printf (" idx:%d->", literal_index);
       util_print_literal (literal_p);
 
@@ -181,7 +181,7 @@ parser_flush_cbc (parser_context_t *context_p) /**< context */
       {
         literal_index = context_p->last_cbc.third_literal_index;
 
-        lexer_literal_t *literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_index);
+        lexer_literal_t *literal_p = PARSER_GET_LITERAL (literal_index);
         printf (" idx:%d->", literal_index);
         util_print_literal (literal_p);
       }

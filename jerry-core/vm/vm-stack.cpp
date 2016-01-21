@@ -28,28 +28,6 @@
  */
 
 /**
- * Get stack's top frame
- * @return pointer to the top frame descriptor
- */
-vm_stack_frame_t*
-vm_stack_get_top_frame (void)
-{
-  return NULL;
-} /* vm_stack_get_top_frame */
-
-/**
- * Get value of specified register variable
- *
- * @return ecma-value
- */
-ecma_value_t
-vm_stack_frame_get_reg_value (vm_stack_frame_t *frame_p, /**< frame */
-                              uint32_t reg_index) /**< index of register variable */
-{
-  return ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
-} /* vm_stack_frame_get_reg_value */
-
-/**
  * Abort (finalize) the current stack context, and remove it.
  *
  * @return new stack top

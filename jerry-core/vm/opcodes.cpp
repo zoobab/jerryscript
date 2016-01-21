@@ -24,7 +24,6 @@
 #include "ecma-objects.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
-#include "opcodes-variable-helpers.h"
 #include "vm-defines.h"
 
 /**

@@ -230,7 +230,6 @@ ecma_value_t
 ecma_op_create_regexp_object_from_bytecode (re_compiled_code_t *bytecode_p) /**< input pattern */
 {
   JERRY_ASSERT (bytecode_p != NULL);
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
 
   ecma_object_t *re_prototype_obj_p = ecma_builtin_get (ECMA_BUILTIN_ID_REGEXP_PROTOTYPE);
 
@@ -245,7 +244,7 @@ ecma_op_create_regexp_object_from_bytecode (re_compiled_code_t *bytecode_p) /**<
   ecma_property_t *bytecode_prop_p;
   bytecode_prop_p = ecma_create_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_REGEXP_BYTECODE);
   ECMA_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_p);
-  ecma_bytecode_ref (bytecode_p);
+  ecma_bytecode_ref ((void *) bytecode_p);
 
   /* Initialize RegExp object properties */
   re_initialize_props (obj_p,

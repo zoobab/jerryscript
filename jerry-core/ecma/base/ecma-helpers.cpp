@@ -1333,7 +1333,7 @@ ecma_get_property_descriptor_from_property (ecma_property_t *prop_p) /**< proper
 void
 ecma_bytecode_ref (void *bytecode_p) /**< byte code pointer */
 {
-  uint16_t *ref_counter_p = bytecode_p;
+  uint16_t *ref_counter_p = (uint16_t *) bytecode_p;
 
   /* Abort program if maximum reference number is reached.
    * Note: This is not tested for objects. */
@@ -1342,7 +1342,7 @@ ecma_bytecode_ref (void *bytecode_p) /**< byte code pointer */
     jerry_fatal (ERR_UNIMPLEMENTED_CASE);
   }
 
-   *ref_counter_p += 1 << ECMA_BYTECODE_REF_SHIFT;
+  *ref_counter_p = (uint16_t) (*ref_counter_p + (1 << ECMA_BYTECODE_REF_SHIFT));
 } /* ecma_bytecode_ref */
 
 /**
@@ -1352,11 +1352,11 @@ ecma_bytecode_ref (void *bytecode_p) /**< byte code pointer */
 void
 ecma_bytecode_deref (void *bytecode_p) /**< byte code pointer */
 {
-  uint16_t *ref_counter_p = bytecode_p;
+  uint16_t *ref_counter_p = (uint16_t *) bytecode_p;
 
   JERRY_ASSERT ((*ref_counter_p >> ECMA_BYTECODE_REF_SHIFT) > 0);
 
-  *ref_counter_p -= 1 << ECMA_BYTECODE_REF_SHIFT;
+  *ref_counter_p = (uint16_t) (*ref_counter_p - (1 << ECMA_BYTECODE_REF_SHIFT));
 
   if (*ref_counter_p >= (1 << ECMA_BYTECODE_REF_SHIFT))
   {

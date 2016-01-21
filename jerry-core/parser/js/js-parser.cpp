@@ -114,7 +114,7 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
           {
             if (literal_p->status_flags & LEXER_FLAG_FUNCTION_NAME)
             {
-              PARSER_ASSERT (literal_p == parser_list_get (&context_p->literal_pool, 0));
+              PARSER_ASSERT (literal_p == PARSER_GET_LITERAL (0));
               status_flags |= PARSER_NAMED_FUNCTION_EXP | PARSER_NO_REG_STORE;
               context_p->status_flags = status_flags;
               context_p->literal_count++;
@@ -1316,14 +1316,14 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       length++;
 
       literal_index |= ((size_t) page_p->bytes[offset]) << 8;
-      literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_index);
+      literal_p = PARSER_GET_LITERAL (literal_index);
 
       if (literal_p->type == LEXER_UNUSED_LITERAL)
       {
         /* In a few cases uninitialized literals may have been converted to initialized
          * literals later. Byte code references to the old (uninitialized) literals
          * must be redirected to the new instance of the literal. */
-        literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_p->prop.index);
+        literal_p = PARSER_GET_LITERAL (literal_p->prop.index);
 
         PARSER_ASSERT (literal_p != NULL && literal_p->type != LEXER_UNUSED_LITERAL);
       }
@@ -1730,7 +1730,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
           continue;
         }
 
-        literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, literal_p->prop.index);
+        literal_p = PARSER_GET_LITERAL (literal_p->prop.index);
 
         PARSER_ASSERT (literal_p != NULL);
       }
@@ -1817,7 +1817,7 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
   context.byte_code_size = 0;
   parser_list_init (&context.literal_pool,
                     sizeof (lexer_literal_t),
-                    (128 - (uint32_t) (sizeof (void *) / sizeof (lexer_literal_t))));
+                    (uint32_t) ((128 - sizeof (void *)) / sizeof (lexer_literal_t)));
   parser_stack_init (&context);
 
 #ifdef PARSER_DEBUG

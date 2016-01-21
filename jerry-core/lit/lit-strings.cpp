@@ -586,7 +586,7 @@ lit_read_code_unit_from_utf8 (const lit_utf8_byte_t *buf_p, /**< buffer with cha
  */
 lit_utf8_size_t
 lit_read_prev_code_unit_from_utf8 (const lit_utf8_byte_t *buf_p, /**< buffer with characters */
-                                    ecma_char_t *code_point) /**< @out: code point */
+                                   ecma_char_t *code_point) /**< @out: code point */
 {
   JERRY_ASSERT (buf_p);
 
@@ -635,7 +635,7 @@ lit_utf8_read_prev (lit_utf8_byte_t **buf_p) /**< in-out:buffer with characters 
  * @return next code unit
  */
 ecma_char_t
-lit_utf8_peek_next (lit_utf8_byte_t *buf_p) /**< in-out:buffer with characters */
+lit_utf8_peek_next (const lit_utf8_byte_t *buf_p) /**< in-out:buffer with characters */
 {
   JERRY_ASSERT (buf_p);
   ecma_char_t ch;
@@ -651,7 +651,7 @@ lit_utf8_peek_next (lit_utf8_byte_t *buf_p) /**< in-out:buffer with characters *
  * @return previous code unit
  */
 ecma_char_t
-lit_utf8_peek_prev (lit_utf8_byte_t *buf_p) /**< in-out:buffer with characters */
+lit_utf8_peek_prev (const lit_utf8_byte_t *buf_p) /**< in-out:buffer with characters */
 {
   JERRY_ASSERT (buf_p);
   ecma_char_t ch;

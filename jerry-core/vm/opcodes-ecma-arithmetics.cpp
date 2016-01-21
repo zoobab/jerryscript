@@ -20,7 +20,6 @@
 #include "ecma-number-arithmetic.h"
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
-#include "opcodes-variable-helpers.h"
 #include "jrt-libc-includes.h"
 
 /**

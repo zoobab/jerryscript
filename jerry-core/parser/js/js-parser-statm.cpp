@@ -365,7 +365,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
       /* Overwrite the previous initialization. */
       cbc_compiled_code_t *compiled_code_p;
 
-      literal_p = (lexer_literal_t *) parser_list_get (&context_p->literal_pool, (size_t) (context_p->lit_object.index + 1));
+      literal_p = PARSER_GET_LITERAL ((size_t) (context_p->lit_object.index + 1));
 
       PARSER_ASSERT (literal_p->type == LEXER_FUNCTION_LITERAL
                      && literal_p->status_flags == 0);

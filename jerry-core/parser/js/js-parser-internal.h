@@ -93,6 +93,9 @@ typedef struct
    || (opcode) == CBC_PUSH_TWO_LITERALS \
    || (opcode) == CBC_PUSH_THREE_LITERALS)
 
+#define PARSER_GET_LITERAL(literal_index) \
+  ((lexer_literal_t *) parser_list_get (&context_p->literal_pool, (literal_index)))
+
 #define PARSER_TO_BINARY_OPERATION_WITH_RESULT(opcode) \
   (PARSER_TO_EXT_OPCODE(opcode) - CBC_ASSIGN_ADD + CBC_EXT_ASSIGN_ADD_PUSH_RESULT)
 

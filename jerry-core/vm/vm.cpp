@@ -259,7 +259,7 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
 
   ecma_deref_object (lex_env_p);
   ecma_free_value (this_binding, true);
-  ecma_bytecode_deref (bytecode_data_p);
+  ecma_bytecode_deref ((void *) bytecode_data_p);
 
   return completion;
 } /* vm_run_eval */
@@ -397,7 +397,7 @@ vm_finalize (void)
 {
   if (__program)
   {
-    ecma_bytecode_deref (__program);
+    ecma_bytecode_deref ((void *) __program);
   }
 
   __program = NULL;
@@ -2282,7 +2282,9 @@ vm_run_with_alloca (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
                     ecma_length_t arg_list_len, /**< length of arguments list */
                     uint32_t call_stack_size) /**< call stack size */
 {
-  ecma_value_t *stack = alloca (call_stack_size * sizeof (ecma_value_t));
+  size_t size = call_stack_size * sizeof (ecma_value_t);
+
+  ecma_value_t *stack = (ecma_value_t *) alloca (size);
 
   frame_ctx_p->registers_p = stack;
 

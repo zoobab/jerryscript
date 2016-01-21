@@ -1093,7 +1093,7 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
     }
     else if (LEXER_IS_BINARY_LVALUE_TOKEN (token))
     {
-      opcode = (cbc_opcode_t) LEXER_BINARY_LVALUE_OP_TOKEN_TO_OPCODE (token);
+      opcode = LEXER_BINARY_LVALUE_OP_TOKEN_TO_OPCODE (token);
 
       if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
       {
@@ -1112,7 +1112,7 @@ parser_process_binary_opcodes (parser_context_t *context_p, /**< context */
     }
     else
     {
-      opcode = (cbc_opcode_t) LEXER_BINARY_OP_TOKEN_TO_OPCODE (token);
+      opcode = LEXER_BINARY_OP_TOKEN_TO_OPCODE (token);
 
       if (context_p->last_cbc_opcode == CBC_PUSH_LITERAL)
       {

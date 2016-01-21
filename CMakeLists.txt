@@ -265,7 +265,7 @@ project (Jerry CXX C ASM)
     foreach(_warning ${ARGV})
       add_jerry_compile_flags(-W${_warning})
       if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
- #      add_jerry_compile_flags(-Werror=${_warning})
+        add_jerry_compile_flags(-Werror=${_warning})
       endif()
     endforeach()
   endmacro()
@@ -290,7 +290,7 @@ project (Jerry CXX C ASM)
   endif()
 
  # C++
-  set(CXX_FLAGS_JERRY "-std=c++11 -fno-exceptions -fno-rtti -fpermissive")
+  set(CXX_FLAGS_JERRY "-std=c++11 -fno-exceptions -fno-rtti")
   # Turn off implicit template instantiation
    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CXX_FLAGS_JERRY "${CXX_FLAGS_JERRY} -fno-implicit-templates -fno-implicit-inline-templates")

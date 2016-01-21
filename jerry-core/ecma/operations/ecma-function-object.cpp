@@ -191,7 +191,7 @@ ecma_op_create_function_object (ecma_object_t *scope_p, /**< function's scope */
   // 12.
   ecma_property_t *bytecode_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
-  ecma_bytecode_ref (bytecode_data_p);
+  ecma_bytecode_ref ((void *) bytecode_data_p);
 
   // 14.
   // 15.

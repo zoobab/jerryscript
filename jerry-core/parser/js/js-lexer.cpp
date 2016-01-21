@@ -1392,7 +1392,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   lexer_literal_t *literal_p;
   int in_class = PARSER_FALSE;
   uint16_t current_flags;
-  size_t length;
+  lit_utf8_size_t length;
 
   PARSER_ASSERT (context_p->token.type == LEXER_DIVIDE
                  || context_p->token.type == LEXER_ASSIGN_DIVIDE);
@@ -1510,7 +1510,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->source_p = source_p;
   context_p->column = column;
 
-  length = (size_t) (regex_end_p - regex_start_p);
+  length = (lit_utf8_size_t) (regex_end_p - regex_start_p);
   if (length > PARSER_MAXIMUM_STRING_LENGTH)
   {
     parser_raise_error (context_p, PARSER_ERR_REGEXP_TOO_LONG);
