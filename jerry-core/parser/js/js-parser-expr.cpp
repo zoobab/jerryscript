@@ -144,6 +144,12 @@ parser_emit_unary_lvalue_opcode (parser_context_t *context_p, /**< context */
         context_p->last_cbc_opcode = CBC_PUSH_TWO_LITERALS;
         break;
       }
+      case CBC_PUSH_PROP_THIS_LITERAL:
+      {
+        PARSER_ASSERT (CBC_SAME_ARGS (CBC_PUSH_PROP_THIS_LITERAL, CBC_PUSH_THIS_LITERAL));
+        context_p->last_cbc_opcode = CBC_PUSH_THIS_LITERAL;
+        break;
+      }
       default:
       {
         parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
