@@ -1212,7 +1212,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP_N)
           {
             ecma_free_value (*(--stack_top_p), true);
-            --stack_top_p;
+            ecma_free_value (*(--stack_top_p), true);
           }
 
           if (ecma_is_completion_value_throw (last_completion_value))

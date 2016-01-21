@@ -48,6 +48,8 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
     return ecma_make_throw_obj_completion_value (ecma_new_standard_error (ECMA_ERROR_TYPE));
   }
 
+  ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
+
   if (this_value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED))
   {
     ecma_completion_value_t this_comp_value;
@@ -59,16 +61,22 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
     }
 
     this_value = ecma_get_completion_value_value (this_comp_value);
+
+    ret_value = ecma_op_function_call_array_args (func_obj_p,
+                                                  this_value,
+                                                  arguments_list_p,
+                                                  arguments_list_len);
+
+    ecma_free_value (this_value, true);
   }
+  else
+  {
 
-  ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
-
-  ret_value = ecma_op_function_call_array_args (func_obj_p,
-                                                this_value,
-                                                arguments_list_p,
-                                                arguments_list_len);
-
-  ecma_free_value (this_value, true);
+    ret_value = ecma_op_function_call_array_args (func_obj_p,
+                                                  this_value,
+                                                  arguments_list_p,
+                                                  arguments_list_len);
+  }
 
   return ret_value;
 } /* opfunc_call_n */
