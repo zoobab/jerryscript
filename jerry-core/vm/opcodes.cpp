@@ -411,7 +411,7 @@ ecma_collection_header_t *
 opfunc_for_in (ecma_value_t left_value) /**< left value */
 {
   ecma_completion_value_t compl_val = ecma_make_empty_completion_value ();
-  ecma_collection_header_t *prop_names_p;
+  ecma_collection_header_t *prop_names_p = NULL;
 
   /* 3. */
   if (!ecma_is_value_undefined (left_value)
