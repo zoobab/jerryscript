@@ -1989,6 +1989,12 @@ parser_parse_function (parser_context_t *context_p, /**< context */
       context_p->lit_object.literal_p->status_flags |= status_flags;
     }
 
+    if (context_p->token.literal_is_reserved
+        || context_p->lit_object.type != LEXER_LITERAL_OBJECT_ANY)
+    {
+      context_p->status_flags |= PARSER_HAS_NON_STRICT_ARG;
+    }
+
     lexer_next_token (context_p);
   }
 

@@ -548,7 +548,24 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
           || *source_p == LEXER_NEWLINE_LF
           || (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1 && LEXER_NEWLINE_LS_PS_BYTE_23 (source_p)))
       {
-        source_p += (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1) ? 3 : 1;
+        if (*source_p == LEXER_NEWLINE_CR)
+        {
+          source_p++;
+          if (source_p < source_end_p
+              && *source_p == LEXER_NEWLINE_LF)
+          {
+            source_p++;
+          }
+        }
+        else if (*source_p == LEXER_NEWLINE_LF)
+        {
+          source_p++;
+        }
+        else
+        {
+          source_p += 3;
+        }
+
         line++;
         column = 1;
         continue;
@@ -1143,7 +1160,24 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
               || *source_p == LEXER_NEWLINE_LF
               || (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1 && LEXER_NEWLINE_LS_PS_BYTE_23 (source_p)))
           {
-            source_p += (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1) ? 3 : 1;
+            if (*source_p == LEXER_NEWLINE_CR)
+            {
+              source_p++;
+              PARSER_ASSERT (source_p < context_p->source_end_p);
+
+              if (*source_p == LEXER_NEWLINE_LF)
+              {
+                source_p++;
+              }
+            }
+            else if (*source_p == LEXER_NEWLINE_LF)
+            {
+              source_p++;
+            }
+            else
+            {
+              source_p += 3;
+            }
             continue;
           }
 

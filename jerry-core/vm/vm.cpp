@@ -132,7 +132,7 @@ vm_op_set_value (ecma_value_t object, /**< base object */
     completion_value = ecma_op_object_put (object_p,
                                            property_p,
                                            value,
-                                           false);
+                                           is_strict);
   }
 
   ECMA_FINALIZE (property_val);
@@ -763,6 +763,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
           *(stack_top_p++) = left_value;
           *(stack_top_p++) = right_value;
+          free_flags = 0;
 
           READ_LITERAL_INDEX (literal_index);
           READ_LITERAL (literal_index,
