@@ -35,8 +35,7 @@
  *         Returned value must be freed with ecma_free_completion_value.
  */
 ecma_completion_value_t
-opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
-               ecma_value_t this_value, /**< this object value */
+opfunc_call_n (ecma_value_t this_value, /**< this object value */
                ecma_value_t func_value, /**< function object value */
                const ecma_value_t *arguments_list_p, /**< stack pointer */
                ecma_length_t arguments_list_len) /**< number of arguments */
@@ -50,33 +49,10 @@ opfunc_call_n (vm_frame_ctx_t *frame_ctx_p, /**< interpreter context */
 
   ecma_object_t *func_obj_p = ecma_get_object_from_value (func_value);
 
-  if (this_value == ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED))
-  {
-    ecma_completion_value_t this_comp_value;
-    this_comp_value = ecma_op_implicit_this_value (frame_ctx_p->lex_env_p);
-
-    if (ecma_is_completion_value_throw (this_comp_value))
-    {
-      return this_comp_value;
-    }
-
-    this_value = ecma_get_completion_value_value (this_comp_value);
-
-    ret_value = ecma_op_function_call_array_args (func_obj_p,
-                                                  this_value,
-                                                  arguments_list_p,
-                                                  arguments_list_len);
-
-    ecma_free_value (this_value, true);
-  }
-  else
-  {
-
-    ret_value = ecma_op_function_call_array_args (func_obj_p,
-                                                  this_value,
-                                                  arguments_list_p,
-                                                  arguments_list_len);
-  }
+  ret_value = ecma_op_function_call_array_args (func_obj_p,
+                                                this_value,
+                                                arguments_list_p,
+                                                arguments_list_len);
 
   return ret_value;
 } /* opfunc_call_n */

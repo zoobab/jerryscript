@@ -482,15 +482,13 @@ parser_parse_with_statement_start (parser_context_t *context_p) /**< context */
     parser_raise_error (context_p, PARSER_ERR_WITH_NOT_ALLOWED);
   }
 
-  context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
-
   parser_parse_enclosed_expr (context_p);
 
 #ifdef PARSER_DEBUG
   PARSER_PLUS_EQUAL_U16 (context_p->context_stack_depth, PARSER_WITH_CONTEXT_STACK_ALLOCATION);
 #endif
 
-  context_p->status_flags |= PARSER_INSIDE_WITH;
+  context_p->status_flags |= PARSER_INSIDE_WITH | PARSER_LEXICAL_ENV_NEEDED;
   parser_emit_cbc_ext_forward_branch (context_p,
                                       CBC_EXT_WITH_CREATE_CONTEXT,
                                       &with_statement.branch);

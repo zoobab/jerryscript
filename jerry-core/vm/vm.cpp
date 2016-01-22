@@ -271,7 +271,7 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
  */
 static ecma_value_t
 vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
-                             lit_cpointer_t lit_cp /**< literal */)
+                             lit_cpointer_t lit_cp) /**< literal */
 {
   cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, lit_cp.value.base_cp);
   bool is_function = ((bytecode_p->status_flags & CBC_CODE_FLAGS_FUNCTION) != 0);
@@ -304,6 +304,31 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
   }
 } /* vm_construct_literal_object */
+
+/**
+ * Get implicit this value
+ *
+ * @return implicit this value
+ */
+static bool __attr_always_inline___
+vm_get_implicit_this_value (ecma_value_t *this_value_p) /**< this value */
+{
+  if (ecma_is_value_object (*this_value_p))
+  {
+    ecma_object_t *this_obj_p = ecma_get_object_from_value (*this_value_p);
+
+    if (ecma_is_lexical_environment (this_obj_p))
+    {
+      ecma_completion_value_t completion_value = ecma_op_implicit_this_value (this_obj_p);
+
+      JERRY_ASSERT (ecma_is_completion_value_normal (completion_value));
+
+      *this_value_p = ecma_get_completion_value_value (completion_value);
+      return true;
+    }
+  }
+  return false;
+} /* vm_get_implicit_this_value */
 
 enum
 {
@@ -1171,15 +1196,13 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         case VM_OC_EVAL:
         {
           is_direct_eval_form_call = true;
-          /* FALLTHRU */
+          JERRY_ASSERT (*byte_code_p >= CBC_CALL && *byte_code_p <= CBC_CALL2_PROP_BLOCK);
+          continue;
         }
         case VM_OC_CALL_N:
         case VM_OC_CALL_PROP_N:
         {
-          if (opcode >= CBC_CALL0)
-          {
-            right_value = (unsigned int) ((opcode - CBC_CALL0) / 6);
-          }
+          right_value = (unsigned int) ((opcode - CBC_CALL0) / 6);
           /* FALLTHRU */
         }
         case VM_OC_CALL:
@@ -1192,10 +1215,15 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           if (VM_OC_GROUP_GET_INDEX (opcode_data) >= VM_OC_CALL_PROP_N)
           {
             this_value = stack_top_p[-3];
+
+            if (vm_get_implicit_this_value (&this_value))
+            {
+              ecma_free_value (stack_top_p[-3], true);
+              stack_top_p[-3] = this_value;
+            }
           }
 
-          last_completion_value = opfunc_call_n (frame_ctx_p,
-                                                 this_value,
+          last_completion_value = opfunc_call_n (this_value,
                                                  stack_top_p[-1],
                                                  stack_top_p,
                                                  right_value);
