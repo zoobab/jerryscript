@@ -152,7 +152,9 @@ parser_emit_unary_lvalue_opcode (parser_context_t *context_p, /**< context */
       }
       default:
       {
-        parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
+        /* Invalid LeftHandSide expression. */
+        parser_emit_cbc_ext (context_p, (opcode == CBC_DELETE) ? CBC_EXT_PUSH_UNDEFINED_BASE
+                                                               : CBC_EXT_THROW_REFERENCE_ERROR);
         break;
       }
     }
@@ -774,6 +776,7 @@ parser_process_unary_expression (parser_context_t *context_p) /**< context */
       {
         if (context_p->stack_top_uint8 == LEXER_KEYW_NEW)
         {
+          parser_push_result (context_p);
           parser_emit_cbc (context_p, CBC_NEW0);
           parser_stack_pop_uint8 (context_p);
           continue;
@@ -964,8 +967,8 @@ parser_append_binary_token (parser_context_t *context_p) /**< context */
     }
     else
     {
-      /* A runtime error will happen. */
-      parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
+      /* Invalid LeftHandSide expression. */
+      parser_emit_cbc_ext (context_p, CBC_EXT_THROW_REFERENCE_ERROR);
       parser_stack_push_uint8 (context_p, CBC_ASSIGN);
     }
   }
@@ -1037,8 +1040,8 @@ parser_append_binary_token (parser_context_t *context_p) /**< context */
     }
     else
     {
-      /* A runtime error will happen. */
-      parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
+      /* Invalid LeftHandSide expression. */
+      parser_emit_cbc_ext (context_p, CBC_EXT_THROW_REFERENCE_ERROR);
       parser_emit_cbc (context_p, CBC_PUSH_PROP_REFERENCE);
     }
   }

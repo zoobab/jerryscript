@@ -17,6 +17,9 @@
 #include "js-parser-internal.h"
 #include "parser.h"
 
+/**
+ * Parse EcamScript source code
+ */
 jsp_status_t
 parser_parse_script (const jerry_api_char_t *source_p, /**< source code */
                      size_t size, /**< size of the source code */
@@ -30,8 +33,11 @@ parser_parse_script (const jerry_api_char_t *source_p, /**< source code */
   }
 
   return JSP_STATUS_OK;
-}
+} /* parser_parse_script */
 
+/**
+ * Parse EcamScript eval source code
+ */
 jsp_status_t
 parser_parse_eval (const jerry_api_char_t *source_p, /**< source code */
                    size_t size, /**< size of the source code */
@@ -46,11 +52,4 @@ parser_parse_eval (const jerry_api_char_t *source_p, /**< source code */
   }
 
   return JSP_STATUS_OK;
-}
-
-extern jsp_status_t parser_parse_new_function (const jerry_api_char_t **,
-                                               const size_t *, size_t,
-                                               const cbc_compiled_code_t **)
-{
-  return JSP_STATUS_SYNTAX_ERROR;
-}
+} /* parser_parse_eval */

@@ -571,8 +571,63 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
         continue;
       }
 
-      /* Except \x and \u, everything is converted to
-       * a character which has the same byte length. */
+      /* Except \x, \u, and octal numbers, everything is
+       * converted to a character which has the same byte length. */
+      if (*source_p >= '0' && *source_p <= '3')
+      {
+        if (context_p->status_flags & PARSER_IS_STRICT)
+        {
+          parser_raise_error (context_p, PARSER_ERR_OCTAL_ESCAPE_NOT_ALLOWED);
+        }
+
+        source_p++;
+        column++;
+
+        if (source_p < source_end_p && *source_p >= '0' && *source_p <= '7')
+        {
+          source_p++;
+          column++;
+
+          if (source_p < source_end_p && *source_p >= '0' && *source_p <= '7')
+          {
+            /* Numbers >= 0x200 (0x80) requires
+             * two bytes for encoding in UTF-8. */
+            if (source_p[-2] >= '2')
+            {
+              length++;
+            }
+
+            source_p++;
+            column++;
+          }
+        }
+
+        length++;
+        continue;
+      }
+
+      if (*source_p >= '4' && *source_p <= '7')
+      {
+        if (context_p->status_flags & PARSER_IS_STRICT)
+        {
+          parser_raise_error (context_p, PARSER_ERR_OCTAL_ESCAPE_NOT_ALLOWED);
+        }
+
+        source_p++;
+        column++;
+
+        if (source_p < source_end_p && *source_p >= '0' && *source_p <= '7')
+        {
+          source_p++;
+          column++;
+        }
+
+        /* The maximum number is 0x4d so the UTF-8
+         * representation is always one byte. */
+        length++;
+        continue;
+      }
+
       if (*source_p == 'x' || *source_p == 'u')
       {
         uint8_t hex_part_length = (*source_p == 'x') ? 2 : 4;
@@ -666,50 +721,88 @@ lexer_parse_number (parser_context_t *context_p) /**< context */
 {
   const uint8_t *source_p = context_p->source_p;
   const uint8_t *source_end_p = context_p->source_end_p;
-  int starts_with_zero;
+  int can_be_float = PARSER_FALSE;
   size_t length;
 
   context_p->token.type = LEXER_LITERAL;
   context_p->token.literal_is_reserved = PARSER_FALSE;
+  context_p->token.extra_value = LEXER_NUMBER_DECIMAL;
   context_p->token.lit_location.char_p = source_p;
   context_p->token.lit_location.type = LEXER_NUMBER_LITERAL;
   context_p->token.lit_location.has_escape = PARSER_FALSE;
 
-  starts_with_zero = (source_p[0] == '0') && (source_p + 1 < source_end_p);
-
-  if (starts_with_zero
-      && (source_p[1] | 0x20) == 'x')
+  if (source_p[0] == '0'
+      && source_p + 1 < source_end_p)
   {
-    source_p += 2;
-
-    if (source_p >= source_end_p
-        || !lexer_is_hex_digit (source_p[0]))
+    if ((source_p[1] | 0x20) == 'x')
     {
-      parser_raise_error (context_p, PARSER_ERR_INVALID_HEX_DIGIT);
-    }
+      context_p->token.extra_value = LEXER_NUMBER_HEXADECIMAL;
+      source_p += 2;
 
-    do
-    {
-      source_p ++;
+      if (source_p >= source_end_p
+          || !lexer_is_hex_digit (source_p[0]))
+      {
+        parser_raise_error (context_p, PARSER_ERR_INVALID_HEX_DIGIT);
+      }
+
+      do
+      {
+        source_p ++;
+      }
+      while (source_p < source_end_p
+             && lexer_is_hex_digit (source_p[0]));
     }
-    while (source_p < source_end_p
-           && lexer_is_hex_digit (source_p[0]));
-  }
-  else if (starts_with_zero
-           && source_p[1] >= '0'
-           && source_p[1] <= '9')
-  {
-    parser_raise_error (context_p, PARSER_ERR_INVALID_NUMBER);
+    else if (source_p[1] >= '0'
+             && source_p[1] <= '7')
+    {
+      context_p->token.extra_value = LEXER_NUMBER_OCTAL;
+
+      if (context_p->status_flags & PARSER_IS_STRICT)
+      {
+        parser_raise_error (context_p, PARSER_ERR_OCTAL_NUMBER_NOT_ALLOWED);
+      }
+
+      do
+      {
+        source_p ++;
+      }
+      while (source_p < source_end_p
+             && source_p[0] >= '0'
+             && source_p[0] <= '7');
+
+      if (source_p < source_end_p
+          && source_p[0] >= '8'
+          && source_p[0] <= '9')
+      {
+        parser_raise_error (context_p, PARSER_ERR_INVALID_NUMBER);
+      }
+    }
+    else if (source_p[1] >= '8'
+             && source_p[1] <= '9')
+    {
+      parser_raise_error (context_p, PARSER_ERR_INVALID_NUMBER);
+    }
+    else
+    {
+      can_be_float = PARSER_TRUE;
+      source_p++;
+    }
   }
   else
   {
-    while (source_p < source_end_p
-           && source_p[0] >= '0'
-           && source_p[0] <= '9')
+    do
     {
       source_p++;
     }
+    while (source_p < source_end_p
+           && source_p[0] >= '0'
+           && source_p[0] <= '9');
 
+    can_be_float = PARSER_TRUE;
+  }
+
+  if (can_be_float)
+  {
     if (source_p < source_end_p
         && source_p[0] == '.')
     {
@@ -1181,6 +1274,49 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
             continue;
           }
 
+          if (*source_p >= '0' && *source_p <= '3')
+          {
+            uint32_t octal_number = (uint32_t) (*source_p - '0');
+
+            source_p++;
+            PARSER_ASSERT (source_p < context_p->source_end_p);
+
+            if (*source_p >= '0' && *source_p <= '7')
+            {
+              octal_number = octal_number * 8 + (uint32_t) (*source_p - '0');
+              source_p++;
+              PARSER_ASSERT (source_p < context_p->source_end_p);
+
+              if (*source_p >= '0' && *source_p <= '7')
+              {
+                octal_number = octal_number * 8 + (uint32_t) (*source_p - '0');
+                source_p++;
+                PARSER_ASSERT (source_p < context_p->source_end_p);
+              }
+            }
+
+            destination_p += util_to_utf8_bytes (destination_p, (uint16_t) octal_number);
+            continue;
+          }
+
+          if (*source_p >= '4' && *source_p <= '7')
+          {
+            uint32_t octal_number = (uint32_t) (*source_p - '0');
+
+            source_p++;
+            PARSER_ASSERT (source_p < context_p->source_end_p);
+
+            if (*source_p >= '0' && *source_p <= '7')
+            {
+              octal_number = octal_number * 8 + (uint32_t) (*source_p - '0');
+              source_p++;
+              PARSER_ASSERT (source_p < context_p->source_end_p);
+            }
+
+            *destination_p++ = (uint8_t) octal_number;
+            continue;
+          }
+
           if (*source_p == 'x' || *source_p == 'u')
           {
             int hex_part_length = (*source_p == 'x') ? 2 : 4;
@@ -1290,7 +1426,8 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
     if (literal_p->length == 4
         && source_p[0] == 'e'
         && source_p[3] == 'l'
-        && memcmp (source_p + 1, "va", 2) == 0)
+        && source_p[1] == 'v'
+        && source_p[2] == 'a')
     {
       context_p->lit_object.type = LEXER_LITERAL_OBJECT_EVAL;
     }
@@ -1335,8 +1472,24 @@ lexer_construct_number_object (parser_context_t *context_p, /**< context */
   ecma_number_t num;
   uint16_t literal_count = context_p->literal_count;
 
-  num = ecma_utf8_string_to_number (context_p->token.lit_location.char_p,
-                                    context_p->token.lit_location.length);
+  if (context_p->token.extra_value != LEXER_NUMBER_OCTAL)
+  {
+    num = ecma_utf8_string_to_number (context_p->token.lit_location.char_p,
+                                      context_p->token.lit_location.length);
+  }
+  else
+  {
+    const uint8_t *src_p = context_p->token.lit_location.char_p;
+    const uint8_t *src_end_p = src_p + context_p->token.lit_location.length - 1;
+
+    num = 0;
+    do
+    {
+      src_p++;
+      num = num * 8 + (ecma_number_t) (*src_p - '0');
+    }
+    while (src_p < src_end_p);
+  }
 
   if (push_number_allowed)
   {

@@ -196,6 +196,16 @@ typedef enum
   LEXER_LITERAL_OBJECT_ARGUMENTS,           /**< reference is equal to arguments */
 } lexer_literal_object_type_t;
 
+/**
+ * Lexer number types.
+ */
+typedef enum
+{
+  LEXER_NUMBER_DECIMAL,                     /**< decimal number */
+  LEXER_NUMBER_HEXADECIMAL,                 /**< hexadecimal number */
+  LEXER_NUMBER_OCTAL,                       /**< octal number */
+} lexer_number_type_t;
+
 /* EcmaScript character */
 typedef uint16_t lexer_character_type_t;
 
@@ -229,6 +239,7 @@ typedef struct
   uint8_t type;                              /**< token type */
   uint8_t literal_is_reserved;               /**< future reserved keyword
                                               *   (when char_literal.type is LEXER_IDENT_LITERAL) */
+  uint8_t extra_value;                       /**< helper value for different purposes */
   uint8_t was_newline;                       /**< newline occured before this token */
   parser_line_counter_t line;                /**< token start line */
   parser_line_counter_t column;              /**< token start column */

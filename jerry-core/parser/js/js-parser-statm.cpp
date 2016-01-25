@@ -794,8 +794,8 @@ parser_parse_for_statement_start (parser_context_t *context_p) /**< context */
       }
       else
       {
-        /* A runtime error will happen. */
-        parser_emit_cbc_ext (context_p, CBC_EXT_PUSH_UNDEFINED_BASE);
+        /* Invalid LeftHandSide expression. */
+        parser_emit_cbc_ext (context_p, CBC_EXT_THROW_REFERENCE_ERROR);
         opcode = CBC_ASSIGN;
       }
 
@@ -1552,10 +1552,26 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
          && context_p->token.lit_location.type == LEXER_STRING_LITERAL)
   {
     lexer_lit_location_t lit_location;
+    uint32_t status_flags = context_p->status_flags;
+#ifdef PARSER_DUMP_BYTE_CODE
+    int switch_to_strict_mode = PARSER_FALSE;
+#endif
 
     PARSER_ASSERT (context_p->stack_depth == 0);
 
     lit_location = context_p->token.lit_location;
+
+    if (lit_location.length == PARSER_USE_STRICT_LENGTH
+        && !lit_location.has_escape
+        && memcmp (PARSER_USE_STRICT_LITERAL, lit_location.char_p, PARSER_USE_STRICT_LENGTH) == 0)
+    {
+      context_p->status_flags |= PARSER_IS_STRICT;
+
+#ifdef PARSER_DUMP_BYTE_CODE
+      switch_to_strict_mode = PARSER_TRUE;
+#endif
+    }
+
     lexer_next_token (context_p);
 
     if (context_p->token.type != LEXER_SEMICOLON
@@ -1567,39 +1583,42 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
           || context_p->token.type == LEXER_LEFT_SQUARE
           || context_p->token.type == LEXER_DOT)
       {
+        /* The string is part of an expression statement. */
+        context_p->status_flags = status_flags;
+
         lexer_construct_literal_object (context_p, &lit_location, LEXER_STRING_LITERAL);
         parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_LITERAL);
-        /* The literal_is_reserved is reused for saving the token. */
-        context_p->token.literal_is_reserved = context_p->token.type;
+        /* The extra_value is used for saving the token. */
+        context_p->token.extra_value = context_p->token.type;
         context_p->token.type = LEXER_EXPRESSION_START;
         break;
       }
     }
 
-    if (lit_location.length == PARSER_USE_STRICT_LENGTH
-        && !lit_location.has_escape
-        && memcmp (PARSER_USE_STRICT_LITERAL, lit_location.char_p, PARSER_USE_STRICT_LENGTH) == 0)
-    {
-      context_p->status_flags |= PARSER_IS_STRICT;
-
-      if (context_p->token.type == LEXER_LITERAL
-          && context_p->token.lit_location.type == LEXER_IDENT_LITERAL
-          && context_p->token.literal_is_reserved)
-      {
-        parser_raise_error (context_p, PARSER_ERR_STRICT_IDENT_NOT_ALLOWED);
-      }
-
 #ifdef PARSER_DUMP_BYTE_CODE
-      if (context_p->is_show_opcodes)
-      {
-        printf ("  Note: switch to strict mode\n\n");
-      }
-#endif /* PARSER_DUMP_BYTE_CODE */
+    if (context_p->is_show_opcodes
+        && switch_to_strict_mode)
+    {
+      printf ("  Note: switch to strict mode\n\n");
     }
+#endif /* PARSER_DUMP_BYTE_CODE */
 
     if (context_p->token.type == LEXER_SEMICOLON)
     {
       lexer_next_token (context_p);
+    }
+
+    /* The last directive prologue can be the result of the script. */
+    if (!(context_p->status_flags & PARSER_IS_FUNCTION))
+    {
+      if (context_p->token.type != LEXER_LITERAL
+          || context_p->token.lit_location.type != LEXER_STRING_LITERAL)
+      {
+        lexer_construct_literal_object (context_p, &lit_location, LEXER_STRING_LITERAL);
+        parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_LITERAL);
+        parser_emit_cbc (context_p, CBC_POP_BLOCK);
+        parser_flush_cbc (context_p);
+      }
     }
   }
 
@@ -1612,8 +1631,6 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
   while (context_p->token.type != LEXER_EOS
          || context_p->stack_top_uint8 != PARSER_STATEMENT_START)
   {
-    int statement_terminator_required;
-
     PARSER_ASSERT (context_p->stack_depth == context_p->context_stack_depth);
 
     switch (context_p->token.type)
@@ -1833,8 +1850,8 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
 
           lexer_construct_literal_object (context_p, &lit_location, LEXER_IDENT_LITERAL);
           parser_emit_cbc_literal_from_token (context_p, CBC_PUSH_LITERAL);
-          /* The literal_is_reserved is reused for saving the token. */
-          context_p->token.literal_is_reserved = context_p->token.type;
+          /* The extra_value is used for saving the token. */
+          context_p->token.extra_value = context_p->token.type;
           context_p->token.type = LEXER_EXPRESSION_START;
         }
         /* FALLTHRU */
@@ -1851,8 +1868,8 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
 
         if (context_p->token.type == LEXER_EXPRESSION_START)
         {
-          /* The literal_is_reserved is reused for saving the token. */
-          context_p->token.type = context_p->token.literal_is_reserved;
+          /* Restore the token type form the extra_value. */
+          context_p->token.type = context_p->token.extra_value;
           options |= PARSE_EXPR_HAS_LITERAL;
         }
 
@@ -1863,73 +1880,67 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
 
     parser_flush_cbc (context_p);
 
-    statement_terminator_required = PARSER_TRUE;
-    while (1)
+    if (context_p->token.type == LEXER_RIGHT_BRACE)
     {
-      if (statement_terminator_required)
+      if (context_p->stack_top_uint8 == PARSER_STATEMENT_BLOCK)
       {
-        if (context_p->token.type == LEXER_RIGHT_BRACE)
-        {
-          if (context_p->stack_top_uint8 == PARSER_STATEMENT_BLOCK)
-          {
-            parser_stack_pop_uint8 (context_p);
-            parser_stack_iterator_init (context_p, &context_p->last_statement);
-            lexer_next_token (context_p);
-          }
-          else if (context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH
-                   || context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH_NO_DEFAULT)
-          {
-            int has_default = (context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH);
-            parser_loop_statement_t loop;
-            parser_switch_statement_t switch_statement;
-
-            parser_stack_pop_uint8 (context_p);
-            parser_stack_pop (context_p, &loop, sizeof (parser_loop_statement_t));
-            parser_stack_pop (context_p, &switch_statement, sizeof (parser_switch_statement_t));
-            parser_stack_iterator_init (context_p, &context_p->last_statement);
-
-            PARSER_ASSERT (switch_statement.branch_list_p == NULL);
-
-            if (!has_default)
-            {
-              parser_set_branch_to_current_position (context_p, &switch_statement.default_branch);
-            }
-
-            parser_set_breaks_to_current_position (context_p, loop.branch_list_p);
-            lexer_next_token (context_p);
-          }
-          else if (context_p->stack_top_uint8 == PARSER_STATEMENT_TRY)
-          {
-            parser_parse_try_statement_end (context_p);
-          }
-          else if (context_p->stack_top_uint8 == PARSER_STATEMENT_START)
-          {
-            if (context_p->status_flags & PARSER_IS_CLOSURE)
-            {
-              parser_stack_pop_uint8 (context_p);
-              context_p->last_statement.current_p = NULL;
-              PARSER_ASSERT (context_p->stack_depth == 0);
-              PARSER_ASSERT (context_p->context_stack_depth == 0);
-              /* There is no lexer_next_token here, since the
-               * next token belongs to the parent context. */
-              return;
-            }
-            parser_raise_error (context_p, PARSER_ERR_INVALID_RIGHT_SQUARE);
-          }
-        }
-        else if (context_p->token.type == LEXER_SEMICOLON)
-        {
-          lexer_next_token (context_p);
-        }
-        else if (context_p->token.type != LEXER_EOS
-                 && !context_p->token.was_newline)
-        {
-          parser_raise_error (context_p, PARSER_ERR_SEMICOLON_EXPECTED);
-        }
+        parser_stack_pop_uint8 (context_p);
+        parser_stack_iterator_init (context_p, &context_p->last_statement);
+        lexer_next_token (context_p);
       }
+      else if (context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH
+               || context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH_NO_DEFAULT)
+      {
+        int has_default = (context_p->stack_top_uint8 == PARSER_STATEMENT_SWITCH);
+        parser_loop_statement_t loop;
+        parser_switch_statement_t switch_statement;
 
-      statement_terminator_required = PARSER_FALSE;
+        parser_stack_pop_uint8 (context_p);
+        parser_stack_pop (context_p, &loop, sizeof (parser_loop_statement_t));
+        parser_stack_pop (context_p, &switch_statement, sizeof (parser_switch_statement_t));
+        parser_stack_iterator_init (context_p, &context_p->last_statement);
 
+        PARSER_ASSERT (switch_statement.branch_list_p == NULL);
+
+        if (!has_default)
+        {
+          parser_set_branch_to_current_position (context_p, &switch_statement.default_branch);
+        }
+
+        parser_set_breaks_to_current_position (context_p, loop.branch_list_p);
+        lexer_next_token (context_p);
+      }
+      else if (context_p->stack_top_uint8 == PARSER_STATEMENT_TRY)
+      {
+        parser_parse_try_statement_end (context_p);
+      }
+      else if (context_p->stack_top_uint8 == PARSER_STATEMENT_START)
+      {
+        if (context_p->status_flags & PARSER_IS_CLOSURE)
+        {
+          parser_stack_pop_uint8 (context_p);
+          context_p->last_statement.current_p = NULL;
+          PARSER_ASSERT (context_p->stack_depth == 0);
+          PARSER_ASSERT (context_p->context_stack_depth == 0);
+          /* There is no lexer_next_token here, since the
+           * next token belongs to the parent context. */
+          return;
+        }
+        parser_raise_error (context_p, PARSER_ERR_INVALID_RIGHT_SQUARE);
+      }
+    }
+    else if (context_p->token.type == LEXER_SEMICOLON)
+    {
+      lexer_next_token (context_p);
+    }
+    else if (context_p->token.type != LEXER_EOS
+             && !context_p->token.was_newline)
+    {
+      parser_raise_error (context_p, PARSER_ERR_SEMICOLON_EXPECTED);
+    }
+
+    while (PARSER_TRUE)
+    {
       switch (context_p->stack_top_uint8)
       {
         case PARSER_STATEMENT_LABEL:
@@ -1971,7 +1982,10 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
         case PARSER_STATEMENT_DO_WHILE:
         {
           parser_parse_do_while_statement_end (context_p);
-          statement_terminator_required = PARSER_TRUE;
+          if (context_p->token.type == LEXER_SEMICOLON)
+          {
+            lexer_next_token (context_p);
+          }
           continue;
           /* FALLTHRU */
         }

@@ -115,8 +115,11 @@ parser_compute_indicies (parser_context_t *context_p, /**< context */
             if (literal_p->status_flags & LEXER_FLAG_FUNCTION_NAME)
             {
               PARSER_ASSERT (literal_p == PARSER_GET_LITERAL (0));
-              status_flags |= PARSER_NAMED_FUNCTION_EXP | PARSER_NO_REG_STORE;
+
+              status_flags |= PARSER_NAMED_FUNCTION_EXP | PARSER_NO_REG_STORE | PARSER_LEXICAL_ENV_NEEDED;
               context_p->status_flags = status_flags;
+
+              literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
               context_p->literal_count++;
             }
 

@@ -287,7 +287,6 @@ vm_op_delete_prop (ecma_value_t object, /**< base object */
 
   if (ecma_is_value_undefined (object))
   {
-    JERRY_ASSERT (!is_strict);
     completion_value = ecma_make_simple_completion_value (ECMA_SIMPLE_VALUE_TRUE);
   }
   else

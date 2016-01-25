@@ -61,35 +61,27 @@ vm_op_get_value (ecma_value_t object, /**< base object */
                  ecma_value_t property, /**< property name */
                  bool is_strict) /**< strict mode */
 {
-  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
-  ecma_object_t *object_p;
-  ecma_string_t *property_p;
+  if (unlikely (ecma_is_value_undefined (object) || ecma_is_value_null (object)))
+  {
+    ecma_object_t *error = ecma_new_standard_error (ECMA_ERROR_TYPE);
+    return ecma_make_throw_obj_completion_value (error);
+  }
 
-  ECMA_TRY_CATCH (obj_val,
-                  ecma_op_to_object (object),
-                  completion_value);
+  ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
 
   ECMA_TRY_CATCH (property_val,
                   ecma_op_to_string (property),
                   completion_value);
 
-  object_p = ecma_get_object_from_value (obj_val);
-  property_p = ecma_get_string_from_value (property_val);
+  ecma_string_t *property_p = ecma_get_string_from_value (property_val);
 
-  if (ecma_is_lexical_environment (object_p))
-  {
-    completion_value = ecma_op_get_value_lex_env_base (object_p,
-                                                       property_p,
-                                                       is_strict);
-  }
-  else
-  {
-    completion_value = ecma_op_object_get (object_p,
-                                           property_p);
-  }
+  ecma_reference_t reference = ecma_make_reference (object, property_p, is_strict);
+
+  completion_value = ecma_op_get_value_object_base (reference);
+
+  ecma_free_reference (reference);
 
   ECMA_FINALIZE (property_val);
-  ECMA_FINALIZE (obj_val);
 
   return completion_value;
 } /* vm_op_get_value */
@@ -757,7 +749,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
       {
         case VM_OC_NONE:
         {
-          JERRY_UNREACHABLE ();
+          JERRY_ASSERT (opcode == CBC_EXT_DEBUGGER);
           break;
         }
         case VM_OC_POP:
@@ -1015,11 +1007,17 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
             ref_base_lex_env_p = ecma_op_resolve_reference_base (frame_ctx_p->lex_env_p,
                                                                  name_p);
 
-            JERRY_ASSERT (ref_base_lex_env_p != NULL);
-
-            last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
-                                                                    name_p,
-                                                                    is_strict);
+            if (ref_base_lex_env_p != NULL)
+            {
+              last_completion_value = ecma_op_get_value_lex_env_base (ref_base_lex_env_p,
+                                                                      name_p,
+                                                                      is_strict);
+            }
+            else
+            {
+              ecma_object_t *error = ecma_new_standard_error (ECMA_ERROR_REFERENCE);
+              last_completion_value = ecma_make_throw_obj_completion_value (error);
+            }
 
             if (ecma_is_completion_value_throw (last_completion_value))
             {
@@ -1074,6 +1072,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           {
             goto error;
           }
+
           result = ecma_get_completion_value_value (last_completion_value);
 
           if (opcode < CBC_PRE_INCR)
@@ -1191,6 +1190,12 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         {
           last_completion_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_THROW, left_value);
           free_flags = 0;
+          goto error;
+        }
+        case VM_OC_THROW_REFERENCE_ERROR:
+        {
+          ecma_object_t *error = ecma_new_standard_error (ECMA_ERROR_REFERENCE);
+          last_completion_value = ecma_make_throw_obj_completion_value (error);
           goto error;
         }
         case VM_OC_EVAL:

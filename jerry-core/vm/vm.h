@@ -89,6 +89,7 @@ typedef enum {
 
   VM_OC_RET,
   VM_OC_THROW,
+  VM_OC_THROW_REFERENCE_ERROR,
 
   /* The PROP forms must get the highest opcodes. */
   VM_OC_EVAL,

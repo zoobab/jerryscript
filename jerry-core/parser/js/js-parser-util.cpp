@@ -739,6 +739,14 @@ parser_error_to_string (parser_error_t error) /**< error code */
     {
       return "Newline is not allowed in strings or regexps.";
     }
+    case PARSER_ERR_OCTAL_NUMBER_NOT_ALLOWED:
+    {
+      return "Octal numbers are not allowed in strict mode.";
+    }
+    case PARSER_ERR_OCTAL_ESCAPE_NOT_ALLOWED:
+    {
+      return "Octal escape sequences are not allowed in strict mode.";
+    }
     case PARSER_ERR_STRICT_IDENT_NOT_ALLOWED:
     {
       return "Identifier name is reserved in strict mode.";

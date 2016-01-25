@@ -36,8 +36,5 @@ extern jsp_status_t parser_parse_eval (const jerry_api_char_t *,
                                        size_t,
                                        bool,
                                        const cbc_compiled_code_t **);
-extern jsp_status_t parser_parse_new_function (const jerry_api_char_t **,
-                                               const size_t *, size_t,
-                                               const cbc_compiled_code_t **);
 
 #endif /* PARSER_H */
