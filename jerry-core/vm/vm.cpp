@@ -1781,11 +1781,11 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         {
           JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
 
-          ecma_collection_header_t *header_p = opfunc_for_in (left_value);
+          ecma_value_t expr_obj_value = ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
+          ecma_collection_header_t *header_p = opfunc_for_in (left_value, &expr_obj_value);
 
-          if (header_p->unit_number == 0)
+          if (header_p == NULL)
           {
-            ecma_dealloc_collection_header (header_p);
             byte_code_p = byte_code_start_p + branch_offset;
             break;
           }
@@ -1796,6 +1796,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           stack_top_p += PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
           stack_top_p[-1] = (ecma_value_t) VM_CREATE_CONTEXT (VM_CONTEXT_FOR_IN, branch_offset);
           stack_top_p[-2] = header_p->first_chunk_cp;
+          stack_top_p[-3] = expr_obj_value;
 
           ecma_dealloc_collection_header (header_p);
           break;
@@ -1817,15 +1818,35 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         {
           JERRY_ASSERT (frame_ctx_p->registers_p + register_end + frame_ctx_p->context_depth == stack_top_p);
 
-          if (stack_top_p[-2] != MEM_CP_NULL)
+          while (true)
           {
-            byte_code_p = byte_code_start_p + branch_offset;
+            if (stack_top_p[-2] == MEM_CP_NULL)
+            {
+              ecma_free_value (stack_top_p[-3], true);
+
+              VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
+              stack_top_p -= PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
+              break;
+            }
+
+            ecma_collection_chunk_t *chunk_p = MEM_CP_GET_NON_NULL_POINTER (ecma_collection_chunk_t, stack_top_p[-2]);
+
+            ecma_string_t *prop_name_p = ecma_get_string_from_value (*(ecma_value_t *) chunk_p->data);
+
+            if (ecma_op_object_get_property (ecma_get_object_from_value (stack_top_p[-3]),
+                                             prop_name_p) == NULL)
+            {
+              stack_top_p[-2] = chunk_p->next_chunk_cp;
+              ecma_deref_ecma_string (prop_name_p);
+              ecma_dealloc_collection_chunk (chunk_p);
+            }
+            else
+            {
+              byte_code_p = byte_code_start_p + branch_offset;
+              break;
+            }
           }
-          else
-          {
-            VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
-            stack_top_p -= PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
-          }
+
           break;
         }
         case VM_OC_TRY:

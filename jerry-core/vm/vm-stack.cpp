@@ -81,9 +81,10 @@ vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
         ecma_dealloc_collection_chunk (chunk_p);
       }
 
+      ecma_free_value (vm_stack_top_p[-3], true);
+
       VM_MINUS_EQUAL_U16 (frame_ctx_p->context_depth, PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION);
       vm_stack_top_p -= PARSER_FOR_IN_CONTEXT_STACK_ALLOCATION;
-
       break;
     }
     default:

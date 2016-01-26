@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
+#include "ecma-alloc.h"
 #include "ecma-builtins.h"
 #include "ecma-conversion.h"
 #include "ecma-exceptions.h"
 #include "ecma-function-object.h"
+#include "ecma-gc.h"
 #include "ecma-globals.h"
 #include "ecma-helpers.h"
 #include "ecma-lex-env.h"
@@ -383,7 +385,8 @@ vm_op_delete_var (lit_cpointer_t name_literal, /**< name literal */
  *         Returned value must be freed with ecma_free_completion_value
  */
 ecma_collection_header_t *
-opfunc_for_in (ecma_value_t left_value) /**< left value */
+opfunc_for_in (ecma_value_t left_value, /**< left value */
+               ecma_value_t *result_obj_p) /**< expression object */
 {
   ecma_completion_value_t compl_val = ecma_make_empty_completion_value ();
   ecma_collection_header_t *prop_names_p = NULL;
@@ -400,11 +403,18 @@ opfunc_for_in (ecma_value_t left_value) /**< left value */
     ecma_object_t *obj_p = ecma_get_object_from_value (obj_expr_value);
     prop_names_p = ecma_op_object_get_property_names (obj_p, false, true, true);
 
+    if (prop_names_p->unit_number != 0)
+    {
+      ecma_ref_object (obj_p);
+      *result_obj_p = ecma_make_object_value (obj_p);
+    }
+    else
+    {
+      ecma_dealloc_collection_header (prop_names_p);
+      prop_names_p = NULL;
+    }
+
     ECMA_FINALIZE (obj_expr_value);
-  }
-  else
-  {
-    prop_names_p = ecma_new_strings_collection (NULL, 0);
   }
 
   JERRY_ASSERT (ecma_is_completion_value_empty (compl_val));
