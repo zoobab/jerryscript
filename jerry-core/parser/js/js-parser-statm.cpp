@@ -2066,7 +2066,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
 void PARSER_NOINLINE
 parser_free_jumps (parser_stack_iterator_t iterator) /**< iterator position */
 {
-  while (1)
+  while (PARSER_TRUE)
   {
     uint8_t type = parser_stack_iterator_read_uint8 (&iterator);
     parser_branch_node_t *branch_list_p = NULL;

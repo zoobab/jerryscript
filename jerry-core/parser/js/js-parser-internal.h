@@ -24,22 +24,23 @@
 #include "js-lexer.h"
 
 /* General parser flags. */
-#define PARSER_IS_STRICT                      0x0001u
-#define PARSER_IS_FUNCTION                    0x0002u
-#define PARSER_IS_CLOSURE                     0x0004u
-#define PARSER_IS_PROPERTY_GETTER             0x0008u
-#define PARSER_IS_PROPERTY_SETTER             0x0010u
-#define PARSER_IS_FUNC_EXPRESSION             0x0020u
-#define PARSER_HAS_NON_STRICT_ARG             0x0040u
-#define PARSER_INSIDE_WITH                    0x0080u
-#define PARSER_NAMED_FUNCTION_EXP             0x0100u
-#define PARSER_HAS_INITIALIZED_VARS           0x0200u
-#define PARSER_NO_END_LABEL                   0x0400u
-#define PARSER_NO_REG_STORE                   0x0800u
-#define PARSER_ARGUMENTS_NEEDED               0x1000u
-#define PARSER_ARGUMENTS_NOT_NEEDED           0x2000u
-#define PARSER_LEXICAL_ENV_NEEDED             0x4000u
-#define PARSER_HAS_LATE_LIT_INIT              0x8000u
+#define PARSER_IS_STRICT                      0x00001u
+#define PARSER_IS_FUNCTION                    0x00002u
+#define PARSER_IS_CLOSURE                     0x00004u
+#define PARSER_IS_PROPERTY_GETTER             0x00008u
+#define PARSER_IS_PROPERTY_SETTER             0x00010u
+#define PARSER_IS_FUNC_EXPRESSION             0x00020u
+#define PARSER_HAS_NON_STRICT_ARG             0x00040u
+#define PARSER_INSIDE_WITH                    0x00080u
+#define PARSER_RESOLVE_THIS_FOR_CALLS         0x00100u
+#define PARSER_NAMED_FUNCTION_EXP             0x00200u
+#define PARSER_HAS_INITIALIZED_VARS           0x00400u
+#define PARSER_NO_END_LABEL                   0x00800u
+#define PARSER_NO_REG_STORE                   0x01000u
+#define PARSER_ARGUMENTS_NEEDED               0x02000u
+#define PARSER_ARGUMENTS_NOT_NEEDED           0x04000u
+#define PARSER_LEXICAL_ENV_NEEDED             0x08000u
+#define PARSER_HAS_LATE_LIT_INIT              0x10000u
 
 /* Expression parsing flags. */
 #define PARSE_EXPR                            0x00

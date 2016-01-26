@@ -19,8 +19,7 @@
 #include "ecma-function-object.h"
 #include "js-parser-internal.h"
 
-#define UTF8_INTERMEDIATE_OCTET_MASK 0xc0
-#define UTF8_INTERMEDIATE_OCTET 0x80
+#define IS_UTF8_INTERMEDIATE_OCTET(byte) (((byte) & 0xc0) == 0x80)
 
 /**
  * Align column to the next tab position.
@@ -95,7 +94,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
 
   context_p->token.was_newline = 0;
 
-  while (1)
+  while (PARSER_TRUE)
   {
     if (context_p->source_p >= source_end_p)
     {
@@ -247,8 +246,10 @@ skip_spaces (parser_context_t *context_p) /**< context */
       return;
     }
 
-    context_p->source_p ++;
-    if ((context_p->source_p[0] & UTF8_INTERMEDIATE_OCTET_MASK) != UTF8_INTERMEDIATE_OCTET)
+    context_p->source_p++;
+
+    if (context_p->source_p < source_end_p
+        && IS_UTF8_INTERMEDIATE_OCTET (context_p->source_p[0]))
     {
       context_p->column++;
     }
@@ -440,7 +441,9 @@ lexer_parse_identifier (parser_context_t *context_p, /**< context */
     source_p++;
     length++;
     column++;
-    while ((source_p[0] & UTF8_INTERMEDIATE_OCTET_MASK) == UTF8_INTERMEDIATE_OCTET)
+
+    while (source_p < source_end_p
+           && IS_UTF8_INTERMEDIATE_OCTET (source_p[0]))
     {
       source_p++;
       length++;
@@ -517,7 +520,7 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
   size_t length = 0;
   uint8_t has_escape = PARSER_FALSE;
 
-  while (1)
+  while (PARSER_TRUE)
   {
     if (source_p >= source_end_p)
     {
@@ -677,7 +680,9 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
     source_p++;
     column++;
     length++;
-    while ((*source_p & UTF8_INTERMEDIATE_OCTET_MASK) == UTF8_INTERMEDIATE_OCTET)
+
+    while (source_p < source_end_p
+           && IS_UTF8_INTERMEDIATE_OCTET (*source_p))
     {
       source_p++;
       length++;
@@ -1221,12 +1226,15 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         }
 
         *destination_p++ = *source_p++;
-        while ((*source_p & UTF8_INTERMEDIATE_OCTET_MASK) == UTF8_INTERMEDIATE_OCTET)
+
+        while (source_p < source_end_p
+               && IS_UTF8_INTERMEDIATE_OCTET (*source_p))
         {
           *destination_p++ = *source_p++;
         }
       }
-      while ((source_p < source_end_p) && (util_is_identifier_part (source_p) || *source_p == '\\'));
+      while (source_p < source_end_p
+             && (util_is_identifier_part (source_p) || *source_p == '\\'));
 
       PARSER_ASSERT (destination_p == destination_start_p + literal_p->length);
     }
@@ -1234,7 +1242,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
     {
       uint8_t str_end_character = source_p[-1];
 
-      while (1)
+      while (PARSER_TRUE)
       {
         if (*source_p == str_end_character)
         {
@@ -1395,7 +1403,10 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
         }
 
         *destination_p++ = *source_p++;
-        while ((*source_p & UTF8_INTERMEDIATE_OCTET_MASK) == UTF8_INTERMEDIATE_OCTET)
+
+        /* There is no need to check the source_end_p
+         * since the string is terminated by a quotation mark. */
+        while (IS_UTF8_INTERMEDIATE_OCTET (*source_p))
         {
           *destination_p++ = *source_p++;
         }
@@ -1415,7 +1426,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
 
   context_p->lit_object.type = LEXER_LITERAL_OBJECT_ANY;
 
-  if (literal_p->type == LEXER_IDENT_LITERAL)
+  if (literal_type == LEXER_IDENT_LITERAL)
   {
     if ((context_p->status_flags & PARSER_INSIDE_WITH)
         && context_p->lit_object.literal_p->type == LEXER_IDENT_LITERAL)
@@ -1441,6 +1452,7 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
       if (!(context_p->status_flags & PARSER_ARGUMENTS_NOT_NEEDED))
       {
         context_p->status_flags |= PARSER_ARGUMENTS_NEEDED | PARSER_LEXICAL_ENV_NEEDED;
+        context_p->lit_object.literal_p->status_flags |= LEXER_FLAG_NO_REG_STORE;
       }
     }
   }
@@ -1548,6 +1560,11 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
     parser_raise_error (context_p, PARSER_ERR_LITERAL_LIMIT_REACHED);
   }
 
+  if (context_p->status_flags & PARSER_RESOLVE_THIS_FOR_CALLS)
+  {
+    extra_status_flags |= PARSER_RESOLVE_THIS_FOR_CALLS;
+  }
+
   context_p->status_flags |= PARSER_LEXICAL_ENV_NEEDED;
 
   literal_p = (lexer_literal_t *) parser_list_append (context_p, &context_p->literal_pool);
@@ -1636,19 +1653,24 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
       }
       case '\\':
       {
-        source_p++;
-        column++;
-
-        if (source_p >= source_end_p)
+        if (source_p + 1 >= source_end_p)
         {
           parser_raise_error (context_p, PARSER_ERR_UNTERMINATED_REGEXP);
+        }
+
+        if (source_p[1] >= 0x20 && source_p[1] <= 0x7f)
+        {
+          source_p++;
+          column++;
         }
       }
     }
 
     source_p++;
     column++;
-    while ((source_p[0] & UTF8_INTERMEDIATE_OCTET_MASK) == UTF8_INTERMEDIATE_OCTET)
+
+    while (source_p < source_end_p
+           && IS_UTF8_INTERMEDIATE_OCTET (source_p[0]))
     {
       source_p++;
     }

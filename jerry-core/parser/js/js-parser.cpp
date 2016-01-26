@@ -854,7 +854,8 @@ parse_print_literal (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
   }
 
   parser_list_iterator_init (literal_pool_p, &literal_iterator);
-  while (1)
+
+  while (PARSER_TRUE)
   {
     literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator);
 
@@ -2034,8 +2035,13 @@ parser_parse_function (parser_context_t *context_p, /**< context */
 
       if (context_p->lit_object.type == LEXER_LITERAL_OBJECT_ARGUMENTS)
       {
+        uint8_t literal_status_flags = context_p->lit_object.literal_p->status_flags;
+
+        literal_status_flags = (uint8_t) (literal_status_flags & ~LEXER_FLAG_NO_REG_STORE);
+        context_p->lit_object.literal_p->status_flags = literal_status_flags;
+
         context_p->status_flags |= PARSER_ARGUMENTS_NOT_NEEDED;
-        context_p->status_flags &= ~PARSER_LEXICAL_ENV_NEEDED;
+        context_p->status_flags &= ~(PARSER_LEXICAL_ENV_NEEDED | PARSER_ARGUMENTS_NEEDED);
       }
 
       if (context_p->literal_count == literal_count)

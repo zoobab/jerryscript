@@ -903,6 +903,10 @@ parser_error_to_string (parser_error_t error) /**< error code */
     {
       return "Duplicated label.";
     }
+    case PARSER_ERR_OBJECT_PROPERTY_REDEFINED:
+    {
+      return "Property of object literal redefined.";
+    }
     case PARSER_ERR_NON_STRICT_ARG_DEFINITION:
     {
       return "Non strict argument definition.";
