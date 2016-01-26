@@ -1139,7 +1139,7 @@ lexer_process_char_literal (parser_context_t *context_p, /**< context */
   {
     if (literal_p->type == literal_type
         && literal_p->prop.length == length
-        && memcmp(literal_p->u.char_p, char_p, length) == 0)
+        && memcmp (literal_p->u.char_p, char_p, length) == 0)
     {
       context_p->lit_object.literal_p = literal_p;
       context_p->lit_object.index = (uint16_t) literal_index;

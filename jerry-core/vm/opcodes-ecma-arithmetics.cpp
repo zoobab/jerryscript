@@ -55,7 +55,7 @@ do_number_arithmetic (number_arithmetic_op op, /**< number arithmetic operation 
   ECMA_OP_TO_NUMBER_TRY_CATCH (num_left, left_value, ret_value);
   ECMA_OP_TO_NUMBER_TRY_CATCH (num_right, right_value, ret_value);
 
-  ecma_number_t *res_p = ecma_alloc_number();
+  ecma_number_t *res_p = ecma_alloc_number ();
 
   switch (op)
   {
@@ -247,7 +247,7 @@ opfunc_unary_plus (ecma_value_t left_value) /**< left value */
                                left_value,
                                ret_value);
 
-  ecma_number_t *tmp_p = ecma_alloc_number();
+  ecma_number_t *tmp_p = ecma_alloc_number ();
 
   *tmp_p = num_var_value;
   ret_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_NORMAL, ecma_make_number_value (tmp_p));
@@ -274,7 +274,7 @@ opfunc_unary_minus (ecma_value_t left_value) /**< left value */
                                left_value,
                                ret_value);
 
-  ecma_number_t *tmp_p = ecma_alloc_number();
+  ecma_number_t *tmp_p = ecma_alloc_number ();
 
   *tmp_p = ecma_number_negate (num_var_value);
   ret_value = ecma_make_completion_value (ECMA_COMPLETION_TYPE_NORMAL, ecma_make_number_value (tmp_p));

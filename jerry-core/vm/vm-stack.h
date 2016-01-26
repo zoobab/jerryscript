@@ -53,7 +53,8 @@ typedef struct vm_stack_frame_t
 #define VM_GET_CONTEXT_TYPE(value) ((vm_stack_context_type_t) ((value) & 0xf))
 #define VM_GET_CONTEXT_END(value) ((value) >> 4)
 
-typedef enum {
+typedef enum
+{
   VM_CONTEXT_FINALLY_JUMP,                    /**< finally context with a jump */
   VM_CONTEXT_FINALLY_THROW,                   /**< finally context with a throw */
   VM_CONTEXT_FINALLY_RETURN,                  /**< finally context with a return */
