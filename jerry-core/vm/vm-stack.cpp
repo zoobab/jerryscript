@@ -142,8 +142,7 @@ vm_stack_find_finally (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 {
   ecma_value_t *vm_stack_top_p = *vm_stack_top_ref_p;
 
-  JERRY_ASSERT (finally_type >= VM_CONTEXT_FINALLY_JUMP
-                && finally_type <= VM_CONTEXT_FINALLY_RETURN);
+  JERRY_ASSERT (finally_type <= VM_CONTEXT_FINALLY_RETURN);
 
   if (finally_type != VM_CONTEXT_FINALLY_JUMP)
   {

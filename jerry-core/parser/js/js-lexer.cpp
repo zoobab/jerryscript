@@ -1588,6 +1588,7 @@ void
 lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
                                int parse_only) /**< parse only */
 {
+#ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
   const uint8_t *source_p = context_p->source_p;
   const uint8_t *regex_start_p = context_p->source_p;
   const uint8_t *regex_end_p = regex_start_p;
@@ -1773,6 +1774,10 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->lit_object.literal_p = literal_p;
   context_p->lit_object.index = (uint16_t) (context_p->literal_count - 1);
   context_p->lit_object.type = LEXER_LITERAL_OBJECT_ANY;
+#else
+  (void) parse_only;
+  parser_raise_error (context_p, PARSER_ERR_UNSUPPORTED_REGEXP);
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
 } /* lexer_construct_regexp_object */
 
 /**

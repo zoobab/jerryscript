@@ -25,13 +25,13 @@
  */
 typedef enum
 {
-  number_bitwise_logic_and, /**< bitwise AND calculation */
-  number_bitwise_logic_or, /**< bitwise OR calculation */
-  number_bitwise_logic_xor, /**< bitwise XOR calculation */
-  number_bitwise_shift_left, /**< bitwise LEFT SHIFT calculation */
-  number_bitwise_shift_right, /**< bitwise RIGHT_SHIFT calculation */
-  number_bitwise_shift_uright, /**< bitwise UNSIGNED RIGHT SHIFT calculation */
-  number_bitwise_not, /**< bitwise NOT calculation */
+  NUMBER_BITWISE_LOGIC_AND, /**< bitwise AND calculation */
+  NUMBER_BITWISE_LOGIC_OR, /**< bitwise OR calculation */
+  NUMBER_BITWISE_LOGIC_XOR, /**< bitwise XOR calculation */
+  NUMBER_BITWISE_SHIFT_LEFT, /**< bitwise LEFT SHIFT calculation */
+  NUMBER_BITWISE_SHIFT_RIGHT, /**< bitwise RIGHT_SHIFT calculation */
+  NUMBER_BITWISE_SHIFT_URIGHT, /**< bitwise UNSIGNED RIGHT SHIFT calculation */
+  NUMBER_BITWISE_NOT, /**< bitwise NOT calculation */
 } number_bitwise_logic_op;
 
 /**
@@ -64,37 +64,37 @@ do_number_bitwise_logic (number_bitwise_logic_op op, /**< number bitwise logic o
 
   switch (op)
   {
-    case number_bitwise_logic_and:
+    case NUMBER_BITWISE_LOGIC_AND:
     {
       *res_p = ecma_int32_to_number ((int32_t) (left_uint32 & right_uint32));
       break;
     }
-    case number_bitwise_logic_or:
+    case NUMBER_BITWISE_LOGIC_OR:
     {
       *res_p = ecma_int32_to_number ((int32_t) (left_uint32 | right_uint32));
       break;
     }
-    case number_bitwise_logic_xor:
+    case NUMBER_BITWISE_LOGIC_XOR:
     {
       *res_p = ecma_int32_to_number ((int32_t) (left_uint32 ^ right_uint32));
       break;
     }
-    case number_bitwise_shift_left:
+    case NUMBER_BITWISE_SHIFT_LEFT:
     {
       *res_p = ecma_int32_to_number (left_int32 << (right_uint32 & 0x1F));
       break;
     }
-    case number_bitwise_shift_right:
+    case NUMBER_BITWISE_SHIFT_RIGHT:
     {
       *res_p = ecma_int32_to_number (left_int32 >> (right_uint32 & 0x1F));
       break;
     }
-    case number_bitwise_shift_uright:
+    case NUMBER_BITWISE_SHIFT_URIGHT:
     {
       *res_p = ecma_uint32_to_number (left_uint32 >> (right_uint32 & 0x1F));
       break;
     }
-    case number_bitwise_not:
+    case NUMBER_BITWISE_NOT:
     {
       *res_p = ecma_int32_to_number ((int32_t) ~right_uint32);
       break;
@@ -121,13 +121,9 @@ ecma_completion_value_t
 opfunc_b_and (ecma_value_t left_value, /**< left value */
               ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_logic_and,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_AND,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_and */
 
 /**
@@ -142,13 +138,9 @@ ecma_completion_value_t
 opfunc_b_or (ecma_value_t left_value, /**< left value */
              ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_logic_or,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_OR,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_or */
 
 /**
@@ -163,13 +155,9 @@ ecma_completion_value_t
 opfunc_b_xor (ecma_value_t left_value, /**< left value */
               ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_logic_xor,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_XOR,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_xor */
 
 /**
@@ -184,13 +172,9 @@ ecma_completion_value_t
 opfunc_b_shift_left (ecma_value_t left_value, /**< left value */
                      ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_shift_left,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_LEFT,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_shift_left */
 
 /**
@@ -205,13 +189,9 @@ ecma_completion_value_t
 opfunc_b_shift_right (ecma_value_t left_value, /**< left value */
                       ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_shift_right,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_RIGHT,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_shift_right */
 
 /**
@@ -226,13 +206,9 @@ ecma_completion_value_t
 opfunc_b_shift_uright (ecma_value_t left_value, /**< left value */
                        ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_shift_uright,
-                                       left_value,
-                                       right_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_URIGHT,
+                                  left_value,
+                                  right_value);
 } /* opfunc_b_shift_uright */
 
 /**
@@ -246,11 +222,7 @@ opfunc_b_shift_uright (ecma_value_t left_value, /**< left value */
 ecma_completion_value_t
 opfunc_b_not (ecma_value_t left_value) /**< left value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_bitwise_logic (number_bitwise_not,
-                                       left_value,
-                                       left_value);
-
-  return ret_value;
+  return do_number_bitwise_logic (NUMBER_BITWISE_NOT,
+                                  left_value,
+                                  left_value);
 } /* opfunc_b_not */

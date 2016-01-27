@@ -98,8 +98,6 @@ vm_op_set_value (ecma_value_t object, /**< base object */
                  bool is_strict) /**< strict mode */
 {
   ecma_completion_value_t completion_value = ecma_make_empty_completion_value ();
-  ecma_object_t *object_p;
-  ecma_string_t *property_p;
 
   ECMA_TRY_CATCH (obj_val,
                   ecma_op_to_object (object),
@@ -109,8 +107,8 @@ vm_op_set_value (ecma_value_t object, /**< base object */
                   ecma_op_to_string (property),
                   completion_value);
 
-  object_p = ecma_get_object_from_value (obj_val);
-  property_p = ecma_get_string_from_value (property_val);
+  ecma_object_t *object_p = ecma_get_object_from_value (obj_val);
+  ecma_string_t *property_p = ecma_get_string_from_value (property_val);
 
   if (ecma_is_lexical_environment (object_p))
   {

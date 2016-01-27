@@ -27,11 +27,11 @@
  */
 typedef enum
 {
-  number_arithmetic_addition, /**< addition */
-  number_arithmetic_substraction, /**< substraction */
-  number_arithmetic_multiplication, /**< multiplication */
-  number_arithmetic_division, /**< division */
-  number_arithmetic_remainder, /**< remainder calculation */
+  NUMBER_ARITHMETIC_ADDITION, /**< addition */
+  NUMBER_ARITHMETIC_SUBSTRACTION, /**< substraction */
+  NUMBER_ARITHMETIC_MULTIPLICATION, /**< multiplication */
+  NUMBER_ARITHMETIC_DIVISION, /**< division */
+  NUMBER_ARITHMETIC_REMAINDER, /**< remainder calculation */
 } number_arithmetic_op;
 
 /**
@@ -59,27 +59,27 @@ do_number_arithmetic (number_arithmetic_op op, /**< number arithmetic operation 
 
   switch (op)
   {
-    case number_arithmetic_addition:
+    case NUMBER_ARITHMETIC_ADDITION:
     {
       *res_p = ecma_number_add (num_left, num_right);
       break;
     }
-    case number_arithmetic_substraction:
+    case NUMBER_ARITHMETIC_SUBSTRACTION:
     {
       *res_p = ecma_number_substract (num_left, num_right);
       break;
     }
-    case number_arithmetic_multiplication:
+    case NUMBER_ARITHMETIC_MULTIPLICATION:
     {
       *res_p = ecma_number_multiply (num_left, num_right);
       break;
     }
-    case number_arithmetic_division:
+    case NUMBER_ARITHMETIC_DIVISION:
     {
       *res_p = ecma_number_divide (num_left, num_right);
       break;
     }
-    case number_arithmetic_remainder:
+    case NUMBER_ARITHMETIC_REMAINDER:
     {
       *res_p = ecma_op_number_remainder (num_left, num_right);
       break;
@@ -135,7 +135,7 @@ opfunc_addition (ecma_value_t left_value, /**< left value */
   }
   else
   {
-    ret_value = do_number_arithmetic (number_arithmetic_addition,
+    ret_value = do_number_arithmetic (NUMBER_ARITHMETIC_ADDITION,
                                       left_value,
                                       right_value);
   }
@@ -158,13 +158,9 @@ ecma_completion_value_t
 opfunc_substraction (ecma_value_t left_value, /**< left value */
                      ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_arithmetic (number_arithmetic_substraction,
-                                    left_value,
-                                    right_value);
-
-  return ret_value;
+  return do_number_arithmetic (NUMBER_ARITHMETIC_SUBSTRACTION,
+                               left_value,
+                               right_value);
 } /* opfunc_substraction */
 
 /**
@@ -179,13 +175,9 @@ ecma_completion_value_t
 opfunc_multiplication (ecma_value_t left_value, /**< left value */
                        ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_arithmetic (number_arithmetic_multiplication,
-                                    left_value,
-                                    right_value);
-
-  return ret_value;
+  return do_number_arithmetic (NUMBER_ARITHMETIC_MULTIPLICATION,
+                               left_value,
+                               right_value);
 } /* opfunc_multiplication */
 
 /**
@@ -200,13 +192,9 @@ ecma_completion_value_t
 opfunc_division (ecma_value_t left_value, /**< left value */
                  ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_arithmetic (number_arithmetic_division,
-                                    left_value,
-                                    right_value);
-
-  return ret_value;
+  return do_number_arithmetic (NUMBER_ARITHMETIC_DIVISION,
+                               left_value,
+                               right_value);
 } /* opfunc_division */
 
 /**
@@ -221,13 +209,9 @@ ecma_completion_value_t
 opfunc_remainder (ecma_value_t left_value, /**< left value */
                   ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
-  ret_value = do_number_arithmetic (number_arithmetic_remainder,
-                                    left_value,
-                                    right_value);
-
-  return ret_value;
+  return do_number_arithmetic (NUMBER_ARITHMETIC_REMAINDER,
+                               left_value,
+                               right_value);
 } /* opfunc_remainder */
 
 /**

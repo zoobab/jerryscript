@@ -829,7 +829,6 @@ parse_print_literal (ecma_compiled_code_t *compiled_code_p, /**< compiled code *
                      uint16_t literal_index, /**< literal index */
                      parser_list_t *literal_pool_p) /**< literal pool */
 {
-  lexer_literal_t *literal_p;
   parser_list_iterator_t literal_iterator;
   uint16_t argument_end;
   uint16_t register_end;
@@ -857,7 +856,7 @@ parse_print_literal (ecma_compiled_code_t *compiled_code_p, /**< compiled code *
 
   while (PARSER_TRUE)
   {
-    literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator);
+    lexer_literal_t *literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator);
 
     if (literal_p == NULL)
     {
@@ -996,8 +995,6 @@ parse_print_final_cbc (ecma_compiled_code_t *compiled_code_p, /**< compiled code
                        parser_list_t *literal_pool_p, /**< literal pool */
                        size_t length) /**< length of byte code */
 {
-  cbc_opcode_t opcode;
-  cbc_ext_opcode_t ext_opcode;
   uint8_t flags;
   uint8_t *byte_code_start_p;
   uint8_t *byte_code_end_p;
@@ -1092,6 +1089,8 @@ parse_print_final_cbc (ecma_compiled_code_t *compiled_code_p, /**< compiled code
 
   while (byte_code_p < byte_code_end_p)
   {
+    cbc_opcode_t opcode;
+    cbc_ext_opcode_t ext_opcode;
     size_t cbc_offset;
 
     opcode = (cbc_opcode_t) *byte_code_p;
@@ -1709,12 +1708,12 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       && !(context_p->status_flags & PARSER_IS_STRICT))
   {
     parser_list_iterator_t literal_iterator;
-    lexer_literal_t *literal_p;
     uint16_t argument_count = 0;
 
     parser_list_iterator_init (&context_p->literal_pool, &literal_iterator);
     while (argument_count < context_p->argument_count)
     {
+      lexer_literal_t *literal_p;
       literal_p = (lexer_literal_t *) parser_list_iterator_next (&literal_iterator);
 
       PARSER_ASSERT (literal_p != NULL);
@@ -1980,8 +1979,6 @@ parser_parse_function (parser_context_t *context_p, /**< context */
       && context_p->token.type == LEXER_LITERAL
       && context_p->token.lit_location.type == LEXER_IDENT_LITERAL)
   {
-    uint8_t status_flags = LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED | LEXER_FLAG_FUNCTION_NAME;
-
     lexer_construct_literal_object (context_p,
                                     &context_p->token.lit_location,
                                     LEXER_IDENT_LITERAL);
@@ -1990,6 +1987,7 @@ parser_parse_function (parser_context_t *context_p, /**< context */
      * function expression name, so there is no need to assign special flags. */
     if (context_p->lit_object.type != LEXER_LITERAL_OBJECT_ARGUMENTS)
     {
+      uint8_t status_flags = LEXER_FLAG_VAR | LEXER_FLAG_INITIALIZED | LEXER_FLAG_FUNCTION_NAME;
       context_p->lit_object.literal_p->status_flags |= status_flags;
     }
 

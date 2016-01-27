@@ -255,7 +255,6 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
                                  const ecma_compiled_code_t *bytecode_data_p) /**< byte code */
 {
   const ecma_length_t arguments_number = arg_collection_p != NULL ? arg_collection_p->unit_number : 0;
-  ecma_completion_value_t completion;
 
   // 2., 3., 6.
   ecma_object_t *prototype_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
@@ -272,6 +271,7 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
        indx < arguments_number;
        indx++)
   {
+    ecma_completion_value_t completion;
     bool is_moved = ecma_collection_iterator_next (&args_iterator);
     JERRY_ASSERT (is_moved);
 
@@ -309,8 +309,6 @@ ecma_op_create_arguments_object_array_args (ecma_object_t *func_obj_p, /**< call
                                             ecma_length_t arguments_number, /**< length of arguments list */
                                             const ecma_compiled_code_t *bytecode_data_p) /**< byte code */
 {
-  ecma_completion_value_t completion;
-
   // 2., 3., 6.
   ecma_object_t *prototype_p = ecma_builtin_get (ECMA_BUILTIN_ID_OBJECT_PROTOTYPE);
 
@@ -323,6 +321,7 @@ ecma_op_create_arguments_object_array_args (ecma_object_t *func_obj_p, /**< call
        indx < arguments_number;
        indx++)
   {
+    ecma_completion_value_t completion;
     ecma_string_t *indx_string_p = ecma_new_ecma_string_from_uint32 (indx);
 
     completion = ecma_builtin_helper_def_prop (obj_p,

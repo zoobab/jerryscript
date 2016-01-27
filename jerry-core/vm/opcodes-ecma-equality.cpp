@@ -95,14 +95,10 @@ ecma_completion_value_t
 opfunc_equal_value_type (ecma_value_t left_value, /**< left value */
                          ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
   bool is_equal = ecma_op_strict_equality_compare (left_value, right_value);
 
-  ret_value = ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_TRUE
-                                                                                  : ECMA_SIMPLE_VALUE_FALSE));
-
-  return ret_value;
+  return ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_TRUE
+                                                                             : ECMA_SIMPLE_VALUE_FALSE));
 } /* opfunc_equal_value_type */
 
 /**
@@ -117,12 +113,8 @@ ecma_completion_value_t
 opfunc_not_equal_value_type (ecma_value_t left_value, /**< left value */
                              ecma_value_t right_value) /**< right value */
 {
-  ecma_completion_value_t ret_value = ecma_make_empty_completion_value ();
-
   bool is_equal = ecma_op_strict_equality_compare (left_value, right_value);
 
-  ret_value = ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_FALSE
-                                                                                  : ECMA_SIMPLE_VALUE_TRUE));
-
-  return ret_value;
+  return ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_FALSE
+                                                                             : ECMA_SIMPLE_VALUE_TRUE));
 } /* opfunc_not_equal_value_type */

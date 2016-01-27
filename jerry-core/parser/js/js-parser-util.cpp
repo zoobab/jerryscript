@@ -707,6 +707,10 @@ parser_error_to_string (parser_error_t error) /**< error code */
     {
       return "Duplicated regexp flag.";
     }
+    case PARSER_ERR_UNSUPPORTED_REGEXP:
+    {
+      return "Regexp is not supported in compact profile.";
+    }
     case PARSER_ERR_IDENTIFIER_TOO_LONG:
     {
       return "Identifier is too long.";
