@@ -202,7 +202,8 @@
   /* Branch opcodes first. Some other opcodes are mixed. */ \
   CBC_OPCODE (CBC_EXT_OPCODE, CBC_NO_FLAG, 0, \
               VM_OC_NONE) \
-  CBC_FORWARD_BRANCH (CBC_JUMP_FORWARD, 0, VM_OC_JUMP) \
+  CBC_FORWARD_BRANCH (CBC_JUMP_FORWARD, 0, \
+                      VM_OC_JUMP) \
   CBC_OPCODE (CBC_POP, CBC_NO_FLAG, -1, \
               VM_OC_POP) \
   CBC_BACKWARD_BRANCH (CBC_JUMP_BACKWARD, 0, \
@@ -598,14 +599,6 @@
  * ident_end <= index < const_literal_end       : constant literals
  * const_literal_end <= index < literal_end     : template literals
  */
-
-/**
- * Compiled byte code data.
- */
-typedef struct
-{
-  uint16_t status_flags;            /**< various status flags */
-} cbc_compiled_code_t;
 
 /**
  * Compiled byte code arguments.

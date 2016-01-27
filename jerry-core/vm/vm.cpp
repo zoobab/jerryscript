@@ -49,7 +49,7 @@ static bool is_direct_eval_form_call = false;
 /**
  * Program bytecode pointer
  */
-static const cbc_compiled_code_t *__program = NULL;
+static ecma_compiled_code_t *__program = NULL;
 
 /**
  * Get the value of object[property].
@@ -137,7 +137,7 @@ vm_op_set_value (ecma_value_t object, /**< base object */
  * Initialize interpreter.
  */
 void
-vm_init (const cbc_compiled_code_t *program_p, /**< pointer to byte-code data */
+vm_init (ecma_compiled_code_t *program_p, /**< pointer to byte-code data */
          bool dump_mem_stats) /** dump per-instruction memory usage change statistics */
 {
   JERRY_ASSERT (!dump_mem_stats);
@@ -205,7 +205,7 @@ vm_run_global (void)
  * @return completion value
  */
 ecma_completion_value_t
-vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data header */
+vm_run_eval (ecma_compiled_code_t *bytecode_data_p, /**< byte-code data */
              bool is_direct) /**< is eval called in direct mode? */
 {
   bool is_strict = ((bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0);
@@ -251,7 +251,7 @@ vm_run_eval (const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data hea
 
   ecma_deref_object (lex_env_p);
   ecma_free_value (this_binding, true);
-  ecma_bytecode_deref ((void *) bytecode_data_p);
+  ecma_bytecode_deref (bytecode_data_p);
 
   return completion;
 } /* vm_run_eval */
@@ -265,7 +265,8 @@ static ecma_value_t
 vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
                              lit_cpointer_t lit_cp) /**< literal */
 {
-  cbc_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (cbc_compiled_code_t, lit_cp.value.base_cp);
+  ecma_compiled_code_t *bytecode_p = ECMA_GET_NON_NULL_POINTER (ecma_compiled_code_t,
+                                                                lit_cp.value.base_cp);
   bool is_function = ((bytecode_p->status_flags & CBC_CODE_FLAGS_FUNCTION) != 0);
 
   if (is_function)
@@ -414,7 +415,7 @@ vm_finalize (void)
 {
   if (__program)
   {
-    ecma_bytecode_deref ((void *) __program);
+    ecma_bytecode_deref (__program);
   }
 
   __program = NULL;
@@ -428,7 +429,7 @@ vm_finalize (void)
 static ecma_completion_value_t
 vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 {
-  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  const ecma_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
   uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
   ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
   uint16_t encoding_limit;
@@ -559,7 +560,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 ecma_completion_value_t
 vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 {
-  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  const ecma_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
   uint8_t *byte_code_p = frame_ctx_p->byte_code_p;
   lit_cpointer_t *literal_start_p = frame_ctx_p->literal_start_p;
   ecma_completion_value_t last_completion_value = ecma_make_empty_completion_value ();
@@ -2220,7 +2221,7 @@ vm_execute (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
             const void *arg_p, /**< arguments list */
             ecma_length_t arg_list_len) /**< length of arguments list */
 {
-  const cbc_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
+  const ecma_compiled_code_t *bytecode_header_p = frame_ctx_p->bytecode_header_p;
   ecma_completion_value_t completion_value;
   vm_frame_ctx_t *prev_context_p;
   uint16_t argument_end;
@@ -2291,6 +2292,8 @@ vm_execute (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
     }
   }
 
+  is_direct_eval_form_call = false;
+
   prev_context_p = vm_top_context_p;
   vm_top_context_p = frame_ctx_p;
 
@@ -2356,7 +2359,7 @@ vm_run_with_alloca (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
  * @return completion value
  */
 ecma_completion_value_t
-vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
+vm_run (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code data header */
         ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
         ecma_object_t *lex_env_p, /**< lexical environment to use */
         bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */
@@ -2423,7 +2426,7 @@ vm_run (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header
  * @return completion value
  */
 ecma_completion_value_t
-vm_run_array_args (const cbc_compiled_code_t *bytecode_header_p, /**< byte-code data header */
+vm_run_array_args (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code data header */
                    ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
                    ecma_object_t *lex_env_p, /**< lexical environment to use */
                    bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */

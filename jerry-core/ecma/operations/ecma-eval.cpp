@@ -92,7 +92,7 @@ ecma_op_eval_chars_buffer (const jerry_api_char_t *code_p, /**< code characters 
 
   ecma_completion_value_t completion;
 
-  const cbc_compiled_code_t *bytecode_data_p;
+  ecma_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
 
   bool is_strict_call = (is_direct && is_called_from_strict_mode_code);

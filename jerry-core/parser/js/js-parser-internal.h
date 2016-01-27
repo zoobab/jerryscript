@@ -352,7 +352,7 @@ int lexer_same_identifiers (lexer_lit_location_t *, lexer_lit_location_t *);
 void parser_parse_expression (parser_context_t *, int);
 void parser_parse_statements (parser_context_t *);
 void parser_scan_until (parser_context_t *, lexer_range_t *, lexer_token_type_t);
-cbc_compiled_code_t *parser_parse_function (parser_context_t *, uint32_t);
+ecma_compiled_code_t *parser_parse_function (parser_context_t *, uint32_t);
 void parser_free_jumps (parser_stack_iterator_t);
 
 /* Error management. */

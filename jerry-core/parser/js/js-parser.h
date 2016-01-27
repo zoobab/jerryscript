@@ -118,7 +118,7 @@ typedef struct
 } parser_error_location;
 
 /* Note: source must be a valid UTF-8 string. */
-cbc_compiled_code_t * parser_parse_script (const uint8_t *, size_t, int, parser_error_location *);
+ecma_compiled_code_t * parser_parse_script (const uint8_t *, size_t, int, parser_error_location *);
 const char *parser_error_to_string (parser_error_t);
 
 extern void parser_set_show_instrs (int);

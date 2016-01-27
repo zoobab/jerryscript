@@ -363,7 +363,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
     if (!(name_p->status_flags & (LEXER_FLAG_FUNCTION_NAME | LEXER_FLAG_FUNCTION_ARGUMENT)))
     {
       /* Overwrite the previous initialization. */
-      cbc_compiled_code_t *compiled_code_p;
+      ecma_compiled_code_t *compiled_code_p;
 
       literal_p = PARSER_GET_LITERAL ((size_t) (context_p->lit_object.index + 1));
 
@@ -373,7 +373,7 @@ parser_parse_function_statement (parser_context_t *context_p) /**< context */
       compiled_code_p = parser_parse_function (context_p, status_flags);
       util_free_literal (literal_p);
 
-      util_set_function_literal (literal_p, compiled_code_p);
+      literal_p->u.bytecode_p = compiled_code_p;
       lexer_next_token (context_p);
       return;
     }

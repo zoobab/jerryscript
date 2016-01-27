@@ -45,7 +45,7 @@ ecma_op_create_arguments_object_common (ecma_object_t *obj_p, /**< arguments obj
                                         ecma_object_t *lex_env_p, /**< lexical environment the Arguments
                                                                        object is created for */
                                         ecma_length_t arguments_number, /**< length of arguments list */
-                                        const cbc_compiled_code_t *bytecode_data_p) /**< byte code */
+                                        const ecma_compiled_code_t *bytecode_data_p) /**< bytecode data */
 {
   bool is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) != 0;
 
@@ -252,7 +252,7 @@ ecma_op_create_arguments_object (ecma_object_t *func_obj_p, /**< callee function
                                  ecma_object_t *lex_env_p, /**< lexical environment the Arguments
                                                                 object is created for */
                                  ecma_collection_header_t *arg_collection_p, /**< arguments collection */
-                                 const cbc_compiled_code_t *bytecode_data_p) /**< byte code */
+                                 const ecma_compiled_code_t *bytecode_data_p) /**< byte code */
 {
   const ecma_length_t arguments_number = arg_collection_p != NULL ? arg_collection_p->unit_number : 0;
   ecma_completion_value_t completion;
@@ -307,7 +307,7 @@ ecma_op_create_arguments_object_array_args (ecma_object_t *func_obj_p, /**< call
                                                                            object is created for */
                                             const ecma_value_t *arguments_list_p, /**< arguments list */
                                             ecma_length_t arguments_number, /**< length of arguments list */
-                                            const cbc_compiled_code_t *bytecode_data_p) /**< byte code */
+                                            const ecma_compiled_code_t *bytecode_data_p) /**< byte code */
 {
   ecma_completion_value_t completion;
 

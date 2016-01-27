@@ -825,7 +825,7 @@ parse_update_branches (parser_context_t *context_p, /**< context */
  * Print literal.
  */
 static void
-parse_print_literal (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
+parse_print_literal (ecma_compiled_code_t *compiled_code_p, /**< compiled code */
                      uint16_t literal_index, /**< literal index */
                      parser_list_t *literal_pool_p) /**< literal pool */
 {
@@ -915,7 +915,7 @@ parse_print_literal (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
  * @return next byte code position
  */
 static uint8_t *
-parse_print_define_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
+parse_print_define_vars (ecma_compiled_code_t *compiled_code_p, /**< compiled code */
                          uint8_t *byte_code_p, /**< byte code position */
                          uint16_t encoding_limit, /**< literal encoding limit */
                          uint16_t encoding_delta, /**< literal encoding delta */
@@ -956,7 +956,7 @@ parse_print_define_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled cod
  * @return next byte code position
  */
 static uint8_t *
-parse_print_initialize_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
+parse_print_initialize_vars (ecma_compiled_code_t *compiled_code_p, /**< compiled code */
                              uint8_t *byte_code_p, /**< byte code position */
                              uint16_t encoding_limit, /**< literal encoding limit */
                              uint16_t encoding_delta, /**< literal encoding delta */
@@ -992,7 +992,7 @@ parse_print_initialize_vars (cbc_compiled_code_t *compiled_code_p, /**< compiled
  * Print byte code.
  */
 static void
-parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code */
+parse_print_final_cbc (ecma_compiled_code_t *compiled_code_p, /**< compiled code */
                        parser_list_t *literal_pool_p, /**< literal pool */
                        size_t length) /**< length of byte code */
 {
@@ -1231,7 +1231,7 @@ parse_print_final_cbc (cbc_compiled_code_t *compiled_code_p, /**< compiled code 
  *
  * @return compiled code
  */
-static cbc_compiled_code_t *
+static ecma_compiled_code_t *
 parser_post_processing (parser_context_t *context_p) /**< context */
 {
   uint16_t literal_one_byte_limit;
@@ -1250,7 +1250,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   uint8_t *byte_code_p;
   int needs_uint16_arguments;
   cbc_opcode_t last_opcode = CBC_EXT_OPCODE;
-  cbc_compiled_code_t *compiled_code_p;
+  ecma_compiled_code_t *compiled_code_p;
   lit_cpointer_t *literal_pool_p;
   uint8_t *dst_p;
 
@@ -1449,7 +1449,7 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   }
 
   total_size += length + context_p->literal_count * sizeof (lit_cpointer_t);
-  compiled_code_p = (cbc_compiled_code_t *) parser_malloc (context_p, total_size);
+  compiled_code_p = (ecma_compiled_code_t *) parser_malloc (context_p, total_size);
 
   byte_code_p = (uint8_t *) compiled_code_p;
   compiled_code_p->status_flags = CBC_CODE_FLAGS_FUNCTION | (1 << ECMA_BYTECODE_REF_SHIFT);
@@ -1778,14 +1778,14 @@ parser_free_literals (parser_list_t *literal_pool_p) /**< literals */
  *
  * @return compiled code
  */
-cbc_compiled_code_t *
+ecma_compiled_code_t *
 parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
                      size_t size, /**< size of the source code */
                      int strict_mode, /**< strict mode */
                      parser_error_location *error_location) /**< error location */
 {
   parser_context_t context;
-  cbc_compiled_code_t *compiled_code;
+  ecma_compiled_code_t *compiled_code;
 
   context.error = PARSER_ERR_NO_ERROR;
   context.allocated_buffer_p = NULL;
@@ -1915,12 +1915,12 @@ parser_parse_script (const uint8_t *source_p, /**< valid UTF-8 source code */
  *
  * @return compiled code
  */
-cbc_compiled_code_t *
+ecma_compiled_code_t *
 parser_parse_function (parser_context_t *context_p, /**< context */
                        uint32_t status_flags) /**< extra status flags */
 {
   parser_saved_context_t saved_context;
-  cbc_compiled_code_t *compiled_code_p;
+  ecma_compiled_code_t *compiled_code_p;
 
   PARSER_ASSERT (context_p->last_cbc_opcode == PARSER_CBC_UNAVAILABLE);
 

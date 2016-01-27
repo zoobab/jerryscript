@@ -138,7 +138,7 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
         if (old_bc_p != NULL)
         {
           /* Free the old bytecode */
-          ecma_bytecode_deref ((void *) old_bc_p);
+          ecma_bytecode_deref ((ecma_compiled_code_t *) old_bc_p);
         }
 
         ECMA_SET_POINTER (bc_prop_p->u.internal_property.value, new_bc_p);
@@ -203,7 +203,7 @@ ecma_builtin_regexp_prototype_compile (ecma_value_t this_arg, /**< this argument
         if (old_bc_p != NULL)
         {
           /* Free the old bytecode */
-          ecma_bytecode_deref ((void *) old_bc_p);
+          ecma_bytecode_deref ((ecma_compiled_code_t *) old_bc_p);
         }
 
         ECMA_SET_POINTER (bc_prop_p->u.internal_property.value, new_bc_p);

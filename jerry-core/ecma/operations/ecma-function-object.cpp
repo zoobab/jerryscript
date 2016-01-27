@@ -152,7 +152,7 @@ ecma_function_bind_merge_arg_lists (ecma_object_t *func_obj_p, /**< Function obj
 ecma_object_t*
 ecma_op_create_function_object (ecma_object_t *scope_p, /**< function's scope */
                                 bool is_decl_in_strict_mode, /**< is function declared in strict mode code? */
-                                const cbc_compiled_code_t *bytecode_data_p) /**< byte-code array */
+                                const ecma_compiled_code_t *bytecode_data_p) /**< byte-code array */
 {
   bool is_strict_mode_code = is_decl_in_strict_mode;
 
@@ -191,7 +191,7 @@ ecma_op_create_function_object (ecma_object_t *scope_p, /**< function's scope */
   // 12.
   ecma_property_t *bytecode_prop_p = ecma_create_internal_property (f, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
   MEM_CP_SET_NON_NULL_POINTER (bytecode_prop_p->u.internal_property.value, bytecode_data_p);
-  ecma_bytecode_ref ((void *) bytecode_data_p);
+  ecma_bytecode_ref ((ecma_compiled_code_t *) bytecode_data_p);
 
   // 14.
   // 15.
@@ -315,8 +315,8 @@ ecma_op_function_try_lazy_instantiate_property (ecma_object_t *obj_p, /**< the f
 
     ecma_property_t *bytecode_prop_p = ecma_get_internal_property (obj_p, ECMA_INTERNAL_PROPERTY_CODE_BYTECODE);
 
-    const cbc_compiled_code_t *bytecode_data_p;
-    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
+    const ecma_compiled_code_t *bytecode_data_p;
+    bytecode_data_p = MEM_CP_GET_POINTER (const ecma_compiled_code_t, bytecode_prop_p->u.internal_property.value);
 
     if (bytecode_data_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
     {
@@ -597,8 +597,8 @@ ecma_op_function_call_array_args (ecma_object_t *func_obj_p, /**< Function objec
     bool is_strict;
     bool is_no_lex_env;
 
-    const cbc_compiled_code_t *bytecode_data_p;
-    bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t,
+    const ecma_compiled_code_t *bytecode_data_p;
+    bytecode_data_p = MEM_CP_GET_POINTER (const ecma_compiled_code_t,
                                           bytecode_prop_p->u.internal_property.value);
 
     is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) ? true : false;
@@ -726,8 +726,8 @@ ecma_op_function_call (ecma_object_t *func_obj_p, /**< Function object */
       bool is_strict;
       bool is_no_lex_env;
 
-      const cbc_compiled_code_t *bytecode_data_p;
-      bytecode_data_p = MEM_CP_GET_POINTER (const cbc_compiled_code_t, bytecode_prop_p->u.internal_property.value);
+      const ecma_compiled_code_t *bytecode_data_p;
+      bytecode_data_p = MEM_CP_GET_POINTER (const ecma_compiled_code_t, bytecode_prop_p->u.internal_property.value);
 
       is_strict = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_STRICT_MODE) ? true : false;
       is_no_lex_env = (bytecode_data_p->status_flags & CBC_CODE_FLAGS_LEXICAL_ENV_NOT_NEEDED) ? true : false;
@@ -1015,7 +1015,7 @@ ecma_op_function_construct (ecma_object_t *func_obj_p, /**< Function object */
 ecma_completion_value_t
 ecma_op_function_declaration (ecma_object_t *lex_env_p, /**< lexical environment */
                               ecma_string_t *function_name_p, /**< function name */
-                              const cbc_compiled_code_t *bytecode_data_p, /**< byte-code data */
+                              const ecma_compiled_code_t *bytecode_data_p, /**< bytecode data */
                               bool is_decl_in_strict_mode, /**< flag, indicating if function is
                                                             *   declared in strict mode code */
                               bool is_configurable_bindings) /**< flag indicating whether function

@@ -1727,7 +1727,7 @@ jerry_parse (const jerry_api_char_t* source_p, /**< script source */
 
   parser_set_show_instrs (is_show_instructions);
 
-  const cbc_compiled_code_t *bytecode_data_p;
+  ecma_compiled_code_t *bytecode_data_p;
   jsp_status_t parse_status;
 
   parse_status = parser_parse_script (source_p,
@@ -1882,7 +1882,7 @@ jerry_parse_and_save_snapshot (const jerry_api_char_t* source_p, /**< script sou
 {
 #ifdef JERRY_ENABLE_SNAPSHOT
   jsp_status_t parse_status;
-  const cbc_compiled_code_t *bytecode_data_p;
+  const ecma_compiled_code_t *bytecode_data_p;
 
   if (is_for_global)
   {

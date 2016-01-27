@@ -253,8 +253,8 @@ extern ecma_property_descriptor_t ecma_make_empty_property_descriptor (void);
 extern void ecma_free_property_descriptor (ecma_property_descriptor_t *);
 extern ecma_property_descriptor_t ecma_get_property_descriptor_from_property (ecma_property_t *);
 
-extern void ecma_bytecode_ref (void *);
-extern void ecma_bytecode_deref (void *);
+extern void ecma_bytecode_ref (ecma_compiled_code_t *);
+extern void ecma_bytecode_deref (ecma_compiled_code_t *);
 
 /* ecma-helpers-external-pointers.cpp */
 extern bool

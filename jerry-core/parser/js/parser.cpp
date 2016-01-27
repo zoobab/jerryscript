@@ -23,7 +23,7 @@
 jsp_status_t
 parser_parse_script (const jerry_api_char_t *source_p, /**< source code */
                      size_t size, /**< size of the source code */
-                     const cbc_compiled_code_t **bytecode_data_p) /**< result */
+                     ecma_compiled_code_t **bytecode_data_p) /**< result */
 {
   *bytecode_data_p = parser_parse_script (source_p, size, false, NULL);
 
@@ -42,7 +42,7 @@ jsp_status_t
 parser_parse_eval (const jerry_api_char_t *source_p, /**< source code */
                    size_t size, /**< size of the source code */
                    bool is_strict, /**< strict mode */
-                   const cbc_compiled_code_t **bytecode_data_p) /**< result */
+                   ecma_compiled_code_t **bytecode_data_p) /**< result */
 {
   *bytecode_data_p = parser_parse_script (source_p, size, is_strict, NULL);
 

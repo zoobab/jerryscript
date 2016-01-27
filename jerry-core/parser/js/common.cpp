@@ -147,16 +147,6 @@ util_get_utf8_length (uint16_t chr) /**< EcmaScript character */
 } /* util_get_utf8_length */
 
 /**
- * Initializes a function literal from the argument.
- */
-void
-util_set_function_literal (lexer_literal_t *literal_p, /**< literal */
-                           void *function_p) /* function */
-{
-  literal_p->u.bytecode_p = function_p;
-} /* util_set_function_literal */
-
-/**
  * Free literal.
  */
 void
@@ -173,7 +163,7 @@ util_free_literal (lexer_literal_t *literal_p) /**< literal */
   else if ((literal_p->type == LEXER_FUNCTION_LITERAL)
            || (literal_p->type == LEXER_REGEXP_LITERAL))
   {
-    ecma_bytecode_deref ((void *) literal_p->u.bytecode_p);
+    ecma_bytecode_deref (literal_p->u.bytecode_p);
   }
 } /* util_free_literal */
 

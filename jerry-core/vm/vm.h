@@ -169,19 +169,19 @@ typedef enum
   VM_OC_PUT_BLOCK = VM_OC_PUT_DATA_CREATE_FLAG (0x8),
 } vm_oc_put_types;
 
-extern void vm_init (const cbc_compiled_code_t *, bool);
+extern void vm_init (ecma_compiled_code_t *, bool);
 extern void vm_finalize (void);
 extern jerry_completion_code_t vm_run_global (void);
-extern ecma_completion_value_t vm_run_eval (const cbc_compiled_code_t *, bool);
+extern ecma_completion_value_t vm_run_eval (ecma_compiled_code_t *, bool);
 
 extern ecma_completion_value_t vm_loop (vm_frame_ctx_t *);
-extern ecma_completion_value_t vm_run (const cbc_compiled_code_t *,
+extern ecma_completion_value_t vm_run (const ecma_compiled_code_t *,
                                        ecma_value_t,
                                        ecma_object_t *,
                                        bool,
                                        ecma_collection_header_t *);
 
-extern ecma_completion_value_t vm_run_array_args (const cbc_compiled_code_t *,
+extern ecma_completion_value_t vm_run_array_args (const ecma_compiled_code_t *,
                                                   ecma_value_t,
                                                   ecma_object_t *,
                                                   bool,

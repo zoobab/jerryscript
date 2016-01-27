@@ -1552,7 +1552,7 @@ void
 lexer_construct_function_object (parser_context_t *context_p, /**< context */
                                  uint32_t extra_status_flags) /**< extra status flags */
 {
-  cbc_compiled_code_t *compiled_code_p;
+  ecma_compiled_code_t *compiled_code_p;
   lexer_literal_t *literal_p;
 
   if (context_p->literal_count >= PARSER_MAXIMUM_NUMBER_OF_LITERALS)
@@ -1575,7 +1575,7 @@ lexer_construct_function_object (parser_context_t *context_p, /**< context */
 
   compiled_code_p = parser_parse_function (context_p, extra_status_flags);
 
-  util_set_function_literal (literal_p, compiled_code_p);
+  literal_p->u.bytecode_p = compiled_code_p;
 
   literal_p->type = LEXER_FUNCTION_LITERAL;
   context_p->status_flags |= PARSER_NO_REG_STORE;
@@ -1764,7 +1764,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   }
 
   literal_p->type = LEXER_REGEXP_LITERAL;
-  literal_p->u.bytecode_p = bc_p;
+  literal_p->u.bytecode_p = (ecma_compiled_code_t *) bc_p;
 
   context_p->token.type = LEXER_LITERAL;
   context_p->token.literal_is_reserved = PARSER_FALSE;

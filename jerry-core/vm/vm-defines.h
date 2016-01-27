@@ -48,7 +48,7 @@ typedef enum : uint8_t
  */
 typedef struct
 {
-  const cbc_compiled_code_t *bytecode_header_p;       /**< currently executed byte-code data */
+  const ecma_compiled_code_t *bytecode_header_p;      /**< currently executed byte-code data */
   uint8_t *byte_code_p;                               /**< current byte code pointer */
   uint8_t *byte_code_start_p;                         /**< byte code start pointer */
   ecma_value_t *registers_p;                          /**< register start pointer */
