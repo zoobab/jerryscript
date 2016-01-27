@@ -951,7 +951,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
           length_str_p = ecma_get_magic_string (LIT_MAGIC_STRING_LENGTH);
           length_prop_p = ecma_get_named_property (array_obj_p, length_str_p);
 
-          PARSER_ASSERT (length_prop_p != NULL);
+          JERRY_ASSERT (length_prop_p != NULL);
 
           left_value = length_prop_p->u.named_data_property.value;
           length_num_p = ecma_get_number_from_value (left_value);
@@ -1120,7 +1120,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
             {
               if (base & 0x1)
               {
-                PARSER_ASSERT (opcode == CBC_POST_INCR_IDENT_PUSH_RESULT
+                JERRY_ASSERT (opcode == CBC_POST_INCR_IDENT_PUSH_RESULT
                                || opcode == CBC_POST_DECR_IDENT_PUSH_RESULT);
 
                 *stack_top_p++ = ecma_copy_value (result, true);
@@ -1130,7 +1130,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
                 /* The parser ensures there is enough space for the
                  * extra value on the stack. See js-parser-expr.cpp. */
 
-                PARSER_ASSERT (opcode == CBC_POST_INCR_PUSH_RESULT
+                JERRY_ASSERT (opcode == CBC_POST_INCR_PUSH_RESULT
                                || opcode == CBC_POST_DECR_PUSH_RESULT);
 
                 stack_top_p++;
@@ -1443,7 +1443,7 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
 
           READ_LITERAL_INDEX (literal_index);
 
-          PARSER_ASSERT (literal_index < ident_end);
+          JERRY_ASSERT (literal_index < ident_end);
 
           if (literal_index < register_end)
           {

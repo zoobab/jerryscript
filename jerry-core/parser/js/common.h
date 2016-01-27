@@ -127,27 +127,6 @@ void util_free_literal (lexer_literal_t *);
 void util_print_literal (lexer_literal_t *);
 #endif /* PARSER_DUMP_BYTE_CODE */
 
-/* Assertions */
-
-#ifdef PARSER_DEBUG
-
-#define PARSER_ASSERT(x) \
-  do \
-  { \
-    if (!(x)) \
-    { \
-      printf ("Assertion failure in '%s' at line %d\n", __FILE__, __LINE__); \
-      abort (); \
-    } \
-  } \
-  while (0)
-
-#else
-
-#define PARSER_ASSERT(x)
-
-#endif /* PARSER_DEBUG */
-
 /* TRY/CATCH block */
 
 #define PARSER_TRY_CONTEXT(context_name) \

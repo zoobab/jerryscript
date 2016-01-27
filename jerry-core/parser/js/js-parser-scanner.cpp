@@ -575,7 +575,7 @@ parser_scan_until (parser_context_t *context_p, /**< context */
       }
       case SCAN_MODE_FUNCTION_ARGUMENTS:
       {
-        PARSER_ASSERT (stack_top == SCAN_STACK_BLOCK_STATEMENT
+        JERRY_ASSERT (stack_top == SCAN_STACK_BLOCK_STATEMENT
                        || stack_top == SCAN_STACK_BLOCK_EXPRESSION
                        || stack_top == SCAN_STACK_BLOCK_PROPERTY);
 
@@ -626,7 +626,7 @@ parser_scan_until (parser_context_t *context_p, /**< context */
       }
       case SCAN_MODE_PROPERTY_NAME:
       {
-        PARSER_ASSERT (stack_top == SCAN_STACK_OBJECT_LITERAL);
+        JERRY_ASSERT (stack_top == SCAN_STACK_OBJECT_LITERAL);
 
         lexer_scan_identifier (context_p, PARSER_TRUE);
 

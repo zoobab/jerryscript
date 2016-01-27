@@ -31,7 +31,7 @@ parser_malloc (parser_context_t *context_p, /**< context */
 {
   void *result;
 
-  PARSER_ASSERT (size > 0);
+  JERRY_ASSERT (size > 0);
   result = PARSER_MALLOC (size);
   if (result == 0)
   {
@@ -59,7 +59,7 @@ parser_malloc_local (parser_context_t *context_p, /**< context */
 {
   void *result;
 
-  PARSER_ASSERT (size > 0);
+  JERRY_ASSERT (size > 0);
   result = PARSER_MALLOC_LOCAL (size);
   if (result == 0)
   {
@@ -244,13 +244,13 @@ parser_list_get (parser_list_t *list_p, /**< parser list */
 
   while (index >= item_count)
   {
-    PARSER_ASSERT (page_p != NULL);
+    JERRY_ASSERT (page_p != NULL);
     page_p = page_p->next_p;
     index -= item_count;
   }
 
-  PARSER_ASSERT (page_p != NULL);
-  PARSER_ASSERT (page_p != list_p->data.last_p
+  JERRY_ASSERT (page_p != NULL);
+  JERRY_ASSERT (page_p != list_p->data.last_p
                  || (index * list_p->item_size < list_p->data.last_position));
   return page_p->bytes + (index * list_p->item_size);
 } /* parser_list_get */
@@ -343,7 +343,7 @@ parser_stack_push_uint8 (parser_context_t *context_p, /**< context */
   /* This assert might trigger false positive valgrind errors, when
    * parser_stack_push() pushes not fully initialized structures.
    * More precisely when the last byte of the structure is uninitialized. */
-  PARSER_ASSERT (page_p == NULL
+  JERRY_ASSERT (page_p == NULL
                  || context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 
   if (context_p->stack.last_position >= PARSER_STACK_PAGE_SIZE)
@@ -377,7 +377,7 @@ parser_stack_pop_uint8 (parser_context_t *context_p) /**< context */
 {
   parser_mem_page_t *page_p = context_p->stack.first_p;
 
-  PARSER_ASSERT (page_p != NULL
+  JERRY_ASSERT (page_p != NULL
                  && context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 
   context_p->stack.last_position--;
@@ -398,7 +398,7 @@ parser_stack_pop_uint8 (parser_context_t *context_p) /**< context */
 
     page_p = context_p->stack.first_p;
 
-    PARSER_ASSERT (page_p != NULL);
+    JERRY_ASSERT (page_p != NULL);
   }
 
   context_p->stack_top_uint8 = page_p->bytes[context_p->stack.last_position - 1];
@@ -415,7 +415,7 @@ parser_stack_push_uint16 (parser_context_t *context_p, /**< context */
   {
     parser_mem_page_t *page_p = context_p->stack.first_p;
 
-    PARSER_ASSERT (page_p != NULL
+    JERRY_ASSERT (page_p != NULL
                    && context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 
     page_p->bytes[context_p->stack.last_position++] = (uint8_t) (uint16_value >> 8);
@@ -443,7 +443,7 @@ parser_stack_pop_uint16 (parser_context_t *context_p) /**< context */
   {
     parser_mem_page_t *page_p = context_p->stack.first_p;
 
-    PARSER_ASSERT (page_p != NULL
+    JERRY_ASSERT (page_p != NULL
                    && context_p->stack_top_uint8 == page_p->bytes[context_p->stack.last_position - 1]);
 
     value |= ((uint32_t) page_p->bytes[context_p->stack.last_position - 2]) << 8;
@@ -471,7 +471,7 @@ parser_stack_push (parser_context_t *context_p, /**< context */
   const uint8_t *bytes_p = (const uint8_t *) data_p;
   parser_mem_page_t *page_p;
 
-  PARSER_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
+  JERRY_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
 
   context_p->stack_top_uint8 = bytes_p[length - 1];
 
@@ -528,7 +528,7 @@ parser_stack_pop (parser_context_t *context_p, /**< context */
   uint8_t *bytes_p = (uint8_t *) data_p;
   parser_mem_page_t *page_p = context_p->stack.first_p;
 
-  PARSER_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
+  JERRY_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
 
   if (context_p->stack.last_position > length)
   {
@@ -542,7 +542,7 @@ parser_stack_pop (parser_context_t *context_p, /**< context */
     return;
   }
 
-  PARSER_ASSERT (page_p->next_p != NULL);
+  JERRY_ASSERT (page_p->next_p != NULL);
 
   length -= context_p->stack.last_position;
 
@@ -560,7 +560,7 @@ parser_stack_pop (parser_context_t *context_p, /**< context */
     memcpy (bytes_p, page_p->next_p->bytes + context_p->stack.last_position, length);
   }
 
-  PARSER_ASSERT (context_p->stack.last_position > 0);
+  JERRY_ASSERT (context_p->stack.last_position > 0);
 
   if (context_p->free_page_p == NULL)
   {
@@ -579,7 +579,7 @@ void
 parser_stack_iterator_skip (parser_stack_iterator_t *iterator, /**< iterator */
                             size_t length) /**< number of skipped bytes */
 {
-  PARSER_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
+  JERRY_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
 
   if (length < iterator->current_position)
   {
@@ -602,7 +602,7 @@ parser_stack_iterator_read (parser_stack_iterator_t *iterator, /**< iterator */
 {
   uint8_t *bytes_p = (uint8_t *) data_p;
 
-  PARSER_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
+  JERRY_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
 
   if (length <= iterator->current_position)
   {
@@ -612,7 +612,7 @@ parser_stack_iterator_read (parser_stack_iterator_t *iterator, /**< iterator */
   }
   else
   {
-    PARSER_ASSERT (iterator->current_p->next_p != NULL);
+    JERRY_ASSERT (iterator->current_p->next_p != NULL);
 
     length -= iterator->current_position;
     memcpy (bytes_p + length,
@@ -634,7 +634,7 @@ parser_stack_iterator_write (parser_stack_iterator_t *iterator, /**< iterator */
 {
   const uint8_t *bytes_p = (const uint8_t *) data_p;
 
-  PARSER_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
+  JERRY_ASSERT (length < PARSER_STACK_PAGE_SIZE && length > 0);
 
   if (length <= iterator->current_position)
   {
@@ -644,7 +644,7 @@ parser_stack_iterator_write (parser_stack_iterator_t *iterator, /**< iterator */
   }
   else
   {
-    PARSER_ASSERT (iterator->current_p->next_p != NULL);
+    JERRY_ASSERT (iterator->current_p->next_p != NULL);
 
     length -= iterator->current_position;
     memcpy (iterator->current_p->bytes,
