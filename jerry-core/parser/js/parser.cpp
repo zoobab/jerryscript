@@ -17,6 +17,16 @@
 #include "js-parser-internal.h"
 #include "parser.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_parser Parser
+ * @{
+ */
+
 /**
  * Parse EcamScript source code
  */
@@ -53,3 +63,9 @@ parser_parse_eval (const jerry_api_char_t *source_p, /**< source code */
 
   return JSP_STATUS_OK;
 } /* parser_parse_eval */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

@@ -16,6 +16,13 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup mem Memory allocation
+ * @{
+ *
+ * \addtogroup mem_parser Parser memory manager
+ * @{
+ */
+
 /**********************************************************************/
 /* Memory allocation                                                  */
 /**********************************************************************/
@@ -655,3 +662,8 @@ parser_stack_iterator_write (parser_stack_iterator_t *iterator, /**< iterator */
             length);
   }
 } /* parser_stack_iterator_write */
+
+/**
+ * @}
+ * @}
+ */

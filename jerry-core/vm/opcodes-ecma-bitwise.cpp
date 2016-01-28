@@ -20,6 +20,13 @@
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 /**
  * Number bitwise logic operations.
  */
@@ -226,3 +233,8 @@ opfunc_b_not (ecma_value_t left_value) /**< left value */
                                   left_value,
                                   left_value);
 } /* opfunc_b_not */
+
+/**
+ * @}
+ * @}
+ */

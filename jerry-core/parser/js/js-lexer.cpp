@@ -20,6 +20,16 @@
 #include "js-parser-internal.h"
 #include "lit-char-helpers.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_lexer Lexer
+ * @{
+ */
+
 #define IS_UTF8_INTERMEDIATE_OCTET(byte) (((byte) & 0xc0) == 0x80)
 
 /**
@@ -2130,3 +2140,9 @@ lexer_same_identifiers (lexer_lit_location_t *left, /**< left identifier */
 
   return PARSER_TRUE;
 } /* lexer_same_identifiers */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

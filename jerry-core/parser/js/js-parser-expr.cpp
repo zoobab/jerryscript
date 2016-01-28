@@ -16,6 +16,16 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_expr Expression parser
+ * @{
+ */
+
 /**
  * Precedence of the binary tokens.
  *
@@ -1468,3 +1478,9 @@ parser_parse_expression (parser_context_t *context_p, /**< context */
     parser_push_result (context_p);
   }
 } /* parser_parse_expression */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

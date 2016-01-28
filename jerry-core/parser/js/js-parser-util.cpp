@@ -16,6 +16,16 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_utils Utility
+ * @{
+ */
+
 /**********************************************************************/
 /* Emitting byte codes                                                */
 /**********************************************************************/
@@ -924,3 +934,9 @@ parser_error_to_string (parser_error_t error) /**< error code */
   JERRY_ASSERT (error == PARSER_ERR_NO_ERROR);
   return "No error.";
 } /* parser_error_to_string */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

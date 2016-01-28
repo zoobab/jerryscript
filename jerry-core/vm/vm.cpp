@@ -36,6 +36,13 @@
 
 #include <alloca.h>
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_executor Executor
+ * @{
+ */
+
 /**
  * Top (current) interpreter context
  */
@@ -2524,3 +2531,8 @@ vm_is_direct_eval_form_call (void)
 {
   return is_direct_eval_form_call;
 } /* vm_is_direct_eval_form_call */
+
+/**
+ * @}
+ * @}
+ */

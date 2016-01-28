@@ -17,6 +17,16 @@
 #ifndef JS_PARSER_LIMITS_H
 #define JS_PARSER_LIMITS_H
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_internals Internals
+ * @{
+ */
+
 /* Maximum identifier length accepted by the parser.
  * Limit: LEXER_MAX_STRING_LENGTH. */
 #ifndef PARSER_MAXIMUM_IDENT_LENGTH
@@ -51,7 +61,8 @@
  * Limit: 65500. Recommended: 1024. */
 #ifndef PARSER_MAXIMUM_STACK_LIMIT
 #define PARSER_MAXIMUM_STACK_LIMIT 1024
-#endif /* PARSER_MAXIMUM_STACK_LIMIT */
+
+#endif /* !PARSER_MAXIMUM_STACK_LIMIT */
 
 /* Checks. */
 
@@ -79,4 +90,10 @@
 #error "Maximum function stack usage is not within range."
 #endif /* (PARSER_MAXIMUM_STACK_LIMIT < 16) || (PARSER_MAXIMUM_STACK_LIMIT > 65500) */
 
-#endif /* JS_PARSER_LIMITS_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !JS_PARSER_LIMITS_H */

@@ -20,6 +20,13 @@
 #include "ecma-globals.h"
 #include "vm-defines.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 ecma_completion_value_t
 vm_var_decl (vm_frame_ctx_t *, ecma_string_t *);
 
@@ -122,4 +129,9 @@ vm_op_delete_var (lit_cpointer_t, ecma_object_t *, bool);
 ecma_collection_header_t *
 opfunc_for_in (ecma_value_t, ecma_value_t *);
 
-#endif /* OPCODES_H */
+/**
+ * @}
+ * @}
+ */
+
+#endif /* !OPCODES_H */

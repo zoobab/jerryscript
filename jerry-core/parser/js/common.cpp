@@ -18,6 +18,16 @@
 #include "ecma-helpers.h"
 #include "lit-char-helpers.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_utils Utility
+ * @{
+ */
+
 /**
  * Checks whether the next UTF8 character is a valid identifier start.
  *
@@ -244,3 +254,9 @@ util_print_literal (lexer_literal_t *literal_p) /**< literal */
 } /* util_print_literal */
 
 #endif /* PARSER_DUMP_BYTE_CODE */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

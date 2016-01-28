@@ -19,6 +19,16 @@
 
 #include "byte-code.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_parser Parser
+ * @{
+ */
+
 /**
  * Error codes.
  */
@@ -124,4 +134,10 @@ const char *parser_error_to_string (parser_error_t);
 
 extern void parser_set_show_instrs (int);
 
-#endif /* JS_PARSER_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !JS_PARSER_H */

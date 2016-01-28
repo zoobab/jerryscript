@@ -25,6 +25,16 @@
 
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup regexparser Regular expression
+ * @{
+ *
+ * \addtogroup regexparser_bytecode Bytecode
+ * @{
+ */
+
 /**
  * Size of block of RegExp bytecode. Used for allocation
  */
@@ -367,6 +377,13 @@ re_insert_into_group_with_jump (re_compiler_ctx_t *re_ctx_p, /**< RegExp compile
                  re_get_bytecode_length (re_ctx_p->bytecode_ctx_p) - group_start_offset);
   re_insert_into_group (re_ctx_p, group_start_offset, idx, is_capturable);
 } /* re_insert_into_group_with_jump */
+
+/**
+ * @}
+ *
+ * \addtogroup regexparser_compiler Compiler
+ * @{
+ */
 
 /**
  * Parse alternatives
@@ -901,5 +918,10 @@ re_dump_bytecode (re_bytecode_ctx_t *bc_ctx_p)
   JERRY_DLOG ("EOF\n");
 } /* re_dump_bytecode */
 #endif /* JERRY_ENABLE_LOG */
+
+/**
+ * @}
+ * @}
+ */
 
 #endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
