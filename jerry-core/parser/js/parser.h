@@ -24,8 +24,8 @@
  */
 typedef enum
 {
-  JSP_STATUS_OK, /**< parse finished successfully, no early errors occured */
-  JSP_STATUS_SYNTAX_ERROR, /**< SyntaxError early error occured */
+  JSP_STATUS_OK,             /**< parse finished successfully, no early errors occured */
+  JSP_STATUS_SYNTAX_ERROR,   /**< SyntaxError early error occured */
   JSP_STATUS_REFERENCE_ERROR /**< ReferenceError early error occured */
 } jsp_status_t;
 

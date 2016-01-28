@@ -159,11 +159,8 @@ typedef enum
   LEXER_KEYW_STATIC,             /**< static */
 } lexer_token_type_t;
 
-#define LEXER_NEWLINE_CR 0x0d
-#define LEXER_NEWLINE_LF 0x0a
 #define LEXER_NEWLINE_LS_PS_BYTE_1 0xe2
 #define LEXER_NEWLINE_LS_PS_BYTE_23(source) ((source)[1] == 0x80 && ((source)[2] | 0x1) == 0xa9)
-#define LEXER_TAB 0x09
 #define LEXER_UTF8_4BYTE_START 0xf0
 
 #define LEXER_IS_LEFT_BRACKET(type) \
@@ -205,9 +202,6 @@ typedef enum
   LEXER_NUMBER_HEXADECIMAL,                 /**< hexadecimal number */
   LEXER_NUMBER_OCTAL,                       /**< octal number */
 } lexer_number_type_t;
-
-/* EcmaScript character */
-typedef uint16_t lexer_character_type_t;
 
 /**
  * Lexer character (string / identifier) literal data.

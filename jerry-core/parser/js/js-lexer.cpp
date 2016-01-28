@@ -18,6 +18,7 @@
 #include "ecma-helpers.h"
 #include "ecma-function-object.h"
 #include "js-parser-internal.h"
+#include "lit-char-helpers.h"
 
 #define IS_UTF8_INTERMEDIATE_OCTET(byte) (((byte) & 0xc0) == 0x80)
 
@@ -38,7 +39,7 @@ align_column_to_tab (parser_line_counter_t column) /**< current column */
  *
  * @return character value
  */
-static lexer_character_type_t
+static ecma_char_t
 lexer_hex_to_character (parser_context_t *context_p, /**< context */
                         const uint8_t *source_p, /**< current source position */
                         int length)
@@ -70,7 +71,7 @@ lexer_hex_to_character (parser_context_t *context_p, /**< context */
   }
   while (--length > 0);
 
-  return (lexer_character_type_t) result;
+  return (ecma_char_t) result;
 } /* lexer_hex_to_character */
 
 /**
@@ -107,17 +108,17 @@ skip_spaces (parser_context_t *context_p) /**< context */
 
     switch (context_p->source_p[0])
     {
-      case LEXER_NEWLINE_CR:
+      case LIT_CHAR_CR:
       {
         if (context_p->source_p + 1 < source_end_p
-            && context_p->source_p[1] == LEXER_NEWLINE_LF)
+            && context_p->source_p[1] == LIT_CHAR_LF)
         {
           context_p->source_p++;
         }
         /* FALLTHRU */
       }
 
-      case LEXER_NEWLINE_LF:
+      case LIT_CHAR_LF:
       {
         context_p->line++;
         context_p->column = 0;
@@ -140,7 +141,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
         /* FALLTHRU */
       }
 
-      case LEXER_TAB:
+      case LIT_CHAR_TAB:
       {
         context_p->column = align_column_to_tab (context_p->column);
         context_p->source_p++;
@@ -577,20 +578,20 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
       has_escape = PARSER_TRUE;
 
       /* Newline is ignored. */
-      if (*source_p == LEXER_NEWLINE_CR
-          || *source_p == LEXER_NEWLINE_LF
+      if (*source_p == LIT_CHAR_CR
+          || *source_p == LIT_CHAR_LF
           || (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1 && LEXER_NEWLINE_LS_PS_BYTE_23 (source_p)))
       {
-        if (*source_p == LEXER_NEWLINE_CR)
+        if (*source_p == LIT_CHAR_CR)
         {
           source_p++;
           if (source_p < source_end_p
-              && *source_p == LEXER_NEWLINE_LF)
+              && *source_p == LIT_CHAR_LF)
           {
             source_p++;
           }
         }
-        else if (*source_p == LEXER_NEWLINE_LF)
+        else if (*source_p == LIT_CHAR_LF)
         {
           source_p++;
         }
@@ -692,15 +693,15 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
       column++;
       continue;
     }
-    else if (*source_p == LEXER_NEWLINE_CR
-             || *source_p == LEXER_NEWLINE_LF
+    else if (*source_p == LIT_CHAR_CR
+             || *source_p == LIT_CHAR_LF
              || (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1 && LEXER_NEWLINE_LS_PS_BYTE_23 (source_p)))
     {
       context_p->token.line = line;
       context_p->token.column = column;
       parser_raise_error (context_p, PARSER_ERR_NEWLINE_NOT_ALLOWED);
     }
-    else if (*source_p == LEXER_TAB)
+    else if (*source_p == LIT_CHAR_TAB)
     {
       column = align_column_to_tab (column);
       /* Subtract -1 because column is increased below. */
@@ -1287,21 +1288,21 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
           JERRY_ASSERT (source_p < context_p->source_end_p);
 
           /* Newline is ignored. */
-          if (*source_p == LEXER_NEWLINE_CR
-              || *source_p == LEXER_NEWLINE_LF
+          if (*source_p == LIT_CHAR_CR
+              || *source_p == LIT_CHAR_LF
               || (*source_p == LEXER_NEWLINE_LS_PS_BYTE_1 && LEXER_NEWLINE_LS_PS_BYTE_23 (source_p)))
           {
-            if (*source_p == LEXER_NEWLINE_CR)
+            if (*source_p == LIT_CHAR_CR)
             {
               source_p++;
               JERRY_ASSERT (source_p < context_p->source_end_p);
 
-              if (*source_p == LEXER_NEWLINE_LF)
+              if (*source_p == LIT_CHAR_LF)
               {
                 source_p++;
               }
             }
-            else if (*source_p == LEXER_NEWLINE_LF)
+            else if (*source_p == LIT_CHAR_LF)
             {
               source_p++;
             }
@@ -1425,9 +1426,9 @@ lexer_construct_literal_object (parser_context_t *context_p, /**< context */
           JERRY_ASSERT (character >= 0x10000);
           character -= 0x10000;
           destination_p += util_to_utf8_bytes (destination_p,
-                                               (lexer_character_type_t) (0xd800 | (character >> 10)));
+                                               (ecma_char_t) (0xd800 | (character >> 10)));
           destination_p += util_to_utf8_bytes (destination_p,
-                                               (lexer_character_type_t) (0xdc00 | (character & 0x3ff)));
+                                               (ecma_char_t) (0xdc00 | (character & 0x3ff)));
           source_p += 4;
           continue;
         }
@@ -1654,8 +1655,8 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
 
     switch (source_p[0])
     {
-      case LEXER_NEWLINE_CR:
-      case LEXER_NEWLINE_LF:
+      case LIT_CHAR_CR:
+      case LIT_CHAR_LF:
       case LEXER_NEWLINE_LS_PS_BYTE_1:
       {
         if (source_p[0] != LEXER_NEWLINE_LS_PS_BYTE_1
@@ -1665,7 +1666,7 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
         }
         break;
       }
-      case LEXER_TAB:
+      case LIT_CHAR_TAB:
       {
         column = align_column_to_tab (column);
          /* Subtract -1 because column is increased below. */
@@ -2014,24 +2015,24 @@ lexer_scan_identifier (parser_context_t *context_p, /**< context */
  *
  * @return the decoded 16 bit unicode character
  */
-static lexer_character_type_t
+static ecma_char_t
 lexer_decode_unicode_sequence (const uint8_t *source_p)
 {
-  lexer_character_type_t chr = 0;
+  ecma_char_t chr = 0;
   const uint8_t *source_end_p = source_p + 6;
 
   source_p += 2;
   do
   {
     uint8_t byte = *source_p++;
-    chr = (lexer_character_type_t) (chr << 4);
+    chr = (ecma_char_t) (chr << 4);
     if (byte <= '9')
     {
-      chr = (lexer_character_type_t) (chr + byte - '0');
+      chr = (ecma_char_t) (chr + byte - '0');
     }
     else
     {
-      chr = (lexer_character_type_t) (chr + LEXER_TO_ASCII_LOWERCASE (byte) - ('a' - 10));
+      chr = (ecma_char_t) (chr + LEXER_TO_ASCII_LOWERCASE (byte) - ('a' - 10));
     }
   }
   while (source_p < source_end_p);
