@@ -19,11 +19,17 @@
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) \
   ((arg2) | (((arg3) + CBC_STACK_ADJUST_BASE) << CBC_STACK_ADJUST_SHIFT)),
 
+/**
+ * Flags of the opcodes.
+ */
 const uint8_t cbc_flags[] =
 {
   CBC_OPCODE_LIST
 };
 
+/**
+ * Flags of the extended opcodes.
+ */
 const uint8_t cbc_ext_flags[] =
 {
   CBC_EXT_OPCODE_LIST
@@ -35,11 +41,17 @@ const uint8_t cbc_ext_flags[] =
 
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) #arg1,
 
+/**
+ * Names of the opcodes.
+ */
 const char *cbc_names[] =
 {
   CBC_OPCODE_LIST
 };
 
+/**
+ * Names of the extended opcodes.
+ */
 const char *cbc_ext_names[] =
 {
   CBC_EXT_OPCODE_LIST

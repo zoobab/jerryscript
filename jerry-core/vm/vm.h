@@ -28,6 +28,9 @@
 #define VM_OC_GET_DATA_GET_ID(O) \
   (((O) >> VM_OC_GET_DATA_SHIFT) & VM_OC_GET_DATA_MASK)
 
+/**
+ * Argument getters that are part of the opcodes.
+ */
 typedef enum
 {
   VM_OC_GET_NONE = VM_OC_GET_DATA_CREATE_ID (0),
@@ -46,6 +49,9 @@ typedef enum
 #define VM_OC_GROUP_GET_INDEX(O) \
   ((O) & VM_OC_GROUP_MASK)
 
+/**
+ * Opcodes.
+ */
 typedef enum
 {
   VM_OC_NONE,
@@ -161,6 +167,9 @@ typedef enum
 #define VM_OC_PUT_DATA_CREATE_FLAG(V) \
   (((V) & VM_OC_PUT_DATA_MASK) << VM_OC_PUT_DATA_SHIFT)
 
+/**
+ * Result writers that are part of the opcodes.
+ */
 typedef enum
 {
   VM_OC_PUT_IDENT = VM_OC_PUT_DATA_CREATE_FLAG (0x1),
@@ -185,7 +194,7 @@ extern ecma_completion_value_t vm_run_array_args (const ecma_compiled_code_t *,
                                                   ecma_value_t,
                                                   ecma_object_t *,
                                                   bool,
-                                                  const ecma_value_t*,
+                                                  const ecma_value_t *,
                                                   ecma_length_t);
 
 extern bool vm_is_strict_mode (void);

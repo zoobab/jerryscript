@@ -16,6 +16,12 @@
 
 #include "js-parser-internal.h"
 
+/**
+ * Precedence of the binary tokens.
+ *
+ * See also:
+ *    lexer_token_type_t
+ */
 static const uint8_t parser_binary_precedence_table[36] =
 {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,

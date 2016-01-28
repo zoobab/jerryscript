@@ -20,19 +20,6 @@
 #include "ecma-globals.h"
 #include "vm-defines.h"
 
-typedef enum : uint8_t
-{
-  OPCODE_CALL_FLAGS__EMPTY                   = (0u),      /**< initializer for empty flag set */
-  OPCODE_CALL_FLAGS_HAVE_THIS_ARG            = (1u << 0), /**< flag, indicating that call is performed
-                                                           *   with 'this' argument specified */
-  OPCODE_CALL_FLAGS_DIRECT_CALL_TO_EVAL_FORM = (1u << 1)  /**< flag, indicating that call is performed
-                                                           *   in form 'eval (...)', i.e. through 'eval' string
-                                                           *   without object base (i.e. with lexical environment
-                                                           *   as base), so it can be a direct call to eval
-                                                           *   See also: ECMA-262 v5, 15.1.2.1.1
-                                                           */
-} opcode_call_flags_t;
-
 ecma_completion_value_t
 vm_var_decl (vm_frame_ctx_t *, ecma_string_t *);
 

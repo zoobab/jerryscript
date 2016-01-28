@@ -272,9 +272,9 @@ typedef struct
 
 /* Memory management.
  * Note: throws an error if unsuccessful. */
-void * parser_malloc (parser_context_t *, size_t);
+void *parser_malloc (parser_context_t *, size_t);
 void parser_free (void *);
-void * parser_malloc_local (parser_context_t *, size_t);
+void *parser_malloc_local (parser_context_t *, size_t);
 void parser_free_local (void *);
 
 /* Parser byte stream. */
@@ -288,10 +288,10 @@ void parser_cbc_stream_alloc_page (parser_context_t *, parser_mem_data_t *);
 void parser_list_init (parser_list_t *, uint32_t, uint32_t);
 void parser_list_free (parser_list_t *);
 void parser_list_reset (parser_list_t *);
-void * parser_list_append (parser_context_t *, parser_list_t *);
-void * parser_list_get (parser_list_t *, size_t);
+void *parser_list_append (parser_context_t *, parser_list_t *);
+void *parser_list_get (parser_list_t *, size_t);
 void parser_list_iterator_init (parser_list_t *, parser_list_iterator_t *);
-void * parser_list_iterator_next (parser_list_iterator_t *);
+void *parser_list_iterator_next (parser_list_iterator_t *);
 
 /* Parser stack. Optimized for pushing bytes.
  * Pop functions never throws error. */

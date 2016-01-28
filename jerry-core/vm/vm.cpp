@@ -136,7 +136,7 @@ vm_op_set_value (ecma_value_t object, /**< base object */
  */
 void
 vm_init (ecma_compiled_code_t *program_p, /**< pointer to byte-code data */
-         bool dump_mem_stats) /** dump per-instruction memory usage change statistics */
+         bool dump_mem_stats) /**< dump per-instruction memory usage change statistics */
 {
   JERRY_ASSERT (!dump_mem_stats);
 
@@ -147,11 +147,17 @@ vm_init (ecma_compiled_code_t *program_p, /**< pointer to byte-code data */
 
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) arg4,
 
+/**
+ * Decode table for opcodes.
+ */
 uint32_t vm_decode_table[] =
 {
   CBC_OPCODE_LIST
 };
 
+/**
+ * Decode table for extended opcodes.
+ */
 uint32_t vm_ext_decode_table[] =
 {
   CBC_EXT_OPCODE_LIST
@@ -161,6 +167,8 @@ uint32_t vm_ext_decode_table[] =
 
 /**
  * Run global code
+ *
+ * @return completion code
  */
 jerry_completion_code_t
 vm_run_global (void)
@@ -285,7 +293,7 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 
     if (ecma_is_completion_value_throw (ret_value))
     {
-      // FIXME
+      // FIXME: throw exception instead of define an 'undefined' value.
       return ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED);
     }
 
@@ -299,10 +307,11 @@ vm_construct_literal_object (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
 /**
  * Get implicit this value
  *
- * @return implicit this value
+ * @return true, if the implicit 'this' value is updated,
+ *         false - otherwise.
  */
 static bool __attr_always_inline___
-vm_get_implicit_this_value (ecma_value_t *this_value_p) /**< this value */
+vm_get_implicit_this_value (ecma_value_t *this_value_p) /**< in-out: this value */
 {
   if (ecma_is_value_object (*this_value_p))
   {
@@ -321,6 +330,9 @@ vm_get_implicit_this_value (ecma_value_t *this_value_p) /**< this value */
   return false;
 } /* vm_get_implicit_this_value */
 
+/**
+ * Indicate which value should be freed.
+ */
 enum
 {
   VM_FREE_LEFT_VALUE = 0x1,
@@ -2428,7 +2440,7 @@ vm_run_array_args (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code
                    ecma_value_t this_binding_value, /**< value of 'ThisBinding' */
                    ecma_object_t *lex_env_p, /**< lexical environment to use */
                    bool is_eval_code, /**< is the code is eval code (ECMA-262 v5, 10.1) */
-                   const ecma_value_t* arg_list_p, /**< arguments list */
+                   const ecma_value_t *arg_list_p, /**< arguments list */
                    ecma_length_t arg_list_len) /**< length of arguments list */
 {
   lit_cpointer_t *literal_p;

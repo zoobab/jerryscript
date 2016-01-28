@@ -268,6 +268,9 @@ typedef struct
 #define LEXER_KEYWORD(name, type) { (const uint8_t *) (name), (type) }
 #define LEXER_KEYWORD_END()       { (const uint8_t *) NULL, LEXER_EOS }
 
+/**
+ * Keywords with 2 characters.
+ */
 static const keyword_string_t keyword_length_2[4] =
 {
   LEXER_KEYWORD ("do", LEXER_KEYW_DO),
@@ -276,6 +279,9 @@ static const keyword_string_t keyword_length_2[4] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 3 characters.
+ */
 static const keyword_string_t keyword_length_3[6] =
 {
   LEXER_KEYWORD ("for", LEXER_KEYW_FOR),
@@ -286,6 +292,9 @@ static const keyword_string_t keyword_length_3[6] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 4 characters.
+ */
 static const keyword_string_t keyword_length_4[9] =
 {
   LEXER_KEYWORD ("case", LEXER_KEYW_CASE),
@@ -299,6 +308,9 @@ static const keyword_string_t keyword_length_4[9] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 5 characters.
+ */
 static const keyword_string_t keyword_length_5[10] =
 {
   LEXER_KEYWORD ("break", LEXER_KEYW_BREAK),
@@ -313,6 +325,9 @@ static const keyword_string_t keyword_length_5[10] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 6 characters.
+ */
 static const keyword_string_t keyword_length_6[9] =
 {
   LEXER_KEYWORD ("delete", LEXER_KEYW_DELETE),
@@ -326,6 +341,9 @@ static const keyword_string_t keyword_length_6[9] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 7 characters.
+ */
 static const keyword_string_t keyword_length_7[6] =
 {
   LEXER_KEYWORD ("default", LEXER_KEYW_DEFAULT),
@@ -336,6 +354,9 @@ static const keyword_string_t keyword_length_7[6] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 8 characters.
+ */
 static const keyword_string_t keyword_length_8[4] =
 {
   LEXER_KEYWORD ("continue", LEXER_KEYW_CONTINUE),
@@ -344,6 +365,9 @@ static const keyword_string_t keyword_length_8[4] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 9 characters.
+ */
 static const keyword_string_t keyword_length_9[3] =
 {
   LEXER_KEYWORD ("interface", LEXER_KEYW_INTERFACE),
@@ -351,6 +375,9 @@ static const keyword_string_t keyword_length_9[3] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * Keywords with 10 characters.
+ */
 static const keyword_string_t keyword_length_10[3] =
 {
   LEXER_KEYWORD ("instanceof", LEXER_KEYW_INSTANCEOF),
@@ -358,6 +385,9 @@ static const keyword_string_t keyword_length_10[3] =
   LEXER_KEYWORD_END ()
 };
 
+/**
+ * List to the keywords.
+ */
 static const keyword_string_t * const keyword_string_list[9] =
 {
   keyword_length_2,

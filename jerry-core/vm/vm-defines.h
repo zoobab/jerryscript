@@ -31,19 +31,6 @@
 typedef const uint8_t *vm_instr_counter_t;
 
 /**
- * Flags indicating various properties of a scope's code
- */
-typedef enum : uint8_t
-{
-  OPCODE_SCOPE_CODE_FLAGS__EMPTY                       = (0u),      /**< initializer for empty flag set */
-  OPCODE_SCOPE_CODE_FLAGS_STRICT                       = (1u << 0), /**< code is strict mode code */
-  OPCODE_SCOPE_CODE_FLAGS_NOT_REF_ARGUMENTS_IDENTIFIER = (1u << 1), /**< code doesn't reference
-                                                                     *   'arguments' identifier */
-  OPCODE_SCOPE_CODE_FLAGS_NOT_REF_EVAL_IDENTIFIER      = (1u << 2)  /**< code doesn't reference
-                                                                     *   'eval' identifier */
-} opcode_scope_code_flags_t;
-
-/**
  * Context of interpreter, related to a JS stack frame
  */
 typedef struct
