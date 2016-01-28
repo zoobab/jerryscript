@@ -23,6 +23,16 @@
 #include <inttypes.h>
 #include <setjmp.h>
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_utils Utility
+ * @{
+ */
+
 #ifndef JERRY_NDEBUG
 #define PARSER_DEBUG
 #endif
@@ -154,4 +164,4 @@ void util_print_literal (lexer_literal_t *);
 #define PARSER_INLINE inline
 #define PARSER_NOINLINE __attribute__ ((noinline))
 
-#endif /* COMMON_H */
+#endif /* !COMMON_H */

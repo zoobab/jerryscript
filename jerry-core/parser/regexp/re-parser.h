@@ -19,6 +19,16 @@
 
 #ifndef CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup regexparser Regular expression
+ * @{
+ *
+ * \addtogroup regexparser_bytecode Bytecode
+ * @{
+ */
+
 /**
  * RegExp token type definitions
  */
@@ -47,19 +57,27 @@ typedef enum
   RE_TOK_START_CHAR_CLASS,           /* [ ] */
   RE_TOK_START_INV_CHAR_CLASS,       /* [^ ] */
 } re_token_type_t;
+
 /**
-  * RegExp constant of infinite
-  */
+ * @}
+ *
+ * \addtogroup regexparser_parser Parser
+ * @{
+ */
+
+/**
+ * RegExp constant of infinite
+ */
 #define RE_ITERATOR_INFINITE ((uint32_t)-1)
 
 /**
-  * Maximum number of decimal escape digits
-  */
+ * Maximum number of decimal escape digits
+ */
 #define RE_MAX_RE_DECESC_DIGITS 9
 
 /**
-  * Undefined character (out of the range of the codeunit)
-  */
+ * Undefined character (out of the range of the codeunit)
+ */
 #define RE_CHAR_UNDEF 0xFFFFFFFF
 
 /**
@@ -94,5 +112,10 @@ re_parse_char_class (re_parser_ctx_t *, re_char_class_callback, void *, re_token
 ecma_completion_value_t
 re_parse_next_token (re_parser_ctx_t *, re_token_t *);
 
-#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
-#endif /* RE_PARSER_H */
+/**
+ * @}
+ * @}
+ */
+
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+#endif /* !RE_PARSER_H */

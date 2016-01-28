@@ -22,6 +22,16 @@
 #include "ecma-globals.h"
 #include "re-parser.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup regexparser Regular expression
+ * @{
+ *
+ * \addtogroup regexparser_compiler Compiler
+ * @{
+ */
+
 /**
  * RegExp opcodes
  */
@@ -110,5 +120,11 @@ re_get_opcode (uint8_t **);
 uint32_t
 re_get_value (uint8_t **);
 
-#endif /* CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
-#endif /* RE_COMPILER_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
+#endif /* !RE_COMPILER_H */

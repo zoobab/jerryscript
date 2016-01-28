@@ -16,6 +16,16 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_scanner Scanner
+ * @{
+ */
+
 /**
  * Scan mode types types.
  */
@@ -660,3 +670,9 @@ parser_scan_until (parser_context_t *context_p, /**< context */
     lexer_next_token (context_p);
   }
 } /* parser_scan_until */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

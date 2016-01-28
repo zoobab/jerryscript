@@ -25,6 +25,13 @@
 #include "opcodes.h"
 #include "vm-defines.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 /**
  * 'Equals' opcode handler.
  *
@@ -118,3 +125,8 @@ opfunc_not_equal_value_type (ecma_value_t left_value, /**< left value */
   return ecma_make_normal_completion_value (ecma_make_simple_value (is_equal ? ECMA_SIMPLE_VALUE_FALSE
                                                                              : ECMA_SIMPLE_VALUE_TRUE));
 } /* opfunc_not_equal_value_type */
+
+/**
+ * @}
+ * @}
+ */

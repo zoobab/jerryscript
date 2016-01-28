@@ -17,6 +17,16 @@
 #ifndef BYTE_CODE_H
 #define BYTE_CODE_H
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_bytecode Bytecode
+ * @{
+ */
+
 /**
  * Compact byte code (CBC) is a byte code representation
  * of EcmaScript which is designed for low memory
@@ -673,4 +683,10 @@ extern const char *cbc_ext_names[];
 
 #endif /* PARSER_DUMP_BYTE_CODE */
 
-#endif /* BYTE_CODE_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !BYTE_CODE_H */

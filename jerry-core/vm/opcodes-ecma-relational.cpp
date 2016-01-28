@@ -22,6 +22,13 @@
 #include "ecma-try-catch-macro.h"
 #include "opcodes.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 /**
  * 'Less-than' opcode handler.
  *
@@ -264,3 +271,8 @@ opfunc_in (ecma_value_t left_value, /**< left value */
 
   return ret_value;
 } /* opfunc_in */
+
+/**
+ * @}
+ * @}
+ */

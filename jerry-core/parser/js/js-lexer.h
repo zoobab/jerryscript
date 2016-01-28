@@ -17,6 +17,16 @@
 #ifndef JS_LEXER_H
 #define JS_LEXER_H
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_lexer Lexer
+ * @{
+ */
+
 /**
  * Lexer token types.
  */
@@ -250,4 +260,10 @@ typedef struct
   uint8_t type;                              /**< literal object type */
 } lexer_lit_object_t;
 
-#endif /* JS_LEXER_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !JS_LEXER_H */

@@ -22,6 +22,13 @@
 #include "opcodes.h"
 #include "jrt-libc-includes.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 /**
  * Number arithmetic operations.
  */
@@ -267,3 +274,8 @@ opfunc_unary_minus (ecma_value_t left_value) /**< left value */
 
   return ret_value;
 } /* opfunc_unary_minus */
+
+/**
+ * @}
+ * @}
+ */

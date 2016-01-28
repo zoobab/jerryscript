@@ -16,6 +16,16 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_bytecode Bytecode
+ * @{
+ */
+
 #define CBC_OPCODE(arg1, arg2, arg3, arg4) \
   ((arg2) | (((arg3) + CBC_STACK_ADJUST_BASE) << CBC_STACK_ADJUST_SHIFT)),
 
@@ -60,3 +70,9 @@ const char *cbc_ext_names[] =
 #undef CBC_OPCODE
 
 #endif /* PARSER_DUMP_BYTE_CODE */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

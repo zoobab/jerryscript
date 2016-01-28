@@ -21,6 +21,13 @@
 #include "jrt.h"
 #include "vm-defines.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_executor Executor
+ * @{
+ */
+
 #define VM_OC_GET_DATA_SHIFT 24
 #define VM_OC_GET_DATA_MASK 0x1f
 #define VM_OC_GET_DATA_CREATE_ID(V) \
@@ -200,4 +207,9 @@ extern ecma_completion_value_t vm_run_array_args (const ecma_compiled_code_t *,
 extern bool vm_is_strict_mode (void);
 extern bool vm_is_direct_eval_form_call (void);
 
-#endif /* VM_H */
+/**
+ * @}
+ * @}
+ */
+
+#endif /* !VM_H */

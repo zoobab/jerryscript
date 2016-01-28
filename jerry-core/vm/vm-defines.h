@@ -19,6 +19,13 @@
 #include "byte-code.h"
 #include "ecma-globals.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_executor Executor
+ * @{
+ */
+
 /**
  * Helpers for updating uint16_t values.
  */
@@ -46,4 +53,9 @@ typedef struct
   bool is_eval_code;                                  /**< eval mode flag */
 } vm_frame_ctx_t;
 
-#endif /* VM_DEFINES_H */
+/**
+ * @}
+ * @}
+ */
+
+#endif /* !VM_DEFINES_H */

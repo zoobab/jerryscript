@@ -19,6 +19,16 @@
 #include "jerry-api.h"
 #include "byte-code.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser ECMAScript
+ * @{
+ *
+ * \addtogroup jsparser_parser Parser
+ * @{
+ */
+
 /**
  * Parser completion status
  */
@@ -36,4 +46,10 @@ extern jsp_status_t parser_parse_script (const jerry_api_char_t *, size_t,
 extern jsp_status_t parser_parse_eval (const jerry_api_char_t *, size_t, bool,
                                        ecma_compiled_code_t **);
 
-#endif /* PARSER_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !PARSER_H */

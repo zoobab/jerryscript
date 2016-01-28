@@ -16,6 +16,16 @@
 
 #include "js-parser-internal.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_stmt Statement parser
+ * @{
+ */
+
 /* Strict mode string literal in directive prologues */
 #define PARSER_USE_STRICT_LITERAL  "use strict"
 #define PARSER_USE_STRICT_LENGTH   10
@@ -2147,3 +2157,9 @@ parser_free_jumps (parser_stack_iterator_t iterator) /**< iterator position */
     }
   }
 } /* parser_free_jumps */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

@@ -23,6 +23,16 @@
 #include "js-parser-limits.h"
 #include "js-lexer.h"
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_internals Internals
+ * @{
+ */
+
 /* General parser flags. */
 #define PARSER_IS_STRICT                      0x00001u
 #define PARSER_IS_FUNCTION                    0x00002u
@@ -359,4 +369,10 @@ void parser_free_jumps (parser_stack_iterator_t);
 
 void parser_raise_error (parser_context_t *, parser_error_t);
 
-#endif /* JS_PARSER_INTERNAL_H */
+/**
+ * @}
+ * @}
+ * @}
+ */
+
+#endif /* !JS_PARSER_INTERNAL_H */

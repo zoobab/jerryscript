@@ -22,6 +22,16 @@
 static int parser_show_instrs = PARSER_FALSE;
 #endif /* PARSER_DUMP_BYTE_CODE */
 
+/** \addtogroup parser Parser
+ * @{
+ *
+ * \addtogroup jsparser JavaScript
+ * @{
+ *
+ * \addtogroup jsparser_parser Parser
+ * @{
+ */
+
 /**
  * Compute real literal indicies.
  *
@@ -2231,3 +2241,9 @@ parser_set_show_instrs (int show_instrs) /**< flag indicating whether to dump by
   (void) show_instrs;
 #endif /* PARSER_DUMP_BYTE_CODE */
 } /* parser_set_show_instrs */
+
+/**
+ * @}
+ * @}
+ * @}
+ */

@@ -28,6 +28,13 @@
 #include "opcodes.h"
 #include "vm-defines.h"
 
+/** \addtogroup vm Virtual machine
+ * @{
+ *
+ * \addtogroup vm_opcodes Opcodes
+ * @{
+ */
+
 /**
  * 'Function call' opcode handler.
  *
@@ -421,3 +428,8 @@ opfunc_for_in (ecma_value_t left_value, /**< left value */
 
   return prop_names_p;
 } /* opfunc_for_in */
+
+/**
+ * @}
+ * @}
+ */
