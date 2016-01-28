@@ -644,7 +644,7 @@ typedef struct
  */
 typedef enum
 {
-  CBC_OPCODE_LIST
+  CBC_OPCODE_LIST      /**< list of opcodes */
 } cbc_opcode_t;
 
 /**
@@ -652,7 +652,7 @@ typedef enum
  */
 typedef enum
 {
-  CBC_EXT_OPCODE_LIST
+  CBC_EXT_OPCODE_LIST  /**< list extended opcodes */
 } cbc_ext_opcode_t;
 
 #undef CBC_OPCODE

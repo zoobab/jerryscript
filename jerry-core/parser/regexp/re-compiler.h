@@ -31,34 +31,34 @@ typedef enum
   /* Group opcode order is important, because RE_IS_CAPTURE_GROUP is based on it.
    * Change it carefully. Capture opcodes should be at first.
    */
-  RE_OP_CAPTURE_GROUP_START,
-  RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START,
-  RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START,
-  RE_OP_CAPTURE_GREEDY_GROUP_END,
-  RE_OP_CAPTURE_NON_GREEDY_GROUP_END,
-  RE_OP_NON_CAPTURE_GROUP_START,
-  RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START,
-  RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START,
-  RE_OP_NON_CAPTURE_GREEDY_GROUP_END,
-  RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END,
+  RE_OP_CAPTURE_GROUP_START,                      /**< group start */
+  RE_OP_CAPTURE_GREEDY_ZERO_GROUP_START,          /**< greedy zero group start */
+  RE_OP_CAPTURE_NON_GREEDY_ZERO_GROUP_START,      /**< non-greedy zero group start */
+  RE_OP_CAPTURE_GREEDY_GROUP_END,                 /**< greedy group end */
+  RE_OP_CAPTURE_NON_GREEDY_GROUP_END,             /**< non-greedy group end */
+  RE_OP_NON_CAPTURE_GROUP_START,                  /**< non-capture group start */
+  RE_OP_NON_CAPTURE_GREEDY_ZERO_GROUP_START,      /**< non-capture greedy zero group start */
+  RE_OP_NON_CAPTURE_NON_GREEDY_ZERO_GROUP_START,  /**< non-capture non-greedy zero group start */
+  RE_OP_NON_CAPTURE_GREEDY_GROUP_END,             /**< non-capture greedy group end */
+  RE_OP_NON_CAPTURE_NON_GREEDY_GROUP_END,         /**< non-capture non-greedy group end */
 
-  RE_OP_MATCH,
-  RE_OP_CHAR,
-  RE_OP_SAVE_AT_START,
-  RE_OP_SAVE_AND_MATCH,
-  RE_OP_PERIOD,
-  RE_OP_ALTERNATIVE,
-  RE_OP_GREEDY_ITERATOR,
-  RE_OP_NON_GREEDY_ITERATOR,
-  RE_OP_ASSERT_START,
-  RE_OP_ASSERT_END,
-  RE_OP_ASSERT_WORD_BOUNDARY,
-  RE_OP_ASSERT_NOT_WORD_BOUNDARY,
-  RE_OP_LOOKAHEAD_POS,
-  RE_OP_LOOKAHEAD_NEG,
-  RE_OP_BACKREFERENCE,
-  RE_OP_CHAR_CLASS,
-  RE_OP_INV_CHAR_CLASS
+  RE_OP_MATCH,                                    /**< match */
+  RE_OP_CHAR,                                     /**< any character */
+  RE_OP_SAVE_AT_START,                            /**< save at start */
+  RE_OP_SAVE_AND_MATCH,                           /**< save and match */
+  RE_OP_PERIOD,                                   /**< . */
+  RE_OP_ALTERNATIVE,                              /**< | */
+  RE_OP_GREEDY_ITERATOR,                          /**< greedy iterator */
+  RE_OP_NON_GREEDY_ITERATOR,                      /**< non-greedy iterator */
+  RE_OP_ASSERT_START,                             /**< ^ */
+  RE_OP_ASSERT_END,                               /**< $ */
+  RE_OP_ASSERT_WORD_BOUNDARY,                     /**< \b */
+  RE_OP_ASSERT_NOT_WORD_BOUNDARY,                 /**< \B */
+  RE_OP_LOOKAHEAD_POS,                            /**< lookahead pos */
+  RE_OP_LOOKAHEAD_NEG,                            /**< lookahead neg */
+  RE_OP_BACKREFERENCE,                            /**< \[0..9] */
+  RE_OP_CHAR_CLASS,                               /**< [ ] */
+  RE_OP_INV_CHAR_CLASS                            /**< [^ ] */
 } re_opcode_t;
 
 /**
