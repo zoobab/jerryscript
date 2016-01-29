@@ -266,7 +266,7 @@ skip_spaces (parser_context_t *context_p) /**< context */
       context_p->column++;
     }
   }
-}
+} /* skip_spaces */
 
 /**
  * Keyword data.

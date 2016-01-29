@@ -45,7 +45,7 @@ parser_malloc (parser_context_t *context_p, /**< context */
     parser_raise_error (context_p, PARSER_ERR_OUT_OF_MEMORY);
   }
   return result;
-} /* parser_malloc_local */
+} /* parser_malloc */
 
 /**
  * Free memory allocated by parser_malloc.
@@ -53,7 +53,7 @@ parser_malloc (parser_context_t *context_p, /**< context */
 void parser_free (void *ptr) /**< pointer to free */
 {
   PARSER_FREE (ptr);
-} /* parser_free_local */
+} /* parser_free */
 
 /**
  * Allocate local memory for short term use.
@@ -97,7 +97,7 @@ parser_data_init (parser_mem_data_t *data_p, /**< memory manager */
   data_p->first_p = NULL;
   data_p->last_p = NULL;
   data_p->last_position = page_size;
-} /* parser_list_init */
+} /* parser_data_init */
 
 /**
  * Free parse data.
@@ -114,7 +114,7 @@ parser_data_free (parser_mem_data_t *data_p) /**< memory manager */
     parser_free (page_p);
     page_p = next_p;
   }
-}
+} /* parser_data_free */
 
 /**********************************************************************/
 /* Parser byte stream management functions                            */
@@ -160,7 +160,7 @@ parser_cbc_stream_alloc_page (parser_context_t *context_p, /**< context */
     data_p->first_p = page_p;
   }
   data_p->last_p = page_p;
-} /* parser_cbc_stream_append_byte */
+} /* parser_cbc_stream_alloc_page */
 
 /**********************************************************************/
 /* Parser list management functions                                   */
@@ -374,7 +374,7 @@ parser_stack_push_uint8 (parser_context_t *context_p, /**< context */
 
   page_p->bytes[context_p->stack.last_position++] = uint8_value;
   context_p->stack_top_uint8 = uint8_value;
-} /* parser_stack_push_byte */
+} /* parser_stack_push_uint8 */
 
 /**
  * Pops the last uint8_t value from the stack.

@@ -65,7 +65,7 @@ parser_emit_two_bytes (parser_context_t *context_p, /**< context */
     context_p->byte_code.last_p->bytes[0] = second_byte;
     context_p->byte_code.last_position = 1;
   }
-}
+} /* parser_emit_two_bytes */
 
 #define PARSER_APPEND_TO_BYTE_CODE(context_p, byte) \
   if ((context_p)->byte_code.last_position >= PARSER_CBC_STREAM_PAGE_SIZE) \
@@ -233,7 +233,7 @@ parser_emit_cbc (parser_context_t *context_p, /**< context */
   }
 
   context_p->last_cbc_opcode = opcode;
-} /* parser_emit_byte_code */
+} /* parser_emit_cbc */
 
 /**
  * Append a byte code with a literal argument
@@ -348,7 +348,7 @@ parser_emit_cbc_push_number (parser_context_t *context_p, /**< context */
       parser_raise_error (context_p, PARSER_ERR_STACK_LIMIT_REACHED);
     }
   }
-} /* parser_emit_cbc_number_2 */
+} /* parser_emit_cbc_push_number */
 
 /**
  * Append a byte code with a branch argument

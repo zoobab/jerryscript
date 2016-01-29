@@ -95,7 +95,7 @@ vm_stack_context_abort (vm_frame_ctx_t *frame_ctx_p, /**< frame context */
   }
 
   return vm_stack_top_p;
-} /* opfunc_context_end */
+} /* vm_stack_context_abort */
 
 /**
  * Decode branch offset.

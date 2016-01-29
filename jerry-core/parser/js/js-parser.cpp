@@ -413,7 +413,7 @@ parser_encode_literal (uint8_t *dst_p, /**< destination buffer */
     }
   }
   return dst_p;
-} /* parser_encode_literals */
+} /* parser_encode_literal */
 
 /**
  * Generate initializer byte codes.

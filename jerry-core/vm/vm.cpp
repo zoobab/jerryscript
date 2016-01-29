@@ -567,7 +567,7 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
   }
 
   return last_completion_value;
-}
+} /* vm_init_loop */
 
 /**
  * Run generic byte code.
@@ -2520,7 +2520,7 @@ vm_run_array_args (const ecma_compiled_code_t *bytecode_header_p, /**< byte-code
                                arg_list_len,
                                call_stack_size);
   }
-} /* vm_run */
+} /* vm_run_array_args */
 
 /**
  * Check whether currently executed code is strict mode code

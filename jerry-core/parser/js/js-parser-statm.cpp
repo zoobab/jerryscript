@@ -270,7 +270,7 @@ parser_stack_change_last_uint8 (parser_context_t *context_p, /**< context */
 
   page_p->bytes[context_p->stack.last_position - 1] = new_value;
   context_p->stack_top_uint8 = new_value;
-} /* parser_stack_iterator_read_uint8 */
+} /* parser_stack_change_last_uint8 */
 
 /**
  * Parse expression enclosed in parens.
@@ -599,7 +599,7 @@ parser_parse_do_while_statement_end (parser_context_t *context_p) /**< context *
   }
 
   parser_set_breaks_to_current_position (context_p, loop.branch_list_p);
-} /* parser_parse_do_while_statement */
+} /* parser_parse_do_while_statement_end */
 
 /**
  * Parse while statement (starting part).
@@ -1224,7 +1224,7 @@ parser_parse_try_statement_end (parser_context_t *context_p) /**< context */
 
   lexer_next_token (context_p);
   parser_stack_iterator_write (&iterator, &try_statement, sizeof (parser_try_statement_t));
-} /* parser_parse_try_statement */
+} /* parser_parse_try_statement_end */
 
 /**
  * Parse default statement.
@@ -2074,7 +2074,7 @@ parser_parse_statements (parser_context_t *context_p) /**< context */
   {
     parser_raise_error (context_p, PARSER_ERR_STATEMENT_EXPECTED);
   }
-}
+} /* parser_parse_statements */
 
 /**
  * Free jumps stored on the stack if a parse error is occured.
