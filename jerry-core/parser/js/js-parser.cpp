@@ -15,6 +15,7 @@
  */
 
 #include "ecma-helpers.h"
+#include "jerry-snapshot.h"
 #include "js-parser-internal.h"
 #include "lit-literal.h"
 
@@ -1516,6 +1517,20 @@ parser_post_processing (parser_context_t *context_p) /**< context */
   literal_pool_p = (lit_cpointer_t *) byte_code_p;
   byte_code_p += context_p->literal_count * sizeof (lit_cpointer_t);
 
+#ifdef JERRY_ENABLE_SNAPSHOT_SAVE
+
+  if (snapshot_report_byte_code_compilation
+      && context_p->argument_count > 0)
+  {
+    /* Reset all arguments to NULL. */
+    for (offset = 0; offset < context_p->argument_count; offset++)
+    {
+      literal_pool_p[offset] = NOT_A_LITERAL;
+    }
+  }
+
+#endif
+
   dst_p = parser_generate_initializers (context_p,
                                         byte_code_p,
                                         literal_pool_p,
@@ -1757,6 +1772,15 @@ parser_post_processing (parser_context_t *context_p) /**< context */
       argument_count++;
     }
   }
+
+#ifdef JERRY_ENABLE_SNAPSHOT_SAVE
+
+  if (snapshot_report_byte_code_compilation)
+  {
+    snapshot_add_compiled_code (compiled_code_p, NULL, (uint32_t) total_size);
+  }
+
+#endif
 
   return compiled_code_p;
 } /* parser_post_processing */

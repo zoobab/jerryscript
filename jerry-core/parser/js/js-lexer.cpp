@@ -17,6 +17,7 @@
 #include "ecma-alloc.h"
 #include "ecma-helpers.h"
 #include "ecma-function-object.h"
+#include "jerry-snapshot.h"
 #include "js-parser-internal.h"
 #include "lit-char-helpers.h"
 
@@ -1788,12 +1789,14 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
   context_p->literal_count++;
 
   /* Compile the RegExp literal and store the RegExp bytecode pointer */
-  re_compiled_code_t *bc_p = NULL;
+  re_compiled_code_t *re_bytecode_p = NULL;
   ecma_completion_value_t completion_value;
 
   ecma_string_t *pattern_str_p = ecma_new_ecma_string_from_utf8 (regex_start_p, length);
   // FIXME: check return value of 're_compile_bytecode' and throw an error
-  completion_value = re_compile_bytecode (&bc_p, pattern_str_p, current_flags);
+  completion_value = re_compile_bytecode (&re_bytecode_p,
+                                          pattern_str_p,
+                                          current_flags);
   ecma_deref_ecma_string (pattern_str_p);
 
   bool is_throw = ecma_is_completion_value_throw (completion_value);
@@ -1805,8 +1808,17 @@ lexer_construct_regexp_object (parser_context_t *context_p, /**< context */
     parser_raise_error (context_p, PARSER_ERR_INVALID_REGEXP);
   }
 
+#ifdef JERRY_ENABLE_SNAPSHOT_SAVE
+  if (snapshot_report_byte_code_compilation)
+  {
+    snapshot_add_compiled_code ((ecma_compiled_code_t *) re_bytecode_p,
+                                regex_start_p,
+                                length);
+  }
+#endif /* JERRY_ENABLE_SNAPSHOT_SAVE */
+
   literal_p->type = LEXER_REGEXP_LITERAL;
-  literal_p->u.bytecode_p = (ecma_compiled_code_t *) bc_p;
+  literal_p->u.bytecode_p = (ecma_compiled_code_t *) re_bytecode_p;
 
   context_p->token.type = LEXER_LITERAL;
   context_p->token.literal_is_reserved = PARSER_FALSE;
