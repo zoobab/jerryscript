@@ -44,7 +44,7 @@
  * Get length of bytecode
  */
 static uint32_t
-re_get_bytecode_length (re_bytecode_ctx_t *bc_ctx_p)
+re_get_bytecode_length (re_bytecode_ctx_t *bc_ctx_p) /**< RegExp bytecode context */
 {
   return ((uint32_t) (bc_ctx_p->current_p - bc_ctx_p->block_start_p));
 } /* re_get_bytecode_length */
@@ -720,7 +720,7 @@ re_compile_bytecode (re_compiled_code_t **out_bytecode_p, /**< out:pointer to by
  * RegExp bytecode dumper
  */
 void
-re_dump_bytecode (re_bytecode_ctx_t *bc_ctx_p)
+re_dump_bytecode (re_bytecode_ctx_t *bc_ctx_p) /**< RegExp bytecode context */
 {
   re_compiled_code_t *compiled_code_p = bc_ctx_p->block_start_p;
   JERRY_DLOG ("%d ", compiled_code_p->flags);

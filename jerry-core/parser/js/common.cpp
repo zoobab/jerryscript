@@ -191,19 +191,19 @@ util_print_chars (const uint8_t *char_p, /**< character pointer */
     printf ("%c", *char_p++);
     size--;
   }
-}
+} /* util_print_chars */
 
 /**
  * Debug utility to print a number.
  */
 static void
-util_print_number (ecma_number_t num_p)
+util_print_number (ecma_number_t num_p) /**< number to print */
 {
   lit_utf8_byte_t str_buf[ECMA_MAX_CHARS_IN_STRINGIFIED_NUMBER];
   lit_utf8_size_t str_size = ecma_number_to_utf8_string (num_p, str_buf, sizeof (str_buf));
   str_buf[str_size] = 0;
   printf ("%s", str_buf);
-}
+} /* util_print_number */
 
 /**
  * Print literal.

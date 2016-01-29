@@ -228,10 +228,10 @@ opfunc_typeof (ecma_value_t left_value) /**< left value */
  * Update getter or setter for object literals.
  */
 void
-opfunc_set_accessor (bool is_getter,
-                     ecma_value_t object,
-                     ecma_value_t accessor_name,
-                     ecma_value_t accessor)
+opfunc_set_accessor (bool is_getter, /**< is getter accessor */
+                     ecma_value_t object, /**< object value */
+                     ecma_value_t accessor_name, /**< accessor name value */
+                     ecma_value_t accessor) /**< accessor value */
 {
   ecma_object_t *object_p = ecma_get_object_from_value (object);
   ecma_string_t *accessor_name_p = ecma_get_string_from_value (accessor_name);
@@ -280,7 +280,7 @@ opfunc_set_accessor (bool is_getter,
                                              property_p,
                                              setter_func_p);
   }
-} /* opfunc_define_accessor */
+} /* opfunc_set_accessor */
 
 /**
  * Deletes an object property.

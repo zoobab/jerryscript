@@ -172,7 +172,7 @@ typedef struct
  * @return size consumed by a statement.
  */
 static PARSER_INLINE size_t
-parser_statement_length (uint8_t type)
+parser_statement_length (uint8_t type) /**< type of statement */
 {
   static const uint8_t statement_lengths[12] =
   {
@@ -206,7 +206,7 @@ parser_statement_length (uint8_t type)
   JERRY_ASSERT (PARSER_STATEMENT_TRY - PARSER_STATEMENT_BLOCK == 11);
 
   return statement_lengths[type - PARSER_STATEMENT_BLOCK];
-}
+} /* parser_statement_length */
 
 /**
  * Initialize a range from the current location.

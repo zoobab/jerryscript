@@ -688,7 +688,7 @@ jerry_api_create_string (const jerry_api_char_t *v) /**< string value */
  */
 jerry_api_string_t *
 jerry_api_create_string_sz (const jerry_api_char_t *v, /**< string value */
-                            jerry_api_size_t v_size)
+                            jerry_api_size_t v_size) /**< string size */
 {
   jerry_assert_api_available ();
 
@@ -1128,9 +1128,9 @@ jerry_api_delete_object_field (jerry_api_object_t *object_p, /**< object to dele
  *                - there is field with specified name in the object;
  *         false - otherwise.
  */
-bool jerry_api_get_object_field_value (jerry_api_object_t *object_p,
-                                       const jerry_api_char_t *field_name_p,
-                                       jerry_api_value_t *field_value_p)
+bool jerry_api_get_object_field_value (jerry_api_object_t *object_p, /**< object */
+                                       const jerry_api_char_t *field_name_p, /**< field name */
+                                       jerry_api_value_t *field_value_p) /**< out: field value */
 {
   return jerry_api_get_object_field_value_sz (object_p,
                                               field_name_p,

@@ -277,12 +277,12 @@ lit_utf8_iterator_seek_bos (lit_utf8_iterator_t *iter_p) /**< iterator to reset 
 } /* lit_utf8_iterator_seek_bos */
 
 /**
- * Save iterator's position to restore it later
+ * Get iterator's position
  *
  * @return current position of the iterator
  */
 lit_utf8_iterator_pos_t
-lit_utf8_iterator_get_pos (const lit_utf8_iterator_t *iter_p)
+lit_utf8_iterator_get_pos (const lit_utf8_iterator_t *iter_p) /**< iterator */
 {
   return iter_p->buf_pos;
 } /* lit_utf8_iterator_get_pos */

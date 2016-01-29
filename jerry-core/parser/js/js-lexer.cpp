@@ -53,7 +53,7 @@ align_column_to_tab (parser_line_counter_t column) /**< current column */
 static ecma_char_t
 lexer_hex_to_character (parser_context_t *context_p, /**< context */
                         const uint8_t *source_p, /**< current source position */
-                        int length)
+                        int length) /**< source length */
 {
   uint32_t result = 0;
 
@@ -755,7 +755,7 @@ lexer_parse_string (parser_context_t *context_p) /**< context */
  * @return non-zero if the character is hex digit.
  */
 static int
-lexer_is_hex_digit (uint8_t character)
+lexer_is_hex_digit (uint8_t character) /**< input character */
 {
   return (character >= '0' && character <= '9') || ((character | 0x20) >= 'a' && (character | 0x20) <= 'f');
 } /* lexer_is_hex_digit */
@@ -2038,7 +2038,7 @@ lexer_scan_identifier (parser_context_t *context_p, /**< context */
  * @return the decoded 16 bit unicode character
  */
 static ecma_char_t
-lexer_decode_unicode_sequence (const uint8_t *source_p)
+lexer_decode_unicode_sequence (const uint8_t *source_p) /**< source pointer */
 {
   ecma_char_t chr = 0;
   const uint8_t *source_end_p = source_p + 6;
