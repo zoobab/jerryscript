@@ -1446,7 +1446,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_BIT_NOT:
         {
-          last_completion_value = opfunc_b_not (left_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_NOT,
+                                                           left_value,
+                                                           left_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1526,7 +1528,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_SUB:
         {
-          last_completion_value = opfunc_substraction (left_value, right_value);
+          last_completion_value = do_number_arithmetic (NUMBER_ARITHMETIC_SUBSTRACTION,
+                                                        left_value,
+                                                        right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1538,7 +1542,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_MUL:
         {
-          last_completion_value = opfunc_multiplication (left_value, right_value);
+          last_completion_value = do_number_arithmetic (NUMBER_ARITHMETIC_MULTIPLICATION,
+                                                        left_value,
+                                                        right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1550,7 +1556,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_DIV:
         {
-          last_completion_value = opfunc_division (left_value, right_value);
+          last_completion_value = do_number_arithmetic (NUMBER_ARITHMETIC_DIVISION,
+                                                        left_value,
+                                                        right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1562,7 +1570,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_MOD:
         {
-          last_completion_value = opfunc_remainder (left_value, right_value);
+          last_completion_value = do_number_arithmetic (NUMBER_ARITHMETIC_REMAINDER,
+                                                        left_value,
+                                                        right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1622,7 +1632,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_BIT_OR:
         {
-          last_completion_value = opfunc_b_or (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_OR,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1634,7 +1646,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_BIT_XOR:
         {
-          last_completion_value = opfunc_b_xor (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_XOR,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1646,7 +1660,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_BIT_AND:
         {
-          last_completion_value = opfunc_b_and (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_LOGIC_AND,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1658,7 +1674,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_LEFT_SHIFT:
         {
-          last_completion_value = opfunc_b_shift_left (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_LEFT,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1670,7 +1688,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_RIGHT_SHIFT:
         {
-          last_completion_value = opfunc_b_shift_right (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_RIGHT,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {
@@ -1682,7 +1702,9 @@ vm_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         }
         case VM_OC_UNS_RIGHT_SHIFT:
         {
-          last_completion_value = opfunc_b_shift_uright (left_value, right_value);
+          last_completion_value = do_number_bitwise_logic (NUMBER_BITWISE_SHIFT_URIGHT,
+                                                           left_value,
+                                                           right_value);
 
           if (ecma_is_completion_value_throw (last_completion_value))
           {

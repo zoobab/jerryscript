@@ -30,18 +30,6 @@
  */
 
 /**
- * Number arithmetic operations.
- */
-typedef enum
-{
-  NUMBER_ARITHMETIC_ADDITION, /**< addition */
-  NUMBER_ARITHMETIC_SUBSTRACTION, /**< substraction */
-  NUMBER_ARITHMETIC_MULTIPLICATION, /**< multiplication */
-  NUMBER_ARITHMETIC_DIVISION, /**< division */
-  NUMBER_ARITHMETIC_REMAINDER, /**< remainder calculation */
-} number_arithmetic_op;
-
-/**
  * Perform ECMA number arithmetic operation.
  *
  * The algorithm of the operation is following:
@@ -52,7 +40,7 @@ typedef enum
  * @return completion value
  *         Returned value must be freed with ecma_free_completion_value
  */
-static ecma_completion_value_t
+ecma_completion_value_t
 do_number_arithmetic (number_arithmetic_op op, /**< number arithmetic operation */
                       ecma_value_t left_value, /**< left value */
                       ecma_value_t right_value) /**< right value */
@@ -152,74 +140,6 @@ opfunc_addition (ecma_value_t left_value, /**< left value */
 
   return ret_value;
 } /* opfunc_addition */
-
-/**
- * 'Substraction' opcode handler.
- *
- * See also: ECMA-262 v5, 11.6.2
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-ecma_completion_value_t
-opfunc_substraction (ecma_value_t left_value, /**< left value */
-                     ecma_value_t right_value) /**< right value */
-{
-  return do_number_arithmetic (NUMBER_ARITHMETIC_SUBSTRACTION,
-                               left_value,
-                               right_value);
-} /* opfunc_substraction */
-
-/**
- * 'Multiplication' opcode handler.
- *
- * See also: ECMA-262 v5, 11.5, 11.5.1
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-ecma_completion_value_t
-opfunc_multiplication (ecma_value_t left_value, /**< left value */
-                       ecma_value_t right_value) /**< right value */
-{
-  return do_number_arithmetic (NUMBER_ARITHMETIC_MULTIPLICATION,
-                               left_value,
-                               right_value);
-} /* opfunc_multiplication */
-
-/**
- * 'Division' opcode handler.
- *
- * See also: ECMA-262 v5, 11.5, 11.5.2
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-ecma_completion_value_t
-opfunc_division (ecma_value_t left_value, /**< left value */
-                 ecma_value_t right_value) /**< right value */
-{
-  return do_number_arithmetic (NUMBER_ARITHMETIC_DIVISION,
-                               left_value,
-                               right_value);
-} /* opfunc_division */
-
-/**
- * 'Remainder calculation' opcode handler.
- *
- * See also: ECMA-262 v5, 11.5, 11.5.3
- *
- * @return completion value
- *         Returned value must be freed with ecma_free_completion_value
- */
-ecma_completion_value_t
-opfunc_remainder (ecma_value_t left_value, /**< left value */
-                  ecma_value_t right_value) /**< right value */
-{
-  return do_number_arithmetic (NUMBER_ARITHMETIC_REMAINDER,
-                               left_value,
-                               right_value);
-} /* opfunc_remainder */
 
 /**
  * 'Unary "+"' opcode handler.

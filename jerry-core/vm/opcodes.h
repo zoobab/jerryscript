@@ -27,6 +27,32 @@
  * @{
  */
 
+/**
+ * Number arithmetic operations.
+ */
+typedef enum
+{
+  NUMBER_ARITHMETIC_ADDITION, /**< addition */
+  NUMBER_ARITHMETIC_SUBSTRACTION, /**< substraction */
+  NUMBER_ARITHMETIC_MULTIPLICATION, /**< multiplication */
+  NUMBER_ARITHMETIC_DIVISION, /**< division */
+  NUMBER_ARITHMETIC_REMAINDER, /**< remainder calculation */
+} number_arithmetic_op;
+
+/**
+ * Number bitwise logic operations.
+ */
+typedef enum
+{
+  NUMBER_BITWISE_LOGIC_AND, /**< bitwise AND calculation */
+  NUMBER_BITWISE_LOGIC_OR, /**< bitwise OR calculation */
+  NUMBER_BITWISE_LOGIC_XOR, /**< bitwise XOR calculation */
+  NUMBER_BITWISE_SHIFT_LEFT, /**< bitwise LEFT SHIFT calculation */
+  NUMBER_BITWISE_SHIFT_RIGHT, /**< bitwise RIGHT_SHIFT calculation */
+  NUMBER_BITWISE_SHIFT_URIGHT, /**< bitwise UNSIGNED RIGHT SHIFT calculation */
+  NUMBER_BITWISE_NOT, /**< bitwise NOT calculation */
+} number_bitwise_logic_op;
+
 ecma_completion_value_t
 vm_var_decl (vm_frame_ctx_t *, ecma_string_t *);
 
@@ -52,19 +78,7 @@ ecma_completion_value_t
 opfunc_not_equal_value_type (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_addition (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_substraction (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_multiplication (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_division (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_remainder (ecma_value_t, ecma_value_t);
+do_number_arithmetic (number_arithmetic_op, ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
 opfunc_unary_plus (ecma_value_t);
@@ -73,25 +87,10 @@ ecma_completion_value_t
 opfunc_unary_minus (ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_or (ecma_value_t, ecma_value_t);
+do_number_bitwise_logic (number_bitwise_logic_op, ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
-opfunc_b_xor (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_b_and (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_b_shift_left (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_b_shift_right (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_b_shift_uright (ecma_value_t, ecma_value_t);
-
-ecma_completion_value_t
-opfunc_b_not (ecma_value_t);
+opfunc_addition (ecma_value_t, ecma_value_t);
 
 ecma_completion_value_t
 opfunc_less_than (ecma_value_t, ecma_value_t);
