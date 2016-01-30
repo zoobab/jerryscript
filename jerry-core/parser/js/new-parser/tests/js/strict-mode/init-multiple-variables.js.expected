@@ -1,0 +1,434 @@
+
+--- Script parsing start ---
+
+  [  1] CBC_PUSH_LITERAL idx:0->ident(next_statement)
+  [  0] CBC_POP_BLOCK
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_ADD_TWO_LITERALS idx:4->var_ident(f) idx:6->var_ident(g)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:8->var_ident(h)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:10->var_ident(i)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:12->var_ident(j)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:14->var_ident(k)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:16->var_ident(l)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:18->var_ident(m)
+  [  0] CBC_POP_BLOCK
+  [  1] CBC_PUSH_LITERAL idx:0->ident(next_statement)
+  [  0] CBC_POP_BLOCK
+
+--- Function parsing start ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_ADD_TWO_LITERALS idx:5->var_ident(f) idx:7->var_ident(g)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:9->var_ident(h)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:11->var_ident(i)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:13->var_ident(j)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:15->var_ident(k)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:17->var_ident(l)
+  [  1] CBC_ADD_RIGHT_LITERAL idx:19->var_ident(m)
+  [  0] CBC_POP
+
+Final byte code dump:
+
+  Maximum stack depth: 4
+  Flags: [small_lit_enc]
+  Argument range end: 3
+  Register range end: 3
+  Identifier range end: 14
+  Const literal range end: 14
+  Literal range end: 22
+
+   0 : CBC_DEFINE_VARS from: 3 to: 4
+         idx:3(ident)->var_ident(a)
+         idx:4(ident)->var_ident(b)
+   2 : CBC_INITIALIZE_VARS from: 5 to: 13
+         idx:5(ident)->var_ident(c) = idx:2(arg)->undefined
+         idx:6(ident)->var_ident(f) = idx:14(lit)->function
+         idx:7(ident)->var_ident(g) = idx:15(lit)->function
+         idx:8(ident)->var_ident(h) = idx:16(lit)->function
+         idx:9(ident)->var_ident(i) = idx:17(lit)->function
+         idx:10(ident)->var_ident(j) = idx:18(lit)->function
+         idx:11(ident)->var_ident(k) = idx:19(lit)->function
+         idx:12(ident)->var_ident(l) = idx:20(lit)->function
+         idx:13(ident)->var_ident(m) = idx:21(lit)->function
+  14 : CBC_ADD_TWO_LITERALS idx:6(ident)->var_ident(f) idx:7(ident)->var_ident(g)
+  17 : CBC_ADD_RIGHT_LITERAL idx:8(ident)->var_ident(h)
+  19 : CBC_ADD_RIGHT_LITERAL idx:9(ident)->var_ident(i)
+  21 : CBC_ADD_RIGHT_LITERAL idx:10(ident)->var_ident(j)
+  23 : CBC_ADD_RIGHT_LITERAL idx:11(ident)->var_ident(k)
+  25 : CBC_ADD_RIGHT_LITERAL idx:12(ident)->var_ident(l)
+  27 : CBC_ADD_RIGHT_LITERAL idx:13(ident)->var_ident(m)
+  29 : CBC_POP
+  30 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 31 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_PUSH_LITERAL idx:20->function
+  [  0] CBC_POP_BLOCK
+  [  1] CBC_PUSH_LITERAL idx:0->ident(next_statement)
+  [  0] CBC_POP_BLOCK
+
+Final byte code dump:
+
+  Maximum stack depth: 1
+  Flags: [small_lit_enc]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 10
+  Const literal range end: 10
+  Literal range end: 19
+
+   0 : CBC_DEFINE_VARS from: 0 to: 0
+         idx:0(ident)->var_ident(s)
+   2 : CBC_INITIALIZE_VARS from: 1 to: 8
+         idx:1(ident)->var_ident(f) = idx:10(lit)->function
+         idx:2(ident)->var_ident(g) = idx:11(lit)->function
+         idx:3(ident)->var_ident(h) = idx:12(lit)->function
+         idx:4(ident)->var_ident(i) = idx:13(lit)->function
+         idx:5(ident)->var_ident(j) = idx:14(lit)->function
+         idx:6(ident)->var_ident(k) = idx:15(lit)->function
+         idx:7(ident)->var_ident(l) = idx:16(lit)->function
+         idx:8(ident)->var_ident(m) = idx:17(lit)->function
+  13 : CBC_PUSH_LITERAL idx:9(ident)->ident(next_statement)
+  15 : CBC_POP_BLOCK
+  16 : CBC_ADD_TWO_LITERALS idx:1(ident)->var_ident(f) idx:2(ident)->var_ident(g)
+  19 : CBC_ADD_RIGHT_LITERAL idx:3(ident)->var_ident(h)
+  21 : CBC_ADD_RIGHT_LITERAL idx:4(ident)->var_ident(i)
+  23 : CBC_ADD_RIGHT_LITERAL idx:5(ident)->var_ident(j)
+  25 : CBC_ADD_RIGHT_LITERAL idx:6(ident)->var_ident(k)
+  27 : CBC_ADD_RIGHT_LITERAL idx:7(ident)->var_ident(l)
+  29 : CBC_ADD_RIGHT_LITERAL idx:8(ident)->var_ident(m)
+  31 : CBC_POP_BLOCK
+  32 : CBC_PUSH_LITERAL idx:9(ident)->ident(next_statement)
+  34 : CBC_POP_BLOCK
+  35 : CBC_PUSH_LITERAL idx:18(lit)->function
+  37 : CBC_POP_BLOCK
+  38 : CBC_PUSH_LITERAL idx:9(ident)->ident(next_statement)
+  40 : CBC_POP_BLOCK
+  41 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 42 bytes
+
+Script parsing successfully completed. Total byte code size: 89 bytes
+
+--- Script parsing end ---
+

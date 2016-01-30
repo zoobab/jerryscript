@@ -1,0 +1,139 @@
+
+--- Script parsing start ---
+
+  [  1] CBC_CREATE_OBJECT
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_EXT_SET_GETTER idx:1->string(x) idx:2->function
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 1
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 1
+  Register range end: 1
+  Identifier range end: 1
+  Const literal range end: 1
+  Literal range end: 1
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_EXT_SET_SETTER idx:1->string(x) idx:3->function
+  [  2] CBC_PUSH_NUMBER_1 number:6
+  [  1] CBC_SET_PROPERTY idx:4->string(y)
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_EXT_SET_GETTER idx:5->string(z) idx:6->function
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 1
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 1
+  Register range end: 1
+  Identifier range end: 1
+  Const literal range end: 1
+  Literal range end: 1
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_EXT_SET_SETTER idx:5->string(z) idx:7->function
+  [  0] CBC_ASSIGN_SET_IDENT_BLOCK idx:0->ident(a)
+  [  1] CBC_CREATE_OBJECT
+  [  2] CBC_PUSH_NUMBER_1 number:1
+  [  1] CBC_SET_PROPERTY idx:9->string(v)
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 0
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 0
+  Register range end: 0
+  Identifier range end: 0
+  Const literal range end: 0
+  Literal range end: 0
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+  [  1] CBC_EXT_SET_GETTER idx:10->string(f) idx:11->function
+
+--- Function parsing start ---
+
+
+Final byte code dump:
+
+  Maximum stack depth: 1
+  Flags: [small_lit_enc,no_lexical_env]
+  Argument range end: 1
+  Register range end: 1
+  Identifier range end: 1
+  Const literal range end: 1
+  Literal range end: 1
+
+   0 : CBC_RETURN_WITH_BLOCK
+
+Byte code size: 1 bytes
+
+--- Function parsing end ---
+
+
+--- Script parsing end ---
+
+Parse error 'Property of object literal redefined.' at line: 15 col: 7

@@ -1,0 +1,13 @@
+
+--- Script parsing start ---
+
+  Note: switch to strict mode
+
+  [  1] CBC_PUSH_LITERAL idx:0->string(use strict)
+  [  0] CBC_POP_BLOCK
+  [  1] CBC_CREATE_OBJECT
+  [  2] CBC_PUSH_NUMBER_1 number:5
+
+--- Script parsing end ---
+
+Parse error 'Property of object literal redefined.' at line: 6 col: 1
