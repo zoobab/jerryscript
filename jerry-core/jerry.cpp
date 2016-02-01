@@ -1965,6 +1965,8 @@ snapshot_add_compiled_code (ecma_compiled_code_t *compiled_code_p, /**< compiled
       snapshot_error_occured = true;
       return;
     }
+
+    data_p = regexp_pattern;
   }
 
   if (!jrt_write_to_buffer_by_offset (snapshot_buffer_p,
@@ -2004,8 +2006,9 @@ jerry_snapshot_set_offsets (uint8_t *buffer_p, /**< buffer */
 
     ecma_compiled_code_t *bytecode_p = (ecma_compiled_code_t *) buffer_p;
 
-    /* Reset reference counter. */
+    /* Set reference counter to 1. */
     bytecode_p->status_flags &= (1 << ECMA_BYTECODE_REF_SHIFT) - 1;
+    bytecode_p->status_flags |= 1 << ECMA_BYTECODE_REF_SHIFT;
 
     if (bytecode_p->status_flags & CBC_CODE_FLAGS_FUNCTION)
     {
@@ -2215,7 +2218,7 @@ static ecma_compiled_code_t *
 snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data */
                              size_t offset, /**< byte code offset */
                              lit_mem_to_snapshot_id_map_entry_t *lit_map_p, /**< literal map */
-                             bool is_copy) /**< byte code should be copied to memory */
+                             bool copy_bytecode) /**< byte code should be copied to memory */
 {
   uint32_t code_size = *(uint32_t *) (snapshot_data_p + offset);
 
@@ -2247,87 +2250,90 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
 #endif /* !CONFIG_ECMA_COMPACT_PROFILE_DISABLE_REGEXP_BUILTIN */
   }
 
-  if (is_copy)
+  size_t header_size;
+  uint32_t literal_end;
+  uint32_t const_literal_end;
+
+  if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+  {
+    uint8_t *byte_p = (uint8_t *) bytecode_p;
+    cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) byte_p;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
+    header_size = sizeof (cbc_uint16_arguments_t);
+  }
+  else
+  {
+    uint8_t *byte_p = (uint8_t *) bytecode_p;
+    cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) byte_p;
+    literal_end = args_p->literal_end;
+    const_literal_end = args_p->const_literal_end;
+    header_size = sizeof (cbc_uint8_arguments_t);
+  }
+
+  if (copy_bytecode)
   {
     bytecode_p = (ecma_compiled_code_t *) mem_heap_alloc_block (code_size,
                                                                 MEM_HEAP_ALLOC_LONG_TERM);
 
     memcpy (bytecode_p, snapshot_data_p + offset + sizeof (uint32_t), code_size);
-
-    JERRY_ASSERT ((bytecode_p->status_flags & ~((1 << ECMA_BYTECODE_REF_SHIFT) - 1)) == 0);
-
-    /* Set reference counter to 1. */
-    bytecode_p->status_flags |= 1 << ECMA_BYTECODE_REF_SHIFT;
   }
   else
   {
-    JERRY_ASSERT ((bytecode_p->status_flags & ~((1 << ECMA_BYTECODE_REF_SHIFT) - 1)) == 0);
+    code_size = (uint32_t) (header_size + literal_end * sizeof (lit_cpointer_t));
 
-    /* Set reference counter to 2 to prevent freeing
-     * this memory area after the byte code is freed. */
-    bytecode_p->status_flags |= 2 << ECMA_BYTECODE_REF_SHIFT;
+    uint8_t *real_bytecode_p = ((uint8_t *) bytecode_p) + code_size;
+
+    bytecode_p = (ecma_compiled_code_t *) mem_heap_alloc_block (code_size + 1 + sizeof (uint8_t *),
+                                                                MEM_HEAP_ALLOC_LONG_TERM);
+
+    memcpy (bytecode_p, snapshot_data_p + offset + sizeof (uint32_t), code_size);
+
+    uint8_t *instructions_p = ((uint8_t *) bytecode_p);
+
+    instructions_p[code_size] = CBC_SET_BYTECODE_PTR;
+    memcpy (instructions_p + code_size + 1, &real_bytecode_p, sizeof (uint8_t *));
   }
 
-  if (bytecode_p->status_flags & CBC_CODE_FLAGS_FUNCTION)
+  JERRY_ASSERT ((bytecode_p->status_flags >> ECMA_BYTECODE_REF_SHIFT) == 1);
+
+  lit_cpointer_t *literal_start_p = (lit_cpointer_t *) (((uint8_t *) bytecode_p) + header_size);
+
+  for (uint32_t i = 0; i < const_literal_end; i++)
   {
-    lit_cpointer_t *literal_start_p;
-    uint8_t *byte_p = (uint8_t *) bytecode_p;
-    uint32_t literal_end;
-    uint32_t const_literal_end;
+    lit_mem_to_snapshot_id_map_entry_t *current_p = lit_map_p;
 
-    if (bytecode_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
+    if (literal_start_p[i].packed_value != MEM_CP_NULL)
     {
-      literal_start_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint16_arguments_t));
+      while (current_p->literal_offset != literal_start_p[i].packed_value)
+      {
+        current_p++;
+      }
 
-      cbc_uint16_arguments_t *args_p = (cbc_uint16_arguments_t *) byte_p;
-      literal_end = args_p->literal_end;
-      const_literal_end = args_p->const_literal_end;
+      literal_start_p[i] = current_p->literal_id;
+    }
+  }
+
+  for (uint32_t i = const_literal_end; i < literal_end; i++)
+  {
+    size_t literal_offset = literal_start_p[i].packed_value;
+
+    if (literal_offset == offset)
+    {
+      /* Self reference */
+      ECMA_SET_NON_NULL_POINTER (literal_start_p[i].value.base_cp,
+                                 bytecode_p);
     }
     else
     {
-      literal_start_p = (lit_cpointer_t *) (byte_p + sizeof (cbc_uint8_arguments_t));
+      ecma_compiled_code_t *literal_bytecode_p;
+      literal_bytecode_p = snapshot_load_compiled_code (snapshot_data_p,
+                                                        literal_offset << MEM_ALIGNMENT_LOG,
+                                                        lit_map_p,
+                                                        copy_bytecode);
 
-      cbc_uint8_arguments_t *args_p = (cbc_uint8_arguments_t *) byte_p;
-      literal_end = args_p->literal_end;
-      const_literal_end = args_p->const_literal_end;
-    }
-
-    for (uint32_t i = 0; i < const_literal_end; i++)
-    {
-      lit_mem_to_snapshot_id_map_entry_t *current_p = lit_map_p;
-
-      if (literal_start_p[i].packed_value != MEM_CP_NULL)
-      {
-        while (current_p->literal_offset != literal_start_p[i].packed_value)
-        {
-          current_p++;
-        }
-
-        literal_start_p[i] = current_p->literal_id;
-      }
-    }
-
-    for (uint32_t i = const_literal_end; i < literal_end; i++)
-    {
-      size_t literal_offset = literal_start_p[i].packed_value;
-
-      if (literal_offset == offset)
-      {
-        /* Self reference */
-        ECMA_SET_NON_NULL_POINTER (literal_start_p[i].value.base_cp,
-                                   bytecode_p);
-      }
-      else
-      {
-        ecma_compiled_code_t *literal_bytecode_p;
-        literal_bytecode_p = snapshot_load_compiled_code (snapshot_data_p,
-                                                          literal_offset << MEM_ALIGNMENT_LOG,
-                                                          lit_map_p,
-                                                          is_copy);
-
-        ECMA_SET_NON_NULL_POINTER (literal_start_p[i].value.base_cp,
-                                   literal_bytecode_p);
-      }
+      ECMA_SET_NON_NULL_POINTER (literal_start_p[i].value.base_cp,
+                                 literal_bytecode_p);
     }
   }
 
@@ -2344,15 +2350,15 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
 jerry_completion_code_t
 jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
                      size_t snapshot_size, /**< size of snapshot */
-                     bool is_copy, /**< flag, indicating whether the passed snapshot
-                                    *   buffer should be copied to the engine's memory.
-                                    *   If set the engine should not reference the buffer
-                                    *   after the function returns (in this case, the passed
-                                    *   buffer could be freed after the call).
-                                    *   Otherwise (if the flag is not set) - the buffer could only be
-                                    *   freed after the engine stops (i.e. after call to jerry_cleanup). */
-                     jerry_api_value_t *retval_p) /**< out: returned value (ECMA-262 'undefined' if code is executed
-                                                   *        as global scope code) */
+                     bool copy_bytecode, /**< flag, indicating whether the passed snapshot
+                                          *   buffer should be copied to the engine's memory.
+                                          *   If set the engine should not reference the buffer
+                                          *   after the function returns (in this case, the passed
+                                          *   buffer could be freed after the call).
+                                          *   Otherwise (if the flag is not set) - the buffer could only be
+                                          *   freed after the engine stops (i.e. after call to jerry_cleanup). */
+                     jerry_api_value_t *retval_p) /**< out: returned value (ECMA-262 'undefined' if
+                                                   * code is executed as global scope code) */
 {
   jerry_api_convert_ecma_value_to_api_value (retval_p, ecma_make_simple_value (ECMA_SIMPLE_VALUE_UNDEFINED));
 
@@ -2408,7 +2414,7 @@ jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
   bytecode_p = snapshot_load_compiled_code (snapshot_data_p,
                                             snapshot_read,
                                             lit_map_p,
-                                            is_copy);
+                                            copy_bytecode);
 
   if (lit_map_p != NULL)
   {
@@ -2444,7 +2450,7 @@ jerry_exec_snapshot (const void *snapshot_p, /**< snapshot */
 #else /* JERRY_ENABLE_SNAPSHOT_EXEC */
   (void) snapshot_p;
   (void) snapshot_size;
-  (void) is_copy;
+  (void) copy_bytecode;
   (void) retval_p;
 
   return JERRY_COMPLETION_CODE_INVALID_SNAPSHOT_VERSION;

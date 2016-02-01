@@ -558,6 +558,15 @@ vm_init_loop (vm_frame_ctx_t *frame_ctx_p) /**< frame context */
         break;
       }
 
+#ifdef JERRY_ENABLE_SNAPSHOT_EXEC
+      case CBC_SET_BYTECODE_PTR:
+      {
+        memcpy (&byte_code_p, byte_code_p + 1, sizeof (uint8_t *));
+        frame_ctx_p->byte_code_start_p = byte_code_p;
+        break;
+      }
+#endif /* JERRY_ENABLE_SNAPSHOT_EXEC */
+
       default:
       {
         frame_ctx_p->byte_code_p = byte_code_p;

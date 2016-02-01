@@ -142,6 +142,7 @@ typedef enum
   LEXER_EXPRESSION_START,        /**< expression start */
   LEXER_PROPERTY_GETTER,         /**< property getter function */
   LEXER_PROPERTY_SETTER,         /**< property setter function */
+  LEXER_COMMA_SEP_LIST,          /**< comma separated bracketed expression list */
   LEXER_SCAN_SWITCH,             /**< special value for switch pre-scan */
 
   /* Future reserved words: these keywords

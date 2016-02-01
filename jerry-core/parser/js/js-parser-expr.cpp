@@ -1360,14 +1360,24 @@ parser_parse_expression (parser_context_t *context_p, /**< context */
 
       parser_process_binary_opcodes (context_p, min_prec_treshold);
 
-      if (context_p->token.type == LEXER_RIGHT_PAREN
-          && context_p->stack_top_uint8 == LEXER_LEFT_PAREN)
+      if (context_p->token.type == LEXER_RIGHT_PAREN)
       {
-        JERRY_ASSERT (grouping_level > 0);
-        grouping_level --;
-        parser_stack_pop_uint8 (context_p);
-        lexer_next_token (context_p);
-        continue;
+        if (context_p->stack_top_uint8 == LEXER_LEFT_PAREN
+            || context_p->stack_top_uint8 == LEXER_COMMA_SEP_LIST)
+        {
+          JERRY_ASSERT (grouping_level > 0);
+          grouping_level--;
+
+          if (context_p->stack_top_uint8 == LEXER_COMMA_SEP_LIST)
+          {
+            parser_push_result (context_p);
+            parser_flush_cbc (context_p);
+          }
+
+          parser_stack_pop_uint8 (context_p);
+          lexer_next_token (context_p);
+          continue;
+        }
       }
       else if (context_p->token.type == LEXER_QUESTION_MARK)
       {
@@ -1421,6 +1431,15 @@ parser_parse_expression (parser_context_t *context_p, /**< context */
         if (!CBC_NO_RESULT_OPERATION (context_p->last_cbc_opcode))
         {
           parser_emit_cbc (context_p, CBC_POP);
+        }
+        if (context_p->stack_top_uint8 == LEXER_LEFT_PAREN)
+        {
+          parser_mem_page_t *page_p = context_p->stack.first_p;
+
+          JERRY_ASSERT (page_p != NULL);
+
+          page_p->bytes[context_p->stack.last_position - 1] = LEXER_COMMA_SEP_LIST;
+          context_p->stack_top_uint8 = LEXER_COMMA_SEP_LIST;
         }
         lexer_next_token (context_p);
         continue;
