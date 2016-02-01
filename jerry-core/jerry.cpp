@@ -2303,7 +2303,7 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
   {
     lit_mem_to_snapshot_id_map_entry_t *current_p = lit_map_p;
 
-    if (literal_start_p[i].packed_value != MEM_CP_NULL)
+    if (literal_start_p[i].packed_value != 0)
     {
       while (current_p->literal_offset != literal_start_p[i].packed_value)
       {
@@ -2316,7 +2316,7 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
 
   for (uint32_t i = const_literal_end; i < literal_end; i++)
   {
-    size_t literal_offset = literal_start_p[i].packed_value;
+    size_t literal_offset = ((size_t) literal_start_p[i].packed_value) << MEM_ALIGNMENT_LOG;
 
     if (literal_offset == offset)
     {
@@ -2328,7 +2328,7 @@ snapshot_load_compiled_code (const uint8_t *snapshot_data_p, /**< snapshot data 
     {
       ecma_compiled_code_t *literal_bytecode_p;
       literal_bytecode_p = snapshot_load_compiled_code (snapshot_data_p,
-                                                        literal_offset << MEM_ALIGNMENT_LOG,
+                                                        literal_offset,
                                                         lit_map_p,
                                                         copy_bytecode);
 

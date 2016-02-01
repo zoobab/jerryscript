@@ -1773,6 +1773,12 @@ parser_post_processing (parser_context_t *context_p) /**< context */
     }
   }
 
+  if (context_p->status_flags & PARSER_NAMED_FUNCTION_EXP)
+  {
+    ECMA_SET_NON_NULL_POINTER (literal_pool_p[const_literal_end].value.base_cp,
+                               compiled_code_p);
+  }
+
 #ifdef JERRY_ENABLE_SNAPSHOT_SAVE
 
   if (snapshot_report_byte_code_compilation)
@@ -2162,27 +2168,6 @@ parser_parse_function (parser_context_t *context_p, /**< context */
   lexer_next_token (context_p);
   parser_parse_statements (context_p);
   compiled_code_p = parser_post_processing (context_p);
-
-  if (context_p->status_flags & PARSER_NAMED_FUNCTION_EXP)
-  {
-    uint8_t *literal_pool_start_p = (uint8_t *) compiled_code_p;
-    uint16_t const_literal_end;
-
-    if (compiled_code_p->status_flags & CBC_CODE_FLAGS_UINT16_ARGUMENTS)
-    {
-      literal_pool_start_p += sizeof (cbc_uint16_arguments_t);
-      const_literal_end = ((cbc_uint16_arguments_t *) compiled_code_p)->const_literal_end;
-    }
-    else
-    {
-      literal_pool_start_p += sizeof (cbc_uint8_arguments_t);
-      const_literal_end = ((cbc_uint8_arguments_t *) compiled_code_p)->const_literal_end;
-    }
-
-    lit_cpointer_t *literal_pool_p = (lit_cpointer_t *) literal_pool_start_p;
-    ECMA_SET_NON_NULL_POINTER (literal_pool_p[const_literal_end].value.base_cp,
-                               compiled_code_p);
-  }
 
 #ifdef PARSER_DUMP_BYTE_CODE
   if (context_p->is_show_opcodes)
