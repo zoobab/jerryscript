@@ -31,13 +31,13 @@
  */
 typedef enum
 {
-  SCAN_MODE_PRIMARY_EXPRESSION,
-  SCAN_MODE_PRIMARY_EXPRESSION_AFTER_NEW,
-  SCAN_MODE_POST_PRIMARY_EXPRESSION,
-  SCAN_MODE_PRIMARY_EXPRESSION_END,
-  SCAN_MODE_STATEMENT,
-  SCAN_MODE_FUNCTION_ARGUMENTS,
-  SCAN_MODE_PROPERTY_NAME,
+  SCAN_MODE_PRIMARY_EXPRESSION,            /**< scanning primary expression */
+  SCAN_MODE_PRIMARY_EXPRESSION_AFTER_NEW,  /**< scanning primary expression after new */
+  SCAN_MODE_POST_PRIMARY_EXPRESSION,       /**< scanning post primary expression */
+  SCAN_MODE_PRIMARY_EXPRESSION_END,        /**< scanning prymary expression end */
+  SCAN_MODE_STATEMENT,                     /**< scanning statement */
+  SCAN_MODE_FUNCTION_ARGUMENTS,            /**< scanning function arguments */
+  SCAN_MODE_PROPERTY_NAME,                 /**< scanning property name */
 } scan_modes_t;
 
 /**
@@ -45,16 +45,16 @@ typedef enum
  */
 typedef enum
 {
-  SCAN_STACK_HEAD,
-  SCAN_STACK_PAREN_EXPRESSION,
-  SCAN_STACK_PAREN_STATEMENT,
-  SCAN_STACK_COLON_EXPRESSION,
-  SCAN_STACK_COLON_STATEMENT,
-  SCAN_STACK_SQUARE_BRACKETED_EXPRESSION,
-  SCAN_STACK_OBJECT_LITERAL,
-  SCAN_STACK_BLOCK_STATEMENT,
-  SCAN_STACK_BLOCK_EXPRESSION,
-  SCAN_STACK_BLOCK_PROPERTY,
+  SCAN_STACK_HEAD,                         /**< head */
+  SCAN_STACK_PAREN_EXPRESSION,             /**< parent expression group */
+  SCAN_STACK_PAREN_STATEMENT,              /**< parent stetement group */
+  SCAN_STACK_COLON_EXPRESSION,             /**< colon expression group */
+  SCAN_STACK_COLON_STATEMENT,              /**< colon statement group*/
+  SCAN_STACK_SQUARE_BRACKETED_EXPRESSION,  /**< square bracketed expression group */
+  SCAN_STACK_OBJECT_LITERAL,               /**< object literal group */
+  SCAN_STACK_BLOCK_STATEMENT,              /**< block statement group */
+  SCAN_STACK_BLOCK_EXPRESSION,             /**< block expression group*/
+  SCAN_STACK_BLOCK_PROPERTY,               /**< block property group */
 } scan_stack_modes_t;
 
 /**

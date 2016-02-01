@@ -37,7 +37,7 @@
  */
 typedef struct
 {
-  uint16_t prev_chunk_p; /**< previous chunk of same frame */
+  uint16_t prev_chunk_p;                      /**< previous chunk of same frame */
 } vm_stack_chunk_header_t;
 
 /**
@@ -45,8 +45,8 @@ typedef struct
  */
 typedef struct vm_stack_frame_t
 {
-  struct vm_stack_frame_t *prev_frame_p; /**< previous frame */
-  uint32_t regs_number; /**< number of register variables */
+  struct vm_stack_frame_t *prev_frame_p;      /**< previous frame */
+  uint32_t regs_number;                       /**< number of register variables */
 } vm_stack_frame_t;
 
 #define VM_CREATE_CONTEXT(type, end_offset) ((ecma_value_t) ((type) | (end_offset) << 4))
