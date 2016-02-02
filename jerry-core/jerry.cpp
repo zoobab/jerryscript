@@ -2165,15 +2165,24 @@ jerry_parse_and_save_snapshot (const jerry_api_char_t* source_p, /**< script sou
     }
     else
     {
-      jerry_snapshot_set_offsets (buffer_p + compiled_code_start,
-                                  (uint32_t) compiled_code_size,
-                                  lit_map_p);
+      if (header.lit_table_size > 0xffff)
+      {
+        /* Aligning literals could increase this range, but
+         * it is not a requirement for low-memory environments. */
+        snapshot_buffer_write_offset = 0;
+      }
+      else
+      {
+        jerry_snapshot_set_offsets (buffer_p + compiled_code_start,
+                                    (uint32_t) compiled_code_size,
+                                    lit_map_p);
 
-      jrt_write_to_buffer_by_offset (buffer_p,
-                                     buffer_size,
-                                     &header_offset,
-                                     &header,
-                                     sizeof (header));
+        jrt_write_to_buffer_by_offset (buffer_p,
+                                       buffer_size,
+                                       &header_offset,
+                                       &header,
+                                       sizeof (header));
+      }
 
       mem_heap_free_block (lit_map_p);
     }
