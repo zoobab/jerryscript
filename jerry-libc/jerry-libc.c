@@ -28,7 +28,7 @@
 /**
  * State of pseudo-random number generator
  */
-static unsigned int libc_random_gen_state[4] = { 1455997910, 1999515274, 1234451287, 1949149569 };
+static uint32_t libc_random_gen_state[4] = { 1455997910, 1999515274, 1234451287, 1949149569 };
 
 /**
  * Standard file descriptors
@@ -240,7 +240,8 @@ strlen (const char *s)
 int
 rand (void)
 {
-  uint32_t intermediate = libc_random_gen_state[0] ^ (libc_random_gen_state[0] << 11);
+  uint32_t intermediate = libc_random_gen_state[0];
+  intermediate ^= intermediate << 11;
   intermediate ^= intermediate >> 8;
 
   libc_random_gen_state[0] = libc_random_gen_state[1];
@@ -250,9 +251,7 @@ rand (void)
   libc_random_gen_state[3] ^= libc_random_gen_state[3] >> 19;
   libc_random_gen_state[3] ^= intermediate;
 
-  uint32_t ret = libc_random_gen_state[3] % (RAND_MAX + 1u);
-
-  return (int32_t) ret;
+  return libc_random_gen_state[3] % (RAND_MAX + 1u);
 } /* rand */
 
 /**
@@ -261,5 +260,8 @@ rand (void)
 void
 srand (unsigned int seed) /**< new seed */
 {
+  libc_random_gen_state[0] =
+  libc_random_gen_state[1] =
+  libc_random_gen_state[2] =
   libc_random_gen_state[3] = seed;
 } /* srand */
