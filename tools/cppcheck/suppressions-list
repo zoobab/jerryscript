@@ -1,3 +1,4 @@
 operatorEqVarError
 noConstructor
 duplicateExpression
+variableScope
